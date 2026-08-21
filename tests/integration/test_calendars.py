@@ -11,10 +11,14 @@ from sqlalchemy.orm import Session
 
 from quant_platform.data.csv_loader import ErrorMode
 from quant_platform.data.ingest import ingest_daily_bars_csv
+from quant_platform.data.reference_csv import load_calendars_csv, load_sessions_csv
 from quant_platform.data.repository import (
+    create_calendar,
     create_ingestion_run,
+    create_session,
     get_daily_bars,
     list_ingestion_errors,
+    list_market_sessions,
     upsert_data_source,
     upsert_instrument,
     upsert_market_calendar,
@@ -24,6 +28,8 @@ from quant_platform.data.repository import (
 pytestmark = pytest.mark.postgres
 
 CAL_CSV = Path(__file__).resolve().parents[1] / "fixtures" / "daily_bars_calendar.csv"
+SESSION_CSV = Path(__file__).resolve().parents[1] / "fixtures" / "market_sessions.csv"
+CALENDAR_CSV = Path(__file__).resolve().parents[1] / "fixtures" / "market_calendars.csv"
 
 
 def _unique(prefix: str) -> str:
@@ -50,6 +56,20 @@ def test_calendar_open_and_closed_sessions(db_session: Session) -> None:
     )
     assert open_row.is_open is True
     assert closed.is_open is False
+    half = create_session(
+        db_session,
+        calendar_id=calendar.id,
+        session_date=date(2024, 7, 3),
+        session_kind="half_session",
+    )
+    exceptional = create_session(
+        db_session,
+        calendar_id=calendar.id,
+        session_date=date(2024, 11, 29),
+        session_kind="exceptional_close",
+    )
+    assert half.is_open is True
+    assert exceptional.is_open is False
     again = upsert_market_session(
         db_session,
         calendar_id=calendar.id,
@@ -142,3 +162,19 @@ def test_ingest_with_calendar_validation_rejects_closed_session(
     bars = get_daily_bars(db_session, instrument_id=instrument.id, source_id=source.id)
     assert len(bars) == 1
     assert bars[0].observation_time.day == 2
+
+
+def test_session_csv_fixture_kinds(db_session: Session) -> None:
+    assert load_calendars_csv(db_session, CALENDAR_CSV) == 1
+    assert load_sessions_csv(db_session, SESSION_CSV) == 4
+    calendar = create_calendar(
+        db_session,
+        code="XNYS_EQUITY",
+        name="Fictional NYSE equity sessions",
+        timezone="America/New_York",
+    )
+    kinds = {
+        row.session_kind
+        for row in list_market_sessions(db_session, calendar_id=calendar.id)
+    }
+    assert kinds == {"open", "holiday", "half_session", "exceptional_close"}

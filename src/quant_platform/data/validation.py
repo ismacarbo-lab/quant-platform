@@ -22,6 +22,10 @@ class IngestionErrorCode(StrEnum):
     CLOSED_SESSION = "closed_session"
     INVALID_TIMEZONE = "invalid_timezone"
     STALE_CORRECTION = "stale_correction"
+    UNKNOWN_EXCHANGE = "unknown_exchange"
+    INVALID_NAMESPACE = "invalid_namespace"
+    INVALID_ACTION_TYPE = "invalid_action_type"
+    INVALID_SESSION_KIND = "invalid_session_kind"
 
 
 class DataValidationError(ValueError):

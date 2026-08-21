@@ -8,6 +8,9 @@ Phase 1.2 revision `0003_identity` replaces global `symbol` uniqueness with
 `(symbol, asset_class, exchange, currency)` using PostgreSQL
 `UNIQUE NULLS NOT DISTINCT`, and adds `instrument_identifiers`,
 `market_calendars`, `market_sessions`, plus daily-bar correction columns.
+Phase 1.4 revision `0004_master` introduces `exchanges` and
+`instruments.exchange_id`, session kinds, identifier namespace checks,
+`corporate_actions`, and `daily_bars.superseded_by_daily_bar_id`.
 None of these revisions create orders, trades, or broker tables.
 
 ```bash

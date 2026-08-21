@@ -90,7 +90,10 @@ uv run python scripts/load-daily-bars.py tests/fixtures/daily_bars_sample.csv
 Fail-fast: add `--fail-fast`. Optional `--calendar CODE` (must already exist)
 and `--validate-calendar` (rejects closed sessions). Row errors live in
 `ingestion_errors`; raw payloads in `raw_ingestion_records`. See
-[docs/data/DATA_INGESTION.md](../data/DATA_INGESTION.md).
+[docs/data/DATA_INGESTION.md](../data/DATA_INGESTION.md),
+[INSTRUMENT_MASTER.md](../data/INSTRUMENT_MASTER.md),
+[MARKET_CALENDARS.md](../data/MARKET_CALENDARS.md), and
+[CORPORATE_ACTIONS.md](../data/CORPORATE_ACTIONS.md).
 
 Stop (keeps the volume):
 

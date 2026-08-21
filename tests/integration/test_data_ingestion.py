@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from quant_platform.data.csv_loader import load_daily_bars_csv
 from quant_platform.data.models import IngestionStatus
 from quant_platform.data.repository import (
+    create_exchange,
     create_ingestion_run,
     finish_ingestion_run,
     get_daily_bars,
@@ -40,14 +41,19 @@ def test_upsert_source_and_instrument(db_session: Session) -> None:
     )
     assert first.id == second.id
     assert second.vendor == "manual_fixture"
+    venue = create_exchange(db_session, code=_unique("XNYS"), timezone="UTC")
     inst_a = upsert_instrument(
-        db_session, symbol=symbol, asset_class="equity", exchange="XNYS", currency="USD"
+        db_session,
+        symbol=symbol,
+        asset_class="equity",
+        exchange_id=venue.id,
+        currency="USD",
     )
     inst_b = upsert_instrument(
         db_session,
         symbol=symbol,
         asset_class="equity",
-        exchange="XNYS",
+        exchange_id=venue.id,
         currency="USD",
         name="updated",
     )

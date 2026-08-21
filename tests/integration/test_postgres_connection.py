@@ -21,6 +21,8 @@ _ALLOWED_TABLES = frozenset(
         "market_calendars",
         "market_sessions",
         "instrument_identifiers",
+        "exchanges",
+        "corporate_actions",
     }
 )
 _TRADING_TABLES = frozenset(

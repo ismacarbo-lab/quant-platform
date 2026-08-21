@@ -10,6 +10,7 @@ import pytest
 from sqlalchemy.orm import Session
 
 from quant_platform.data.repository import (
+    create_exchange,
     create_ingestion_run,
     get_daily_bars,
     insert_daily_bar_correction,
@@ -28,8 +29,12 @@ def _unique(prefix: str) -> str:
 
 def test_explicit_correction_and_as_of(db_session: Session) -> None:
     source = upsert_data_source(db_session, name=_unique("src"), vendor="local_csv")
+    venue = create_exchange(db_session, code=_unique("XNYS"), timezone="UTC")
     instrument = upsert_instrument(
-        db_session, symbol=_unique("COR"), asset_class="equity", exchange="XNYS"
+        db_session,
+        symbol=_unique("COR"),
+        asset_class="equity",
+        exchange_id=venue.id,
     )
     run = create_ingestion_run(db_session, source_id=source.id)
     original_draft = DailyBarDraft(
@@ -68,6 +73,7 @@ def test_explicit_correction_and_as_of(db_session: Session) -> None:
     )
     assert correction.is_correction is True
     assert correction.supersedes_daily_bar_id == original.id
+    assert original.superseded_by_daily_bar_id == correction.id
     assert correction.correction_reason == "restated close"
     as_of_early = get_daily_bars(
         db_session,

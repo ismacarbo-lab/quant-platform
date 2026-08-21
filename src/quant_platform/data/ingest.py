@@ -90,43 +90,43 @@ def ingest_daily_bars_csv(
                     aborted=True,
                 )
             continue
-        instrument = instruments.get(draft.symbol)
-        if instrument is None:
-            instrument = upsert_instrument(
-                session,
-                symbol=draft.symbol,
-                asset_class=asset_class,
-                currency=currency,
-                exchange=exchange,
-                calendar_id=calendar_id,
-            )
-            instruments[draft.symbol] = instrument
-        if validate_calendar:
-            try:
+        try:
+            instrument = instruments.get(draft.symbol)
+            if instrument is None:
+                instrument = upsert_instrument(
+                    session,
+                    symbol=draft.symbol,
+                    asset_class=asset_class,
+                    currency=currency,
+                    exchange=exchange,
+                    calendar_id=calendar_id,
+                )
+                instruments[draft.symbol] = instrument
+            if validate_calendar:
                 require_open_session(
                     session,
                     instrument=instrument,
                     observation_time=draft.observation_time,
                 )
-            except DataValidationError as exc:
-                insert_ingestion_error(
-                    session,
-                    ingestion_run_id=run.id,
-                    source_id=source.id,
-                    record_index=record_index,
-                    error_code=exc.code,
-                    error_message=str(exc),
-                    raw_payload=payload,
+        except DataValidationError as exc:
+            insert_ingestion_error(
+                session,
+                ingestion_run_id=run.id,
+                source_id=source.id,
+                record_index=record_index,
+                error_code=exc.code,
+                error_message=str(exc),
+                raw_payload=payload,
+            )
+            rejected += 1
+            if error_mode is ErrorMode.FAIL_FAST:
+                return IngestResult(
+                    accepted_count=accepted,
+                    rejected_count=rejected,
+                    inserted_bars=inserted_bars,
+                    aborted=True,
                 )
-                rejected += 1
-                if error_mode is ErrorMode.FAIL_FAST:
-                    return IngestResult(
-                        accepted_count=accepted,
-                        rejected_count=rejected,
-                        inserted_bars=inserted_bars,
-                        aborted=True,
-                    )
-                continue
+            continue
         inserted_bars += insert_daily_bars(
             session,
             drafts=[draft],

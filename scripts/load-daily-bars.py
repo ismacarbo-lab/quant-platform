@@ -12,6 +12,7 @@ from quant_platform.data.csv_loader import CsvLoadError, ErrorMode, ensure_csv_r
 from quant_platform.data.ingest import ingest_daily_bars_csv
 from quant_platform.data.models import IngestionRun, IngestionStatus
 from quant_platform.data.repository import (
+    create_exchange,
     create_ingestion_run,
     finish_ingestion_run,
     get_market_calendar_by_code,
@@ -31,6 +32,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--asset-class", default="equity")
     parser.add_argument("--currency", default=None)
     parser.add_argument("--exchange", default=None)
+    parser.add_argument(
+        "--exchange-timezone",
+        default="UTC",
+        help="IANA timezone used when creating a local exchange stub.",
+    )
     parser.add_argument(
         "--fail-fast",
         action="store_true",
@@ -73,6 +79,12 @@ def main(argv: list[str] | None = None) -> int:
         source = upsert_data_source(
             session, name=args.source, vendor=args.vendor, description="local CSV"
         )
+        if args.exchange:
+            create_exchange(
+                session,
+                code=args.exchange,
+                timezone=args.exchange_timezone,
+            )
         calendar_id = None
         if args.calendar:
             calendar = get_market_calendar_by_code(session, code=args.calendar)

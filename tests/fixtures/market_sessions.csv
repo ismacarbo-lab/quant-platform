@@ -1,0 +1,5 @@
+calendar_code,calendar_name,calendar_timezone,session_date,session_kind,open_time,close_time,note
+XNYS_EQUITY,Fictional NYSE equity sessions,America/New_York,2024-01-02,open,09:30:00,16:00:00,regular
+XNYS_EQUITY,Fictional NYSE equity sessions,America/New_York,2024-01-01,holiday,,,New Year
+XNYS_EQUITY,Fictional NYSE equity sessions,America/New_York,2024-07-03,half_session,09:30:00,13:00:00,early close
+XNYS_EQUITY,Fictional NYSE equity sessions,America/New_York,2024-11-29,exceptional_close,,,weather close

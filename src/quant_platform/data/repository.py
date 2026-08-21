@@ -14,8 +14,13 @@ from sqlalchemy.orm import Session
 from quant_platform.core.time import utc_now
 from quant_platform.data.calendar import session_date_for_observation
 from quant_platform.data.models import (
+    ALLOWED_CORPORATE_ACTION_TYPES,
+    ALLOWED_IDENTIFIER_NAMESPACES,
+    ALLOWED_SESSION_KINDS,
+    CorporateAction,
     DailyBar,
     DataSource,
+    Exchange,
     IngestionError,
     IngestionRun,
     IngestionStatus,
@@ -24,11 +29,14 @@ from quant_platform.data.models import (
     MarketCalendar,
     MarketSession,
     RawIngestionRecord,
+    SessionKind,
+    session_kind_is_open,
 )
 from quant_platform.data.validation import (
     DailyBarDraft,
     DataValidationError,
     IngestionErrorCode,
+    ensure_utc,
     validate_daily_bar_draft,
 )
 
@@ -58,6 +66,59 @@ def upsert_data_source(
     return source
 
 
+def get_exchange_by_code(session: Session, *, code: str) -> Exchange | None:
+    return session.scalar(select(Exchange).where(Exchange.code == code.strip()))
+
+
+def list_exchanges(session: Session) -> list[Exchange]:
+    return list(session.scalars(select(Exchange).order_by(Exchange.code)))
+
+
+def create_exchange(
+    session: Session,
+    *,
+    code: str,
+    timezone: str,
+    mic: str | None = None,
+    country: str | None = None,
+    currency: str | None = None,
+) -> Exchange:
+    """Insert the exchange, or return the existing row with this code."""
+    key = code.strip()
+    existing = get_exchange_by_code(session, code=key)
+    if existing is not None:
+        return existing
+    row = Exchange(
+        code=key,
+        timezone=timezone,
+        mic=mic,
+        country=country,
+        currency=currency,
+    )
+    session.add(row)
+    session.flush()
+    return row
+
+
+def _resolve_exchange_id(
+    session: Session,
+    *,
+    exchange_id: UUID | None,
+    exchange: str | None,
+) -> UUID | None:
+    if exchange_id is not None:
+        return exchange_id
+    if exchange is None or not exchange.strip():
+        return None
+    row = get_exchange_by_code(session, code=exchange)
+    if row is None:
+        raise DataValidationError(
+            f"unknown exchange {exchange.strip()!r}",
+            code=IngestionErrorCode.UNKNOWN_EXCHANGE,
+        )
+    return row.id
+
+
 def upsert_instrument(
     session: Session,
     *,
@@ -66,14 +127,18 @@ def upsert_instrument(
     name: str | None = None,
     currency: str | None = None,
     exchange: str | None = None,
+    exchange_id: UUID | None = None,
     calendar_id: UUID | None = None,
 ) -> Instrument:
     key = symbol.strip()
+    resolved_exchange_id = _resolve_exchange_id(
+        session, exchange_id=exchange_id, exchange=exchange
+    )
     existing = session.scalar(
         select(Instrument).where(
             Instrument.symbol == key,
             Instrument.asset_class == asset_class,
-            _optional_match(Instrument.exchange, exchange),
+            _optional_match(Instrument.exchange_id, resolved_exchange_id),
             _optional_match(Instrument.currency, currency),
         )
     )
@@ -89,7 +154,7 @@ def upsert_instrument(
         asset_class=asset_class,
         name=name,
         currency=currency,
-        exchange=exchange,
+        exchange_id=resolved_exchange_id,
         calendar_id=calendar_id,
     )
     session.add(instrument)
@@ -306,10 +371,46 @@ def upsert_market_calendar(
     return calendar
 
 
+def create_calendar(
+    session: Session,
+    *,
+    code: str,
+    name: str,
+    timezone: str,
+) -> MarketCalendar:
+    return upsert_market_calendar(session, code=code, name=name, timezone=timezone)
+
+
 def get_market_calendar_by_code(
     session: Session, *, code: str
 ) -> MarketCalendar | None:
     return session.scalar(select(MarketCalendar).where(MarketCalendar.code == code))
+
+
+def list_market_calendars(session: Session) -> list[MarketCalendar]:
+    return list(session.scalars(select(MarketCalendar).order_by(MarketCalendar.code)))
+
+
+def _normalize_session_kind(
+    *,
+    session_kind: str | None,
+    is_open: bool | None,
+) -> tuple[str, bool]:
+    if session_kind is not None:
+        kind = session_kind.strip()
+        if kind not in ALLOWED_SESSION_KINDS:
+            raise DataValidationError(
+                f"unsupported session_kind {kind!r}",
+                code=IngestionErrorCode.INVALID_SESSION_KIND,
+            )
+        return kind, session_kind_is_open(kind)
+    if is_open is None:
+        raise DataValidationError(
+            "session_kind or is_open is required",
+            code=IngestionErrorCode.INVALID_SESSION_KIND,
+        )
+    kind = SessionKind.OPEN.value if is_open else SessionKind.HOLIDAY.value
+    return kind, is_open
 
 
 def upsert_market_session(
@@ -317,11 +418,15 @@ def upsert_market_session(
     *,
     calendar_id: UUID,
     session_date: date,
-    is_open: bool,
+    is_open: bool | None = None,
+    session_kind: str | None = None,
     open_time: time | None = None,
     close_time: time | None = None,
     note: str | None = None,
 ) -> MarketSession:
+    kind, open_flag = _normalize_session_kind(
+        session_kind=session_kind, is_open=is_open
+    )
     existing = session.scalar(
         select(MarketSession).where(
             MarketSession.calendar_id == calendar_id,
@@ -329,7 +434,8 @@ def upsert_market_session(
         )
     )
     if existing is not None:
-        existing.is_open = is_open
+        existing.session_kind = kind
+        existing.is_open = open_flag
         existing.open_time = open_time
         existing.close_time = close_time
         existing.note = note
@@ -338,7 +444,8 @@ def upsert_market_session(
     row = MarketSession(
         calendar_id=calendar_id,
         session_date=session_date,
-        is_open=is_open,
+        session_kind=kind,
+        is_open=open_flag,
         open_time=open_time,
         close_time=close_time,
         note=note,
@@ -346,6 +453,36 @@ def upsert_market_session(
     session.add(row)
     session.flush()
     return row
+
+
+def create_session(
+    session: Session,
+    *,
+    calendar_id: UUID,
+    session_date: date,
+    session_kind: str,
+    open_time: time | None = None,
+    close_time: time | None = None,
+    note: str | None = None,
+) -> MarketSession:
+    return upsert_market_session(
+        session,
+        calendar_id=calendar_id,
+        session_date=session_date,
+        session_kind=session_kind,
+        open_time=open_time,
+        close_time=close_time,
+        note=note,
+    )
+
+
+def list_market_sessions(session: Session, *, calendar_id: UUID) -> list[MarketSession]:
+    stmt = (
+        select(MarketSession)
+        .where(MarketSession.calendar_id == calendar_id)
+        .order_by(MarketSession.session_date)
+    )
+    return list(session.scalars(stmt))
 
 
 def require_open_session(
@@ -387,9 +524,15 @@ def insert_instrument_identifier(
     valid_from: datetime | None = None,
     valid_to: datetime | None = None,
 ) -> InstrumentIdentifier:
+    ns = namespace.strip()
+    if ns not in ALLOWED_IDENTIFIER_NAMESPACES:
+        raise DataValidationError(
+            f"unsupported identifier namespace {ns!r}",
+            code=IngestionErrorCode.INVALID_NAMESPACE,
+        )
     ident = InstrumentIdentifier(
         instrument_id=instrument_id,
-        namespace=namespace.strip(),
+        namespace=ns,
         value=value.strip(),
         valid_from=valid_from,
         valid_to=valid_to,
@@ -397,6 +540,25 @@ def insert_instrument_identifier(
     session.add(ident)
     session.flush()
     return ident
+
+
+def create_identifier(
+    session: Session,
+    *,
+    instrument_id: UUID,
+    namespace: str,
+    value: str,
+    valid_from: datetime | None = None,
+    valid_to: datetime | None = None,
+) -> InstrumentIdentifier:
+    return insert_instrument_identifier(
+        session,
+        instrument_id=instrument_id,
+        namespace=namespace,
+        value=value,
+        valid_from=valid_from,
+        valid_to=valid_to,
+    )
 
 
 def list_instrument_identifiers(
@@ -423,7 +585,10 @@ def insert_daily_bar_correction(
     ingestion_run_id: UUID,
     reason: str,
 ) -> DailyBar:
-    """Insert a new PIT row. Does not update or delete ``superseded``."""
+    """Insert a new PIT row. OHLC on ``superseded`` is never rewritten.
+
+    ``superseded.superseded_by_daily_bar_id`` is a navigation pointer only.
+    """
     instrument = session.get(Instrument, superseded.instrument_id)
     if instrument is None:
         raise DataValidationError(
@@ -464,4 +629,62 @@ def insert_daily_bar_correction(
     )
     session.add(bar)
     session.flush()
+    superseded.superseded_by_daily_bar_id = bar.id
+    session.flush()
     return bar
+
+
+def create_corporate_action(
+    session: Session,
+    *,
+    instrument_id: UUID,
+    action_type: str,
+    effective_time: datetime,
+    available_time: datetime,
+    quantity_before: Decimal | None = None,
+    quantity_after: Decimal | None = None,
+    cash_amount: Decimal | None = None,
+    currency: str | None = None,
+    old_value: str | None = None,
+    new_value: str | None = None,
+    note: str | None = None,
+    details: dict[str, object] | None = None,
+) -> CorporateAction:
+    kind = action_type.strip()
+    if kind not in ALLOWED_CORPORATE_ACTION_TYPES:
+        raise DataValidationError(
+            f"unsupported corporate action type {kind!r}",
+            code=IngestionErrorCode.INVALID_ACTION_TYPE,
+        )
+    row = CorporateAction(
+        instrument_id=instrument_id,
+        action_type=kind,
+        effective_time=ensure_utc(effective_time, field="effective_time"),
+        available_time=ensure_utc(available_time, field="available_time"),
+        quantity_before=quantity_before,
+        quantity_after=quantity_after,
+        cash_amount=cash_amount,
+        currency=currency,
+        old_value=old_value,
+        new_value=new_value,
+        note=note,
+        details=details,
+    )
+    session.add(row)
+    session.flush()
+    return row
+
+
+def list_corporate_actions(
+    session: Session,
+    *,
+    instrument_id: UUID,
+    as_of: datetime | None = None,
+) -> list[CorporateAction]:
+    stmt: Select[tuple[CorporateAction]] = select(CorporateAction).where(
+        CorporateAction.instrument_id == instrument_id
+    )
+    if as_of is not None:
+        stmt = stmt.where(CorporateAction.available_time <= as_of)
+    stmt = stmt.order_by(CorporateAction.effective_time, CorporateAction.available_time)
+    return list(session.scalars(stmt))

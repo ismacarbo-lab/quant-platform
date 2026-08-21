@@ -1,0 +1,4 @@
+symbol,exchange_code,asset_class,currency,action_type,effective_time,available_time,quantity_before,quantity_after,cash_amount,old_value,new_value,note
+FICT,XNYS,equity,USD,split,2024-06-10T00:00:00+00:00,2024-06-01T20:00:00+00:00,1,4,,,,fictional 4-for-1
+FICT,XNYS,equity,USD,dividend,2024-06-20T00:00:00+00:00,2024-06-05T20:00:00+00:00,,,0.25,,,fictional cash dividend
+FICT,XNYS,equity,USD,symbol_change,2024-07-01T00:00:00+00:00,2024-06-15T20:00:00+00:00,,,,FICT,FICT2,fictional ticker change

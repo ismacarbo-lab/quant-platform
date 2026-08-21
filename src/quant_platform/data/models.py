@@ -5,8 +5,9 @@ broker, order, or execution models. The JSON payload column is named
 ``run_metadata`` because SQLAlchemy reserves ``metadata`` on declarative
 classes.
 
-Instrument uniqueness uses PostgreSQL ``UNIQUE NULLS NOT DISTINCT`` so
-NULL exchange/currency compare equal in the natural key.
+Instrument uniqueness uses PostgreSQL ``UNIQUE NULLS NOT DISTINCT`` on
+``(symbol, asset_class, exchange_id, currency)`` so NULL exchange or
+currency compare equal in the natural key.
 """
 
 from __future__ import annotations
@@ -44,6 +45,39 @@ class IngestionStatus(StrEnum):
     FAILED = "failed"
 
 
+class IdentifierNamespace(StrEnum):
+    ISIN = "isin"
+    FIGI = "figi"
+    CUSIP = "cusip"
+    LOCAL_SYMBOL = "local_symbol"
+    VENDOR_SYMBOL = "vendor_symbol"
+
+
+class SessionKind(StrEnum):
+    OPEN = "open"
+    HOLIDAY = "holiday"
+    HALF_SESSION = "half_session"
+    EXCEPTIONAL_CLOSE = "exceptional_close"
+
+
+class CorporateActionType(StrEnum):
+    SPLIT = "split"
+    REVERSE_SPLIT = "reverse_split"
+    DIVIDEND = "dividend"
+    SYMBOL_CHANGE = "symbol_change"
+    DELISTING = "delisting"
+
+
+OPEN_SESSION_KINDS = frozenset({SessionKind.OPEN, SessionKind.HALF_SESSION})
+ALLOWED_IDENTIFIER_NAMESPACES = frozenset(item.value for item in IdentifierNamespace)
+ALLOWED_SESSION_KINDS = frozenset(item.value for item in SessionKind)
+ALLOWED_CORPORATE_ACTION_TYPES = frozenset(item.value for item in CorporateActionType)
+
+
+def session_kind_is_open(kind: str) -> bool:
+    return kind in {item.value for item in OPEN_SESSION_KINDS}
+
+
 class DataSource(Base):
     __tablename__ = "data_sources"
 
@@ -53,6 +87,24 @@ class DataSource(Base):
     name: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
     vendor: Mapped[str] = mapped_column(String(64), nullable=False)
     description: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )
+
+
+class Exchange(Base):
+    """Research venue. Not a broker adapter."""
+
+    __tablename__ = "exchanges"
+
+    id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), primary_key=True, default=uuid4
+    )
+    code: Mapped[str] = mapped_column(String(32), unique=True, nullable=False)
+    mic: Mapped[str | None] = mapped_column(String(8), nullable=True)
+    timezone: Mapped[str] = mapped_column(String(64), nullable=False)
+    country: Mapped[str | None] = mapped_column(String(8), nullable=True)
+    currency: Mapped[str | None] = mapped_column(String(8), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utc_now
     )
@@ -82,6 +134,18 @@ class MarketSession(Base):
         UniqueConstraint(
             "calendar_id", "session_date", name="uq_market_sessions_calendar_date"
         ),
+        CheckConstraint(
+            "session_kind IN ('open', 'holiday', 'half_session', 'exceptional_close')",
+            name="ck_market_sessions_kind",
+        ),
+        CheckConstraint(
+            "("
+            "session_kind IN ('open', 'half_session') AND is_open = true"
+            ") OR ("
+            "session_kind IN ('holiday', 'exceptional_close') AND is_open = false"
+            ")",
+            name="ck_market_sessions_kind_open",
+        ),
         Index("ix_market_sessions_calendar_date", "calendar_id", "session_date"),
     )
 
@@ -94,6 +158,7 @@ class MarketSession(Base):
     session_date: Mapped[date] = mapped_column(Date, nullable=False)
     open_time: Mapped[time | None] = mapped_column(Time, nullable=True)
     close_time: Mapped[time | None] = mapped_column(Time, nullable=True)
+    session_kind: Mapped[str] = mapped_column(String(32), nullable=False)
     is_open: Mapped[bool] = mapped_column(Boolean, nullable=False)
     note: Mapped[str | None] = mapped_column(String(256), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
@@ -107,12 +172,13 @@ class Instrument(Base):
         UniqueConstraint(
             "symbol",
             "asset_class",
-            "exchange",
+            "exchange_id",
             "currency",
             name="uq_instruments_natural_key",
             postgresql_nulls_not_distinct=True,
         ),
         Index("ix_instruments_symbol", "symbol"),
+        Index("ix_instruments_exchange", "exchange_id"),
     )
 
     id: Mapped[UUID] = mapped_column(
@@ -122,7 +188,9 @@ class Instrument(Base):
     name: Mapped[str | None] = mapped_column(String(128), nullable=True)
     asset_class: Mapped[str] = mapped_column(String(32), nullable=False)
     currency: Mapped[str | None] = mapped_column(String(8), nullable=True)
-    exchange: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    exchange_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("exchanges.id"), nullable=True
+    )
     calendar_id: Mapped[UUID | None] = mapped_column(
         Uuid(as_uuid=True), ForeignKey("market_calendars.id"), nullable=True
     )
@@ -132,7 +200,7 @@ class Instrument(Base):
 
 
 class InstrumentIdentifier(Base):
-    """Local alternate identifier. Namespaces are placeholders, not vendors."""
+    """Local alternate identifier. Namespaces are stored strings, not vendors."""
 
     __tablename__ = "instrument_identifiers"
     __table_args__ = (
@@ -146,6 +214,10 @@ class InstrumentIdentifier(Base):
         CheckConstraint(
             "valid_to IS NULL OR valid_from IS NULL OR valid_to > valid_from",
             name="ck_instrument_identifiers_valid_range",
+        ),
+        CheckConstraint(
+            "namespace IN ('isin', 'figi', 'cusip', 'local_symbol', 'vendor_symbol')",
+            name="ck_instrument_identifiers_namespace",
         ),
         Index("ix_instrument_identifiers_instrument", "instrument_id"),
     )
@@ -222,6 +294,14 @@ class DailyBar(Base):
             "supersedes_daily_bar_id IS NULL OR is_correction = true",
             name="ck_daily_bars_supersedes_is_correction",
         ),
+        CheckConstraint(
+            "superseded_by_daily_bar_id IS NULL OR superseded_by_daily_bar_id <> id",
+            name="ck_daily_bars_superseded_by_not_self",
+        ),
+        CheckConstraint(
+            "supersedes_daily_bar_id IS NULL OR supersedes_daily_bar_id <> id",
+            name="ck_daily_bars_supersedes_not_self",
+        ),
         Index(
             "ix_daily_bars_instrument_observation", "instrument_id", "observation_time"
         ),
@@ -256,6 +336,61 @@ class DailyBar(Base):
     supersedes_daily_bar_id: Mapped[UUID | None] = mapped_column(
         Uuid(as_uuid=True), ForeignKey("daily_bars.id"), nullable=True
     )
+    superseded_by_daily_bar_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("daily_bars.id"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )
+
+
+class CorporateAction(Base):
+    """Stored corporate event. Adjustments are not applied in this phase."""
+
+    __tablename__ = "corporate_actions"
+    __table_args__ = (
+        CheckConstraint(
+            "action_type IN ('split', 'reverse_split', 'dividend', "
+            "'symbol_change', 'delisting')",
+            name="ck_corporate_actions_type",
+        ),
+        Index(
+            "ix_corporate_actions_instrument_effective",
+            "instrument_id",
+            "effective_time",
+        ),
+        Index(
+            "ix_corporate_actions_instrument_available",
+            "instrument_id",
+            "available_time",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), primary_key=True, default=uuid4
+    )
+    instrument_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("instruments.id"), nullable=False
+    )
+    action_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    effective_time: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    available_time: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    quantity_before: Mapped[Decimal | None] = mapped_column(
+        Numeric(28, 8), nullable=True
+    )
+    quantity_after: Mapped[Decimal | None] = mapped_column(
+        Numeric(28, 8), nullable=True
+    )
+    cash_amount: Mapped[Decimal | None] = mapped_column(Numeric(28, 8), nullable=True)
+    currency: Mapped[str | None] = mapped_column(String(8), nullable=True)
+    old_value: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    new_value: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    note: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    details: Mapped[dict[str, object] | None] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utc_now
     )

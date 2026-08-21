@@ -5,8 +5,9 @@ Phase 0 foundation for a professional quantitative research platform.
 This repository currently provides a **research-only** software base:
 typed configuration, UTC clocks, structured logging, PostgreSQL, Alembic,
 an internal health API, **local CSV daily-bar ingestion** with point-in-time
-timestamps, a **bronze audit layer**, composite **instrument identity**, and
-**manual calendars**. It is **not** a trading system.
+timestamps, a **bronze audit layer**, an **instrument master** (exchanges,
+composite identity, identifiers), **manual calendars**, and **stored
+corporate actions** (not applied to prices). It is **not** a trading system.
 
 A pre-existing tree named `AI_VENTURE_OS_PROMPTS/` may sit next to this
 project. It is a separate product and is **not** part of `quant_platform`.
@@ -16,7 +17,7 @@ Do not mix the two.
 
 - Load local daily OHLCV CSV into PostgreSQL with point-in-time fields.
 - Keep bronze raw records and row-level ingestion errors for audit.
-- Distinguish instruments by symbol, asset class, exchange, and currency.
+- Identify instruments by `(symbol, asset_class, exchange_id, currency)`.
 
 ## What is not implemented
 
@@ -146,22 +147,20 @@ Connection URL:
 postgresql+psycopg://quant:quant_dev_only_not_for_production@127.0.0.1:5434/quant_platform
 ```
 
-There are still **no domain tables** (candles, quotes, trades, orders, fills,
-signals, strategies). Alembic may create only `alembic_version` as bookkeeping.
+There are still **no** trading tables (orders, fills, signals, strategies).
+Alembic revisions `0001_ingestion` … `0004_master` create research ingestion
+and instrument-master tables only.
 
 ## Migrations
 
-Phase 0 has no financial schema and therefore **no domain Alembic revisions**.
-Alembic is configured so future models registered on
-`quant_platform.storage.database.Base` can generate migrations.
+Apply research schema (PostgreSQL only):
 
 ```bash
 uv run alembic current
 uv run alembic upgrade head
 ```
 
-With no revisions, `upgrade head` is a no-op for domain schema. Do not use
-SQLite. See `alembic/README.md`.
+Do not use SQLite. See `alembic/README.md`.
 
 APP_MODE remains **research** only.
 
@@ -180,7 +179,10 @@ GET /health
 It does not query the database or any external service.
 
 Data ingestion (local CSV only):
-[docs/data/DATA_INGESTION.md](docs/data/DATA_INGESTION.md).
+[docs/data/DATA_INGESTION.md](docs/data/DATA_INGESTION.md),
+[docs/data/INSTRUMENT_MASTER.md](docs/data/INSTRUMENT_MASTER.md),
+[docs/data/MARKET_CALENDARS.md](docs/data/MARKET_CALENDARS.md),
+[docs/data/CORPORATE_ACTIONS.md](docs/data/CORPORATE_ACTIONS.md).
 
 See [docs/development/DEVELOPER_WORKFLOW.md](docs/development/DEVELOPER_WORKFLOW.md)
 for install, Compose, Alembic, port 5434 conflicts, and CI.
