@@ -1,8 +1,9 @@
-# Architecture — Phase 2.3
+# Architecture — Phase 2.4
 
 Status: research ingestion, an internal **dataset query API**, **dataset
-quality reports**, **local hashed snapshots**, and a **PostgreSQL snapshot
-catalog**. No LLM runtime, strategies, brokers, or execution.
+quality reports**, **local hashed snapshots**, a **PostgreSQL snapshot
+catalog**, and **read-only snapshot integrity checks**. No LLM runtime,
+strategies, brokers, or execution.
 
 ## Modular monolith
 
@@ -14,7 +15,7 @@ until a measured operational need appears.
 src/quant_platform/
   core/         configuration, UTC clock, identifiers
   data/         local CSV ingest, PIT daily bars, repositories
-  research/     PIT datasets, CSV export, quality reports, snapshots, catalog
+  research/     PIT datasets, quality reports, snapshots, catalog, integrity
   storage/      PostgreSQL engine/session, SQLAlchemy Base
   monitoring/   structured logging
   api/          internal HTTP surface (health)
@@ -28,7 +29,7 @@ Documented future areas (no empty implementation packages in Phase 0):
 | `domain` | Canonical types and invariants | documented |
 | `data` | Ingest, bronze/silver/gold, PIT | bronze, silver, identity, calendars, CA store |
 | `storage` | Persistence adapters | engine/session only |
-| `research` | Dataset queries, experiment runners | PIT datasets, quality reports, snapshots, catalog; no notebooks |
+| `research` | Dataset queries, experiment runners | PIT datasets, quality reports, snapshots, catalog, integrity; no notebooks |
 | `backtesting` | Simulation engine | not implemented |
 | `strategies` | Signal generation | not implemented |
 | `ml` | Model training/inference | not implemented |
@@ -109,8 +110,9 @@ research dataset API **requires** `as_of`. See
 [CORPORATE_ACTIONS.md](../data/CORPORATE_ACTIONS.md),
 [RESEARCH_DATASETS.md](../research/RESEARCH_DATASETS.md),
 [DATASET_QUALITY.md](../research/DATASET_QUALITY.md),
-[DATASET_SNAPSHOTS.md](../research/DATASET_SNAPSHOTS.md), and
-[DATASET_CATALOG.md](../research/DATASET_CATALOG.md).
+[DATASET_SNAPSHOTS.md](../research/DATASET_SNAPSHOTS.md),
+[DATASET_CATALOG.md](../research/DATASET_CATALOG.md), and
+[SNAPSHOT_INTEGRITY.md](../research/SNAPSHOT_INTEGRITY.md).
 
 ### Point-in-time timestamps
 
@@ -178,7 +180,8 @@ Application mode remains **research** only.
 
 Phase 2.0 adds `quant_platform.research` for tabular datasets. Phase 2.1
 adds quality reports. Phase 2.2 adds local hashed snapshots. Phase 2.3 adds
-the `dataset_snapshots` catalog table (`0005_catalog`). None of these add
+the `dataset_snapshots` catalog table (`0005_catalog`). Phase 2.4 adds
+read-only artifact verification (no schema change). None of these add
 HTTP routes or gold/trading tables.
 
 ## AI usage boundary

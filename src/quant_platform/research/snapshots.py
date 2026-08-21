@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 from collections.abc import Mapping, Sequence
@@ -60,6 +61,11 @@ _SECRET_MARKERS = (
 DATASET_HASH_KIND = "daily_bars_dataset"
 QUALITY_HASH_KIND = "dataset_quality_report"
 HASH_FORMAT_VERSION = 1
+SHA256_HASH_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
+
+
+def is_sha256_digest(value: str) -> bool:
+    return bool(SHA256_HASH_PATTERN.fullmatch(value))
 
 
 def canonical_datetime(value: datetime) -> str:
@@ -142,6 +148,23 @@ def hash_daily_bars_dataset(
     return sha256_canonical(payload)
 
 
+def hash_quality_mapping(
+    mapping: Mapping[str, object],
+    *,
+    include_generated_at: bool = False,
+) -> str:
+    """SHA-256 of a quality-report JSON object (from memory or quality.json)."""
+    report = dict(mapping)
+    if not include_generated_at:
+        report.pop("generated_at", None)
+    payload = {
+        "kind": QUALITY_HASH_KIND,
+        "version": HASH_FORMAT_VERSION,
+        "report": report,
+    }
+    return sha256_canonical(payload)
+
+
 def hash_quality_report(
     report: DatasetQualityReport,
     *,
@@ -154,14 +177,15 @@ def hash_quality_report(
     ``quality_hash`` uses the default (exclude) so it tracks diagnostics, not
     wall-clock time.
     """
-    mapping = dict(report.as_mapping())
-    if not include_generated_at:
-        mapping.pop("generated_at", None)
-    payload = {
-        "kind": QUALITY_HASH_KIND,
-        "version": HASH_FORMAT_VERSION,
-        "report": mapping,
-    }
+    return hash_quality_mapping(
+        report.as_mapping(), include_generated_at=include_generated_at
+    )
+
+
+def hash_manifest_mapping(mapping: Mapping[str, object]) -> str:
+    """SHA-256 of a manifest JSON object excluding ``manifest_hash``."""
+    payload = dict(mapping)
+    payload.pop("manifest_hash", None)
     return sha256_canonical(payload)
 
 
@@ -311,7 +335,7 @@ def create_daily_bars_snapshot(
         artifacts=artifacts,
         notes=_coalesce_notes(notes, request.notes),
     )
-    manifest_hash = sha256_canonical(draft.as_mapping(include_manifest_hash=False))
+    manifest_hash = hash_manifest_mapping(draft.as_mapping(include_manifest_hash=False))
     manifest = replace(draft, manifest_hash=manifest_hash)
     write_snapshot_manifest(manifest, manifest_path)
     return DatasetSnapshotResult(

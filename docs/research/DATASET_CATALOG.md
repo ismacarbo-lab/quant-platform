@@ -96,9 +96,11 @@ Filters: `--content-hash`, `--snapshot-id`, `--manifest-hash`, `--symbol`,
 
 ## Compare snapshots
 
-`compare_dataset_snapshots(a, b)` reports whether content/quality/manifest
-hashes match, whether `as_of` and `git_commit` match, and count deltas.
-It does not re-read CSV files.
+`compare_dataset_snapshots` / `compare_catalog_snapshots` report whether
+content/quality/manifest hashes match, plus `as_of`, window, git commit,
+package version, artifact paths, and count deltas. They do not re-read CSV
+files. Local file checks are in
+[SNAPSHOT_INTEGRITY.md](SNAPSHOT_INTEGRITY.md).
 
 ## Migrations
 
@@ -122,3 +124,4 @@ uv run pytest -m postgres          # upsert, filters, Alembic round-trip
 - paper/live trading, ML, LLM runtime, vendor downloads
 - HTTP catalog routes (still `GET /health` only)
 - S3/GCS/Azure, automatic artifact cleanup, dashboards
+- persisted verification status (`last_verified_at` does not exist)

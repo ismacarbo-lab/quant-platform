@@ -153,6 +153,17 @@ uv run python scripts/list-dataset-snapshots.py --usable-only --json
 
 See [docs/research/DATASET_CATALOG.md](../research/DATASET_CATALOG.md).
 
+Verify local artifacts (no writes) and catalog rows against a folder:
+
+```bash
+uv run python scripts/verify-dataset-snapshot.py --snapshot-dir /tmp/fixt-snapshot
+uv run python scripts/verify-dataset-catalog.py \
+  --base-dir /tmp/fixt-snapshot \
+  --json
+```
+
+See [docs/research/SNAPSHOT_INTEGRITY.md](../research/SNAPSHOT_INTEGRITY.md).
+
 Stop (keeps the volume):
 
 ```bash

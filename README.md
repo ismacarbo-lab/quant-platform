@@ -26,6 +26,7 @@ Do not mix the two.
   before any backtest exists.
 - Save a local, hashed snapshot of a dataset request, CSV, and quality report.
 - Register snapshot metadata in PostgreSQL (hashes, request, relative artifacts).
+- Verify local snapshot artifacts and catalog hashes without rewriting files.
 
 ## What is not implemented
 
@@ -200,6 +201,8 @@ Reproducible local snapshots (CSV + quality JSON + hashed manifest):
 [docs/research/DATASET_SNAPSHOTS.md](docs/research/DATASET_SNAPSHOTS.md).
 Snapshot catalog (PostgreSQL metadata, hashes, list/compare):
 [docs/research/DATASET_CATALOG.md](docs/research/DATASET_CATALOG.md).
+Snapshot integrity (local artifact and catalog verification):
+[docs/research/SNAPSHOT_INTEGRITY.md](docs/research/SNAPSHOT_INTEGRITY.md).
 
 See [docs/development/DEVELOPER_WORKFLOW.md](docs/development/DEVELOPER_WORKFLOW.md)
 for install, Compose, Alembic, port 5434 conflicts, and CI.

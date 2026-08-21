@@ -133,6 +133,10 @@ class DatasetSnapshotComparison:
     same_manifest_hash: bool
     same_as_of: bool
     same_git_commit: bool
+    same_package_version: bool
+    same_start_time: bool
+    same_end_time: bool
+    same_artifact_paths: bool
     row_count_delta: int
     instrument_count_delta: int
     error_count_delta: int
@@ -148,6 +152,10 @@ class DatasetSnapshotComparison:
             "same_manifest_hash": self.same_manifest_hash,
             "same_as_of": self.same_as_of,
             "same_git_commit": self.same_git_commit,
+            "same_package_version": self.same_package_version,
+            "same_start_time": self.same_start_time,
+            "same_end_time": self.same_end_time,
+            "same_artifact_paths": self.same_artifact_paths,
             "row_count_delta": self.row_count_delta,
             "instrument_count_delta": self.instrument_count_delta,
             "error_count_delta": self.error_count_delta,

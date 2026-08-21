@@ -118,6 +118,7 @@ folder. Uncommitted working-tree edits are **not** hashed.
 ## Current limitations
 
 - The CSV/JSON files live on disk; the Phase 2.3 catalog stores **metadata only**.
+- Phase 2.4 verifies those files and hashes without writing a verification table.
 - Quality JSON uses the dataset calendar the same way quality reports do
   (diagnostics; holiday bars stay visible in the report). The CSV follows
   `get_daily_bars_dataset` (holiday bars dropped if `calendar_code` is set).
@@ -125,6 +126,7 @@ folder. Uncommitted working-tree edits are **not** hashed.
 - No cloud upload, no signature besides SHA-256.
 
 Catalog registration and listing: [DATASET_CATALOG.md](DATASET_CATALOG.md).
+Integrity checks: [SNAPSHOT_INTEGRITY.md](SNAPSHOT_INTEGRITY.md).
 
 ## Tests
 

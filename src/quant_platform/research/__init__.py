@@ -5,6 +5,7 @@ download vendors, apply corporate actions, or emit signals.
 """
 
 from quant_platform.research.catalog import (
+    compare_catalog_snapshots,
     compare_dataset_snapshots,
     get_dataset_snapshot_by_id,
     get_dataset_snapshot_by_manifest_hash,
@@ -13,6 +14,13 @@ from quant_platform.research.catalog import (
     snapshot_is_reproducible,
     snapshot_is_usable,
     validate_catalog_manifest,
+)
+from quant_platform.research.catalog_integrity import (
+    integrity_report_json,
+    load_snapshot_daily_bar_rows,
+    verify_catalog,
+    verify_catalog_entry_artifacts,
+    verify_snapshot_artifacts,
 )
 from quant_platform.research.catalog_types import (
     DatasetSnapshotCatalogEntry,
@@ -32,6 +40,15 @@ from quant_platform.research.export import (
     DAILY_BAR_DATASET_COLUMNS,
     write_corporate_actions_csv,
     write_daily_bars_csv,
+)
+from quant_platform.research.integrity_types import (
+    ArtifactVerificationIssue,
+    ArtifactVerificationReport,
+    ArtifactVerificationRequest,
+    CatalogIntegrityReport,
+    IntegrityIssueCode,
+    IntegritySeverity,
+    SnapshotArtifactStatus,
 )
 from quant_platform.research.quality import (
     analyze_instrument_coverage,
@@ -59,6 +76,8 @@ from quant_platform.research.snapshots import (
     create_daily_bars_snapshot,
     get_git_commit,
     hash_daily_bars_dataset,
+    hash_manifest_mapping,
+    hash_quality_mapping,
     hash_quality_report,
     write_snapshot_manifest,
 )
@@ -73,6 +92,10 @@ from quant_platform.research.types import (
 __all__ = [
     "CORPORATE_ACTION_DATASET_COLUMNS",
     "DAILY_BAR_DATASET_COLUMNS",
+    "ArtifactVerificationIssue",
+    "ArtifactVerificationReport",
+    "ArtifactVerificationRequest",
+    "CatalogIntegrityReport",
     "CorporateActionDatasetRow",
     "DailyBarDatasetRow",
     "DailyBarsDataset",
@@ -91,14 +114,18 @@ __all__ = [
     "DatasetSnapshotResult",
     "DatasetValidationError",
     "InstrumentCoverageSummary",
+    "IntegrityIssueCode",
+    "IntegritySeverity",
     "IssueSeverity",
     "QualityIssueCode",
     "SnapshotArtifact",
+    "SnapshotArtifactStatus",
     "analyze_instrument_coverage",
     "build_daily_bars_dataset_request",
     "build_dataset_quality_request",
     "build_dataset_snapshot_catalog_filters",
     "build_dataset_snapshot_request",
+    "compare_catalog_snapshots",
     "compare_dataset_snapshots",
     "create_daily_bars_snapshot",
     "get_corporate_actions_for_dataset",
@@ -108,13 +135,20 @@ __all__ = [
     "get_dataset_snapshot_by_manifest_hash",
     "get_git_commit",
     "hash_daily_bars_dataset",
+    "hash_manifest_mapping",
+    "hash_quality_mapping",
     "hash_quality_report",
+    "integrity_report_json",
     "list_dataset_snapshots",
     "list_instruments_for_dataset",
+    "load_snapshot_daily_bar_rows",
     "register_dataset_snapshot",
     "snapshot_is_reproducible",
     "snapshot_is_usable",
     "validate_catalog_manifest",
+    "verify_catalog",
+    "verify_catalog_entry_artifacts",
+    "verify_snapshot_artifacts",
     "write_corporate_actions_csv",
     "write_daily_bars_csv",
     "write_dataset_quality_json",

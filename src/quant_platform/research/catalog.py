@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
@@ -23,9 +22,10 @@ from quant_platform.research.catalog_types import (
 )
 from quant_platform.research.errors import DatasetErrorCode, DatasetValidationError
 from quant_platform.research.snapshot_types import DatasetSnapshotManifest
-from quant_platform.research.snapshots import manifest_contains_secrets
-
-_SHA256 = re.compile(r"^sha256:[0-9a-f]{64}$")
+from quant_platform.research.snapshots import (
+    is_sha256_digest,
+    manifest_contains_secrets,
+)
 
 
 def validate_catalog_manifest(manifest: DatasetSnapshotManifest) -> None:
@@ -45,7 +45,7 @@ def validate_catalog_manifest(manifest: DatasetSnapshotManifest) -> None:
         ("quality_hash", manifest.quality_hash),
         ("manifest_hash", manifest.manifest_hash),
     ):
-        if not _SHA256.fullmatch(value):
+        if not is_sha256_digest(value):
             raise DatasetValidationError(
                 f"{label} must be a sha256:<hex> digest",
                 code=DatasetErrorCode.CATALOG_INVALID,
@@ -205,6 +205,14 @@ def compare_dataset_snapshots(
         differences.append("as_of")
     if left.git_commit != right.git_commit:
         differences.append("git_commit")
+    if left.package_version != right.package_version:
+        differences.append("package_version")
+    if left.start_time != right.start_time:
+        differences.append("start_time")
+    if left.end_time != right.end_time:
+        differences.append("end_time")
+    if left.artifact_paths != right.artifact_paths:
+        differences.append("artifact_paths")
     if left.row_count != right.row_count:
         differences.append("row_count")
     if left.instrument_count != right.instrument_count:
@@ -221,6 +229,10 @@ def compare_dataset_snapshots(
         same_manifest_hash=left.manifest_hash == right.manifest_hash,
         same_as_of=left.as_of == right.as_of,
         same_git_commit=left.git_commit == right.git_commit,
+        same_package_version=left.package_version == right.package_version,
+        same_start_time=left.start_time == right.start_time,
+        same_end_time=left.end_time == right.end_time,
+        same_artifact_paths=left.artifact_paths == right.artifact_paths,
         row_count_delta=right.row_count - left.row_count,
         instrument_count_delta=right.instrument_count - left.instrument_count,
         error_count_delta=right.error_count - left.error_count,
@@ -390,11 +402,28 @@ class _CompareView:
     quality_hash: str
     manifest_hash: str
     as_of: datetime
+    start_time: datetime
+    end_time: datetime
     git_commit: str | None
+    package_version: str
+    artifact_paths: tuple[str, ...]
     row_count: int
     instrument_count: int
     error_count: int
     warning_count: int
+
+
+def _artifact_paths_from_manifest(manifest: DatasetSnapshotManifest) -> tuple[str, ...]:
+    return tuple(sorted(item.path for item in manifest.artifacts))
+
+
+def _artifact_paths_from_entry(entry: DatasetSnapshotCatalogEntry) -> tuple[str, ...]:
+    paths: list[str] = []
+    for item in entry.artifacts:
+        path = item.get("path")
+        if isinstance(path, str):
+            paths.append(path)
+    return tuple(sorted(paths))
 
 
 def _compare_view(
@@ -407,7 +436,11 @@ def _compare_view(
             quality_hash=item.quality_hash,
             manifest_hash=item.manifest_hash,
             as_of=_parse_request_time(item.dataset_request, "as_of"),
+            start_time=_parse_request_time(item.dataset_request, "start_time"),
+            end_time=_parse_request_time(item.dataset_request, "end_time"),
             git_commit=item.git_commit,
+            package_version=item.package_version,
+            artifact_paths=_artifact_paths_from_manifest(item),
             row_count=item.row_count,
             instrument_count=item.instrument_count,
             error_count=item.error_count,
@@ -419,9 +452,27 @@ def _compare_view(
         quality_hash=item.quality_hash,
         manifest_hash=item.manifest_hash,
         as_of=item.as_of,
+        start_time=item.start_time,
+        end_time=item.end_time,
         git_commit=item.git_commit,
+        package_version=item.package_version,
+        artifact_paths=_artifact_paths_from_entry(item),
         row_count=item.row_count,
         instrument_count=item.instrument_count,
         error_count=item.error_count,
         warning_count=item.warning_count,
     )
+
+
+def compare_catalog_snapshots(
+    session: Session, snapshot_id_a: str, snapshot_id_b: str
+) -> DatasetSnapshotComparison:
+    """Compare two catalog rows. Does not read local files."""
+    left = get_dataset_snapshot_by_id(session, snapshot_id_a)
+    right = get_dataset_snapshot_by_id(session, snapshot_id_b)
+    if left is None or right is None:
+        raise DatasetValidationError(
+            "both snapshot_id values must exist in the catalog",
+            code=DatasetErrorCode.CATALOG_INVALID,
+        )
+    return compare_dataset_snapshots(left, right)
