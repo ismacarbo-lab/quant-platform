@@ -103,6 +103,9 @@ Quality reports (`get_dataset_quality_report`) consume this API. They do
 coverage diagnostics can flag them. See
 [DATASET_QUALITY.md](DATASET_QUALITY.md).
 
+Local hashed snapshots (CSV + quality JSON + manifest) are documented in
+[DATASET_SNAPSHOTS.md](DATASET_SNAPSHOTS.md).
+
 ## Tests
 
 ```bash
@@ -119,3 +122,5 @@ uv run pytest -m postgres          # PIT, calendars, corporate actions
 - vendor downloads, ML, LLM runtime
 - dataset quality is documented in [DATASET_QUALITY.md](DATASET_QUALITY.md);
   it is a report, not a backtester
+- local snapshots are documented in [DATASET_SNAPSHOTS.md](DATASET_SNAPSHOTS.md);
+  they are folders on disk, not a catalog or object store

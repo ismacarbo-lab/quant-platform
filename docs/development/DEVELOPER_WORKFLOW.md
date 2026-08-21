@@ -123,6 +123,20 @@ uv run python scripts/report-dataset-quality.py \
 Optional `--output PATH` writes JSON. See
 [docs/research/DATASET_QUALITY.md](../research/DATASET_QUALITY.md).
 
+Save a hashed local snapshot (CSV + quality JSON + manifest; `--as-of` and
+`--output-dir` required):
+
+```bash
+uv run python scripts/create-dataset-snapshot.py \
+  --as-of 2024-01-10T00:00:00Z \
+  --start 2024-01-01T00:00:00Z \
+  --end 2024-01-05T00:00:00Z \
+  --symbol FIXT \
+  --output-dir /tmp/fixt-snapshot
+```
+
+See [docs/research/DATASET_SNAPSHOTS.md](../research/DATASET_SNAPSHOTS.md).
+
 Stop (keeps the volume):
 
 ```bash

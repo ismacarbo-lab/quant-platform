@@ -149,3 +149,5 @@ uv run pytest -m postgres          # calendars, PIT, corporate actions, ingest e
 - paper trading, live trading, risk engine, optimizer, ML
 - HTTP quality routes (still `GET /health` only)
 - vendor downloads, LLM runtime
+
+Snapshots that freeze a dataset plus this report: [DATASET_SNAPSHOTS.md](DATASET_SNAPSHOTS.md).
