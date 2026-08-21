@@ -21,7 +21,7 @@ Do not mix the two.
 ## What is not implemented
 
 - Strategies and BUY/SELL signals
-- Machine learning
+- Machine learning or LLM runtime
 - Backtester
 - Market-data download or vendor APIs
 - Broker connectivity
@@ -32,6 +32,19 @@ Do not mix the two.
 
 Live trading is not a configurable mode. `APP_MODE=live` (and `paper`) is
 rejected by settings validation.
+
+## AI usage boundary
+
+Cursor (and similar editors) may be used to **write** this codebase. They
+are **not** part of the running platform: not a dependency, not required
+for tests or CI, and not a trading brain.
+
+A future research assistant, if added, must be optional, off by default,
+auditable, and unable to write market data or place orders. There is **no**
+OpenAI, Anthropic, Cursor API, or local-model integration in this phase.
+
+Policy: [docs/ai/AI_USAGE_BOUNDARY.md](docs/ai/AI_USAGE_BOUNDARY.md) and
+[docs/adr/0002-ai-usage-boundary.md](docs/adr/0002-ai-usage-boundary.md).
 
 ## Prerequisites
 
@@ -174,5 +187,6 @@ for install, Compose, Alembic, port 5434 conflicts, and CI.
 
 ## Architecture
 
-See [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md)
-and [docs/adr/0001-foundation-architecture.md](docs/adr/0001-foundation-architecture.md).
+See [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md),
+[docs/adr/0001-foundation-architecture.md](docs/adr/0001-foundation-architecture.md),
+and [docs/adr/0002-ai-usage-boundary.md](docs/adr/0002-ai-usage-boundary.md).

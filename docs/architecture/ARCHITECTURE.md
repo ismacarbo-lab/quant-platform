@@ -1,8 +1,7 @@
-# Architecture — Phase 1.2
+# Architecture — Phase 1.3
 
-Status: research ingestion with bronze audit, silver daily bars, composite
-instrument identity, and manual calendars. No strategies, brokers, or
-execution.
+Status: research ingestion with an explicit AI usage boundary. No LLM
+runtime, strategies, brokers, or execution.
 
 ## Modular monolith
 
@@ -36,6 +35,7 @@ Documented future areas (no empty implementation packages in Phase 0):
 | `execution` | Order lifecycle, broker adapters | not implemented (critical future) |
 | `monitoring` | Logs, later metrics/traces | structured logs only |
 | `api` | Internal HTTP | `/health` only |
+| AI assistant | Optional explain/review helper | documented only; no client |
 
 ## Dependency direction
 
@@ -160,6 +160,16 @@ connectivity with `uv run python scripts/check-db.py` (SELECT 1 only).
 `GET /health` still does not query the database.
 
 Application mode remains **research** only.
+
+## AI usage boundary
+
+Cursor is a **development** tool, not a runtime. The deployed package must
+not import Cursor, OpenAI, Anthropic, or similar clients. Future AI, if
+any, is optional, default-off, auditable, and must not trade, call brokers,
+or write market data outside the validated ingestion pipeline.
+
+See [docs/ai/AI_USAGE_BOUNDARY.md](../ai/AI_USAGE_BOUNDARY.md) and
+[ADR 0002](../adr/0002-ai-usage-boundary.md).
 
 ## API
 

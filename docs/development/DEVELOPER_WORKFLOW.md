@@ -3,6 +3,17 @@
 This project is **research-only**. There is no paper trading, live trading,
 broker adapter, or execution engine.
 
+## AI usage boundary
+
+Use Cursor or another assistant to edit the repo if you want. Do **not**
+add it to `pyproject.toml`. Tests and CI must pass without Cursor.
+
+There is no LLM client in the application. Do not add OpenAI, Anthropic,
+LangChain, LlamaIndex, or Transformers until a later ADR. A future helper
+must stay optional, off by default, and must not trade or mutate data.
+
+Details: [docs/ai/AI_USAGE_BOUNDARY.md](../ai/AI_USAGE_BOUNDARY.md).
+
 Commands below assume the working directory is the repository root
 (`/home/isma/invest` on this machine). Use the `uv run …` forms if `make`
 is unavailable. `make` is a convenience wrapper, not a required dependency.
