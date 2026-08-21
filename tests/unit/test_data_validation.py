@@ -47,8 +47,9 @@ def test_ensure_utc_normalizes_offset_to_utc() -> None:
 
 def test_rejects_available_time_not_after_observation() -> None:
     obs = datetime(2024, 1, 2, tzinfo=UTC)
-    with pytest.raises(DataValidationError, match="strictly after"):
+    with pytest.raises(DataValidationError, match="strictly after") as exc_info:
         require_available_after_observation(obs, obs)
+    assert exc_info.value.code == "lookahead"
     with pytest.raises(DataValidationError, match="strictly after"):
         require_available_after_observation(obs, datetime(2024, 1, 1, tzinfo=UTC))
 

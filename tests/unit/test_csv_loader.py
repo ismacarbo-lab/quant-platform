@@ -7,7 +7,12 @@ from pathlib import Path
 
 import pytest
 
-from quant_platform.data.csv_loader import CsvLoadError, load_daily_bars_csv
+from quant_platform.data.csv_loader import (
+    CsvLoadError,
+    ErrorMode,
+    load_daily_bars_csv,
+    parse_csv_file,
+)
 
 FIXTURE = Path(__file__).resolve().parents[1] / "fixtures" / "daily_bars_sample.csv"
 
@@ -59,3 +64,18 @@ def test_rejects_invalid_ohlc(tmp_path: Path) -> None:
     )
     with pytest.raises(CsvLoadError, match="high must be >= low"):
         load_daily_bars_csv(path)
+
+
+def test_collect_errors_continues_after_invalid_row(tmp_path: Path) -> None:
+    mixed = Path(__file__).resolve().parents[1] / "fixtures" / "daily_bars_mixed.csv"
+    accepted, rejected = parse_csv_file(mixed, error_mode=ErrorMode.COLLECT_ERRORS)
+    assert len(accepted) == 2
+    assert len(rejected) == 1
+    assert rejected[0].record_index == 1
+    assert rejected[0].error_code == "invalid_ohlc"
+
+
+def test_fail_fast_parse_raises_on_first_invalid_row() -> None:
+    mixed = Path(__file__).resolve().parents[1] / "fixtures" / "daily_bars_mixed.csv"
+    with pytest.raises(CsvLoadError, match="row 3"):
+        parse_csv_file(mixed, error_mode=ErrorMode.FAIL_FAST)

@@ -88,6 +88,8 @@ class IngestionRun(Base):
     )
     status: Mapped[str] = mapped_column(String(32), nullable=False)
     row_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    accepted_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    rejected_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     run_metadata: Mapped[dict[str, object] | None] = mapped_column(JSONB, nullable=True)
 
@@ -144,6 +146,65 @@ class DailyBar(Base):
     ingestion_run_id: Mapped[UUID] = mapped_column(
         Uuid(as_uuid=True), ForeignKey("ingestion_runs.id"), nullable=False
     )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )
+
+
+class RawIngestionRecord(Base):
+    """Bronze row: the payload as received, before silver validation."""
+
+    __tablename__ = "raw_ingestion_records"
+    __table_args__ = (
+        UniqueConstraint(
+            "ingestion_run_id",
+            "record_index",
+            name="uq_raw_ingestion_run_index",
+        ),
+        CheckConstraint("record_index >= 0", name="ck_raw_ingestion_record_index"),
+        Index("ix_raw_ingestion_source_hash", "source_id", "payload_hash"),
+        Index("ix_raw_ingestion_run_index", "ingestion_run_id", "record_index"),
+    )
+
+    id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), primary_key=True, default=uuid4
+    )
+    ingestion_run_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("ingestion_runs.id"), nullable=False
+    )
+    source_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("data_sources.id"), nullable=False
+    )
+    record_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    raw_payload: Mapped[dict[str, object]] = mapped_column(JSONB, nullable=False)
+    payload_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    received_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )
+
+
+class IngestionError(Base):
+    """Bronze quality record for a rejected row or file-level failure."""
+
+    __tablename__ = "ingestion_errors"
+    __table_args__ = (Index("ix_ingestion_errors_run", "ingestion_run_id"),)
+
+    id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), primary_key=True, default=uuid4
+    )
+    ingestion_run_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("ingestion_runs.id"), nullable=False
+    )
+    source_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("data_sources.id"), nullable=False
+    )
+    record_index: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    error_code: Mapped[str] = mapped_column(String(64), nullable=False)
+    error_message: Mapped[str] = mapped_column(Text, nullable=False)
+    raw_payload: Mapped[dict[str, object] | None] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utc_now
     )

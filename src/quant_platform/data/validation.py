@@ -5,10 +5,30 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
+from enum import StrEnum
+
+
+class IngestionErrorCode(StrEnum):
+    VALIDATION_ERROR = "validation_error"
+    NAIVE_TIMESTAMP = "naive_timestamp"
+    LOOKAHEAD = "lookahead"
+    INVALID_OHLC = "invalid_ohlc"
+    INVALID_NUMBER = "invalid_number"
+    EMPTY_SYMBOL = "empty_symbol"
+    CSV_ERROR = "csv_error"
+    FILE_NOT_FOUND = "file_not_found"
+    MISSING_COLUMNS = "missing_columns"
+    EMPTY_FILE = "empty_file"
 
 
 class DataValidationError(ValueError):
     """Raised when a research observation violates ingestion rules."""
+
+    def __init__(
+        self, message: str, *, code: str = IngestionErrorCode.VALIDATION_ERROR
+    ) -> None:
+        super().__init__(message)
+        self.code = code
 
 
 @dataclass(frozen=True, slots=True)
@@ -28,7 +48,7 @@ class DailyBarDraft:
 def ensure_utc(value: datetime, *, field: str) -> datetime:
     if value.tzinfo is None:
         msg = f"{field} must be timezone-aware UTC, got naive {value!r}"
-        raise DataValidationError(msg)
+        raise DataValidationError(msg, code=IngestionErrorCode.NAIVE_TIMESTAMP)
     return value.astimezone(UTC)
 
 
@@ -43,7 +63,7 @@ def require_available_after_observation(
             f"(available_time={avail.isoformat()}, "
             f"observation_time={obs.isoformat()})"
         )
-        raise DataValidationError(msg)
+        raise DataValidationError(msg, code=IngestionErrorCode.LOOKAHEAD)
 
 
 def parse_decimal(value: object, *, field: str) -> Decimal:
@@ -51,10 +71,10 @@ def parse_decimal(value: object, *, field: str) -> Decimal:
         number = Decimal(str(value).strip())
     except (InvalidOperation, AttributeError) as exc:
         msg = f"{field} is not a valid decimal: {value!r}"
-        raise DataValidationError(msg) from exc
+        raise DataValidationError(msg, code=IngestionErrorCode.INVALID_NUMBER) from exc
     if not number.is_finite():
         msg = f"{field} must be finite, got {value!r}"
-        raise DataValidationError(msg)
+        raise DataValidationError(msg, code=IngestionErrorCode.INVALID_NUMBER)
     return number
 
 
@@ -73,26 +93,28 @@ def validate_ohlc(
     ):
         if price < 0:
             msg = f"{field} must be non-negative, got {price}"
-            raise DataValidationError(msg)
+            raise DataValidationError(msg, code=IngestionErrorCode.INVALID_OHLC)
     if volume is not None and volume < 0:
         msg = f"volume must be non-negative, got {volume}"
-        raise DataValidationError(msg)
+        raise DataValidationError(msg, code=IngestionErrorCode.INVALID_OHLC)
     if high < low:
         msg = f"high must be >= low (high={high}, low={low})"
-        raise DataValidationError(msg)
+        raise DataValidationError(msg, code=IngestionErrorCode.INVALID_OHLC)
     if high < open_ or high < close:
         msg = (
             f"high must be >= open and close (open={open_}, high={high}, close={close})"
         )
-        raise DataValidationError(msg)
+        raise DataValidationError(msg, code=IngestionErrorCode.INVALID_OHLC)
     if low > open_ or low > close:
         msg = f"low must be <= open and close (open={open_}, low={low}, close={close})"
-        raise DataValidationError(msg)
+        raise DataValidationError(msg, code=IngestionErrorCode.INVALID_OHLC)
 
 
 def validate_daily_bar_draft(draft: DailyBarDraft) -> DailyBarDraft:
     if not draft.symbol.strip():
-        raise DataValidationError("symbol must not be empty")
+        raise DataValidationError(
+            "symbol must not be empty", code=IngestionErrorCode.EMPTY_SYMBOL
+        )
     observation = ensure_utc(draft.observation_time, field="observation_time")
     available = ensure_utc(draft.available_time, field="available_time")
     require_available_after_observation(observation, available)

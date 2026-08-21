@@ -14,6 +14,7 @@ from quant_platform.storage.database import (
 def test_base_registers_ingestion_tables_not_trading() -> None:
     names = set(Base.metadata.tables)
     assert {"data_sources", "instruments", "ingestion_runs", "daily_bars"} <= names
+    assert {"raw_ingestion_records", "ingestion_errors"} <= names
     assert names.isdisjoint({"orders", "trades", "fills", "signals", "strategies"})
     assert {DailyBar.__tablename__, DataSource.__tablename__} <= names
     assert Instrument.__tablename__ in names

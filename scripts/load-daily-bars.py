@@ -8,14 +8,14 @@ from pathlib import Path
 
 from quant_platform.core.config import get_settings
 from quant_platform.core.redact import redact_secret_text
-from quant_platform.data.csv_loader import CsvLoadError, load_daily_bars_csv
+from quant_platform.data.csv_loader import CsvLoadError, ErrorMode, ensure_csv_readable
+from quant_platform.data.ingest import ingest_daily_bars_csv
 from quant_platform.data.models import IngestionRun, IngestionStatus
 from quant_platform.data.repository import (
     create_ingestion_run,
     finish_ingestion_run,
-    insert_daily_bars,
+    list_ingestion_errors,
     upsert_data_source,
-    upsert_instrument,
 )
 from quant_platform.storage.database import create_db_engine, create_session_factory
 
@@ -30,6 +30,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--asset-class", default="equity")
     parser.add_argument("--currency", default=None)
     parser.add_argument("--exchange", default=None)
+    parser.add_argument(
+        "--fail-fast",
+        action="store_true",
+        help="Stop on the first invalid row (default: collect-errors).",
+    )
     args = parser.parse_args(argv)
 
     settings = get_settings()
@@ -37,8 +42,9 @@ def main(argv: list[str] | None = None) -> int:
         print("error: APP_MODE must be research", file=sys.stderr)
         return 1
 
+    error_mode = ErrorMode.FAIL_FAST if args.fail_fast else ErrorMode.COLLECT_ERRORS
     try:
-        drafts = load_daily_bars_csv(args.csv_path)
+        ensure_csv_readable(args.csv_path)
     except (CsvLoadError, OSError) as exc:
         print(f"error: {redact_secret_text(str(exc))}", file=sys.stderr)
         return 1
@@ -46,8 +52,12 @@ def main(argv: list[str] | None = None) -> int:
     engine = create_db_engine(settings, connect_timeout_seconds=5)
     factory = create_session_factory(engine)
     session = factory()
+    accepted = 0
+    rejected = 0
     inserted = 0
+    error_codes: list[str] = []
     run_id = None
+    exit_code = 0
     try:
         source = upsert_data_source(
             session, name=args.source, vendor=args.vendor, description="local CSV"
@@ -55,33 +65,39 @@ def main(argv: list[str] | None = None) -> int:
         run = create_ingestion_run(
             session,
             source_id=source.id,
-            run_metadata={"kind": "local_csv"},
+            run_metadata={"kind": "local_csv", "error_mode": error_mode.value},
         )
         session.commit()
         run_id = run.id
-        instruments = {}
-        for symbol in sorted({draft.symbol for draft in drafts}):
-            instruments[symbol] = upsert_instrument(
-                session,
-                symbol=symbol,
-                asset_class=args.asset_class,
-                currency=args.currency,
-                exchange=args.exchange,
-            )
-        inserted = insert_daily_bars(
+        result = ingest_daily_bars_csv(
             session,
-            drafts=drafts,
-            instruments_by_symbol=instruments,
-            source_id=source.id,
-            ingestion_run_id=run.id,
+            args.csv_path,
+            source=source,
+            run=run,
+            asset_class=args.asset_class,
+            currency=args.currency,
+            exchange=args.exchange,
+            error_mode=error_mode,
         )
+        accepted = result.accepted_count
+        rejected = result.rejected_count
+        inserted = result.inserted_bars
+        status = IngestionStatus.FAILED if result.aborted else IngestionStatus.SUCCEEDED
         finish_ingestion_run(
             session,
             run,
-            status=IngestionStatus.SUCCEEDED,
-            row_count=inserted,
+            status=status,
+            row_count=accepted + rejected,
+            accepted_count=accepted,
+            rejected_count=rejected,
         )
         session.commit()
+        error_codes = [
+            error.error_code
+            for error in list_ingestion_errors(session, ingestion_run_id=run.id)
+        ]
+        if result.aborted:
+            exit_code = 1
     except Exception as exc:
         session.rollback()
         if run_id is not None:
@@ -103,10 +119,13 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"mode={settings.app_mode.value}")
     print(f"source={args.source}")
-    print(f"symbols={sorted({draft.symbol for draft in drafts})}")
-    print(f"parsed_rows={len(drafts)}")
+    print(f"error_mode={error_mode.value}")
+    print(f"accepted_count={accepted}")
+    print(f"rejected_count={rejected}")
     print(f"inserted_rows={inserted}")
-    return 0
+    if error_codes:
+        print(f"error_codes={','.join(error_codes)}")
+    return exit_code
 
 
 if __name__ == "__main__":

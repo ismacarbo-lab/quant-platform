@@ -24,6 +24,8 @@ _ALLOWED_TABLES = frozenset(
         "instruments",
         "ingestion_runs",
         "daily_bars",
+        "raw_ingestion_records",
+        "ingestion_errors",
     }
 )
 _TRADING_TABLES = frozenset(

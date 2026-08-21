@@ -70,13 +70,15 @@ Apply the ingestion schema:
 uv run alembic upgrade head
 ```
 
-Load a local CSV (no vendors):
+Load a local CSV (no vendors). Default is collect-errors:
 
 ```bash
 uv run python scripts/load-daily-bars.py tests/fixtures/daily_bars_sample.csv
 ```
 
-Details: [docs/data/DATA_INGESTION.md](../data/DATA_INGESTION.md).
+Fail-fast: add `--fail-fast`. Row errors live in `ingestion_errors`; raw
+payloads in `raw_ingestion_records`. See
+[docs/data/DATA_INGESTION.md](../data/DATA_INGESTION.md).
 
 Stop (keeps the volume):
 
