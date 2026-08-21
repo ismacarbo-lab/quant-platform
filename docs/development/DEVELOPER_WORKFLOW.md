@@ -96,6 +96,41 @@ uv run uvicorn quant_platform.api.app:app --host 127.0.0.1 --port 8000
 
 Only `GET /health`. It does not query PostgreSQL.
 
+## Remote, first push, and GitHub Actions
+
+Create an **empty** GitHub repository (recommended name: `quant-platform`).
+Do not add a README, `.gitignore`, or license from the GitHub UI.
+
+There is no `origin` remote until you add one. Do not invent a URL.
+
+```bash
+git remote add origin git@github.com:<github-user>/quant-platform.git
+git push -u origin main
+```
+
+HTTPS alternative: `https://github.com/<github-user>/quant-platform.git`.
+
+If push fails with authentication:
+
+- GitHub CLI: `gh auth login -h github.com` then `gh auth setup-git`
+- SSH: add the local public key (`~/.ssh/id_ed25519.pub`) at GitHub →
+  Settings → SSH and GPG keys, then retry `git push -u origin main`
+- Personal access token: GitHub → Settings → Developer settings.
+  Do not commit or paste the token into the repo
+
+After a successful push: GitHub → repository → **Actions** → latest
+workflow run for `CI` (`.github/workflows/ci.yml`). Expect jobs
+`quality` and `postgres` to pass.
+
+If **setup-uv** fails: confirm the runner has network access, then retry or
+pin `astral-sh/setup-uv` to a known-good tag in `ci.yml`. Re-run the
+workflow; do not weaken quality gates.
+
+If the **postgres** job fails: the runner uses `127.0.0.1:5432` via
+`DATABASE_URL` (not local Compose `5434`). Check the service healthcheck,
+that `QUANT_PLATFORM_REQUIRE_POSTGRES=1` is set, and that tests are not
+skipping. Fix only the workflow or connection env; do not add SQLite.
+
 ## CI
 
 `.github/workflows/ci.yml` runs on push and pull request. No GitHub secrets.

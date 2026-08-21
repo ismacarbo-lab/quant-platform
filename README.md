@@ -87,7 +87,9 @@ docker compose config
 ```
 
 Or `make quality`. GitHub Actions (`.github/workflows/ci.yml`) runs the same
-fast path on every push/PR, plus an optional Postgres job. No GitHub secrets.
+fast path on every push/PR, plus a Postgres job. No GitHub secrets.
+First push and how to read Actions:
+[docs/development/DEVELOPER_WORKFLOW.md](docs/development/DEVELOPER_WORKFLOW.md#remote-first-push-and-github-actions).
 
 ## PostgreSQL (local development)
 
