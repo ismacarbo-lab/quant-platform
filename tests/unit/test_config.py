@@ -35,7 +35,7 @@ def test_sqlite_database_url_is_rejected() -> None:
 def test_postgresql_url_is_accepted() -> None:
     settings = Settings(
         _env_file=None,
-        database_url="postgresql+psycopg://quant:quant_dev_only_not_for_production@127.0.0.1:5432/quant_platform",
+        database_url="postgresql+psycopg://quant:quant_dev_only_not_for_production@127.0.0.1:5434/quant_platform",
     )
     assert settings.database_url.startswith("postgresql")
 

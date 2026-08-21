@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def test_compose_exposes_postgres_on_localhost_only() -> None:
     text = (ROOT / "docker-compose.yml").read_text(encoding="utf-8")
-    assert "127.0.0.1:5432:5432" in text
+    assert "127.0.0.1:5434:5432" in text
     assert "0.0.0.0" not in text
 
 

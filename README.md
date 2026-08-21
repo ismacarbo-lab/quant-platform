@@ -62,6 +62,10 @@ uv run pytest
 
 Unit tests do not call the network and do not require PostgreSQL to be running.
 
+Integration tests that need PostgreSQL skip cleanly if the database is down
+(`tests/integration/test_postgres_connection.py`). With Compose up they run
+`SELECT 1` and assert that no domain tables exist.
+
 ## Quality gates
 
 ```bash
@@ -73,31 +77,63 @@ uv run pytest
 
 ## PostgreSQL (local development)
 
+Host **5432** is already used on this machine by another container
+(`ia_postgres`). **5433** is used by `postgres_db`. This project therefore
+maps PostgreSQL to **`127.0.0.1:5434`** (container port remains 5432).
+
 ```bash
+cp .env.example .env   # if .env does not exist; gitignored
 docker compose up -d postgres
+docker compose ps
+docker compose logs postgres --tail=50
 ```
 
+Wait until the `postgres` service is healthy. Then:
+
+```bash
+uv run python scripts/check-db.py
+```
+
+That command loads settings, opens a SQLAlchemy connection, runs `SELECT 1`,
+lists public tables, and exits non-zero if any domain table exists. It does
+not create tables.
+
+Stop:
+
+```bash
+docker compose down
+```
+
+`docker compose down` keeps the named volume. Use `docker compose down -v`
+only if you intend to wipe the local database.
+
 Default credentials in Compose and `.env.example` are **fictional local
-placeholders**, not production secrets. Postgres is bound to `127.0.0.1:5432`.
+placeholders**, not production secrets. Postgres is bound to `127.0.0.1:5434`.
 
 Connection URL:
 
 ```text
-postgresql+psycopg://quant:quant_dev_only_not_for_production@127.0.0.1:5432/quant_platform
+postgresql+psycopg://quant:quant_dev_only_not_for_production@127.0.0.1:5434/quant_platform
 ```
+
+There are still **no domain tables** (candles, quotes, trades, orders, fills,
+signals, strategies). Alembic may create only `alembic_version` as bookkeeping.
 
 ## Migrations
 
-Phase 0 has no financial schema and therefore **no Alembic revisions**.
+Phase 0 has no financial schema and therefore **no domain Alembic revisions**.
 Alembic is configured so future models registered on
 `quant_platform.storage.database.Base` can generate migrations.
 
 ```bash
-uv run alembic revision --autogenerate -m "describe the change"
+uv run alembic current
 uv run alembic upgrade head
 ```
 
-See `alembic/README.md`. Do not use SQLite as a stand-in for PostgreSQL.
+With no revisions, `upgrade head` is a no-op for domain schema. Do not use
+SQLite. See `alembic/README.md`.
+
+APP_MODE remains **research** only.
 
 ## API
 

@@ -1,6 +1,9 @@
 # Local development PostgreSQL only.
 # Credentials are fictional placeholders and must never be used in production.
 # Override via docker-compose.override.yml or environment variables if needed.
+#
+# Host port: 5434 (not 5432). On this machine 5432 is already bound by another
+# container (`ia_postgres`) and 5433 by `postgres_db`. Keep 127.0.0.1 only.
 
 services:
   postgres:
@@ -11,7 +14,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-quant_dev_only_not_for_production}
       POSTGRES_DB: ${POSTGRES_DB:-quant_platform}
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:5434:5432"
     volumes:
       - quant_platform_pgdata:/var/lib/postgresql/data
     healthcheck:

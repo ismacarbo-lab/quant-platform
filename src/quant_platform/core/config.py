@@ -41,7 +41,7 @@ class Settings(BaseSettings):
     database_url: str = Field(
         default=(
             "postgresql+psycopg://quant:quant_dev_only_not_for_production"
-            "@127.0.0.1:5432/quant_platform"
+            "@127.0.0.1:5434/quant_platform"
         )
     )
 

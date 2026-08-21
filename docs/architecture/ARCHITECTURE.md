@@ -132,8 +132,15 @@ an operation; execution must not be reachable from strategy code.
 ## Persistence
 
 PostgreSQL is the system of record. SQLAlchemy 2.x and Alembic are
-wired. Phase 0 stores **no** candles, quotes, trades, orders, fills, or
+wired. Phase 0 / 0.1 stores **no** candles, quotes, trades, orders, fills, or
 strategy tables. SQLite is rejected by configuration.
+
+Local Compose exposes Postgres on `127.0.0.1:5434` because host 5432 and 5433
+were already bound by other containers on the development machine. Check
+connectivity with `uv run python scripts/check-db.py` (SELECT 1 only).
+`GET /health` still does not query the database.
+
+Application mode remains **research** only.
 
 ## API
 
