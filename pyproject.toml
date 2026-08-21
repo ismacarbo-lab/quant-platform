@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "quant-platform"
 version = "0.1.0"
-description = "Foundation for a quantitative research platform (Phase 0). No trading, brokers, or market-data integrations."
+description = "Research-only quantitative platform foundation. Local CSV ingestion; no trading or vendor APIs."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [

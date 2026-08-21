@@ -42,3 +42,4 @@ def test_ci_workflow_does_not_require_github_secrets() -> None:
     assert "APP_MODE: research" in workflow
     assert 'pytest -m "not postgres"' in workflow
     assert "pytest -m postgres" in workflow
+    assert "alembic upgrade head" in workflow

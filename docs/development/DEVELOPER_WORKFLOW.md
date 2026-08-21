@@ -61,15 +61,22 @@ docker compose ps
 uv run python scripts/check-db.py
 ```
 
-`scripts/check-db.py` runs `SELECT 1`, lists public tables, and refuses domain
-tables. It does not print `DATABASE_URL` or passwords.
+`scripts/check-db.py` runs `SELECT 1`, lists public tables, and refuses
+trading tables. It does not print `DATABASE_URL` or passwords.
 
-Alembic (no domain migrations yet):
+Apply the ingestion schema:
 
 ```bash
-uv run alembic current
 uv run alembic upgrade head
 ```
+
+Load a local CSV (no vendors):
+
+```bash
+uv run python scripts/load-daily-bars.py tests/fixtures/daily_bars_sample.csv
+```
+
+Details: [docs/data/DATA_INGESTION.md](../data/DATA_INGESTION.md).
 
 Stop (keeps the volume):
 

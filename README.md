@@ -2,10 +2,10 @@
 
 Phase 0 foundation for a professional quantitative research platform.
 
-This repository currently provides a **small, reproducible software base**:
-typed configuration, UTC clocks, structured logging, a PostgreSQL-ready
-storage layer, Alembic, and an internal health API. It is **not** a trading
-system.
+This repository currently provides a **research-only** software base:
+typed configuration, UTC clocks, structured logging, PostgreSQL, Alembic,
+an internal health API, and **local CSV daily-bar ingestion** with
+point-in-time timestamps. It is **not** a trading system.
 
 A pre-existing tree named `AI_VENTURE_OS_PROMPTS/` may sit next to this
 project. It is a separate product and is **not** part of `quant_platform`.
@@ -13,9 +13,9 @@ Do not mix the two.
 
 ## Current purpose
 
+- Load local daily OHLCV CSV into PostgreSQL with point-in-time fields.
 - Run local research tooling on a safe default mode (`research`).
-- Provide architectural boundaries for later data, risk, and execution work.
-- Make behaviour testable without network access or vendor credentials.
+- Provide architectural boundaries for later risk and execution work.
 
 ## What is not implemented
 
@@ -164,6 +164,9 @@ GET /health
 ```
 
 It does not query the database or any external service.
+
+Data ingestion (local CSV only):
+[docs/data/DATA_INGESTION.md](docs/data/DATA_INGESTION.md).
 
 See [docs/development/DEVELOPER_WORKFLOW.md](docs/development/DEVELOPER_WORKFLOW.md)
 for install, Compose, Alembic, port 5434 conflicts, and CI.

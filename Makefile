@@ -1,4 +1,4 @@
-.PHONY: lint format format-check typecheck test test-fast test-postgres check-db compose-config quality
+.PHONY: lint format format-check typecheck test test-fast test-postgres check-db migrate compose-config quality
 
 lint:
 	uv run ruff check .
@@ -23,6 +23,9 @@ test-postgres:
 
 check-db:
 	uv run python scripts/check-db.py
+
+migrate:
+	uv run alembic upgrade head
 
 compose-config:
 	docker compose config

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from quant_platform.core.config import Settings
+from quant_platform.data.models import DailyBar, DataSource, IngestionRun, Instrument
 from quant_platform.storage.database import (
     Base,
     create_db_engine,
@@ -10,8 +11,13 @@ from quant_platform.storage.database import (
 )
 
 
-def test_base_has_no_financial_tables() -> None:
-    assert Base.metadata.tables == {}
+def test_base_registers_ingestion_tables_not_trading() -> None:
+    names = set(Base.metadata.tables)
+    assert {"data_sources", "instruments", "ingestion_runs", "daily_bars"} <= names
+    assert names.isdisjoint({"orders", "trades", "fills", "signals", "strategies"})
+    assert {DailyBar.__tablename__, DataSource.__tablename__} <= names
+    assert Instrument.__tablename__ in names
+    assert IngestionRun.__tablename__ in names
 
 
 def test_session_factory_uses_postgres_engine(research_settings: Settings) -> None:

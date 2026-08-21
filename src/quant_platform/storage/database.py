@@ -16,7 +16,7 @@ from quant_platform.core.config import Settings, get_settings
 
 
 class Base(DeclarativeBase):
-    """SQLAlchemy declarative base. Intentionally empty in Phase 0."""
+    """SQLAlchemy declarative base for research persistence."""
 
 
 def create_db_engine(
@@ -45,7 +45,7 @@ def ping_database(engine: Engine) -> None:
 
 
 def list_public_tables(engine: Engine) -> list[str]:
-    """Return public-schema table names. Used to assert no domain schema yet."""
+    """Return public-schema table names."""
     return sorted(inspect(engine).get_table_names())
 
 

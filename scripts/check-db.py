@@ -17,7 +17,25 @@ from quant_platform.storage.database import (
     ping_database,
 )
 
-_ALLOWED_INFRA_TABLES = frozenset({"alembic_version"})
+_ALLOWED_TABLES = frozenset(
+    {
+        "alembic_version",
+        "data_sources",
+        "instruments",
+        "ingestion_runs",
+        "daily_bars",
+    }
+)
+_TRADING_TABLES = frozenset(
+    {
+        "trades",
+        "orders",
+        "fills",
+        "signals",
+        "strategies",
+        "positions",
+    }
+)
 
 
 def main() -> int:
@@ -40,14 +58,18 @@ def main() -> int:
     finally:
         engine.dispose()
 
-    unexpected = [name for name in tables if name not in _ALLOWED_INFRA_TABLES]
+    unexpected = [name for name in tables if name not in _ALLOWED_TABLES]
+    trading = [name for name in tables if name in _TRADING_TABLES]
     print(f"mode={settings.app_mode.value}")
     print("ping=ok")
     print(f"tables={tables}")
+    if trading:
+        print(f"error: trading tables present {trading}", file=sys.stderr)
+        return 1
     if unexpected:
         print(f"error: unexpected tables {unexpected}", file=sys.stderr)
         return 1
-    print("domain_tables=none")
+    print("trading_tables=none")
     return 0
 
 

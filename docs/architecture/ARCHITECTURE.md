@@ -1,6 +1,6 @@
-# Architecture — Phase 0
+# Architecture — Phase 1.0
 
-Status: foundation only. No strategies, market data, brokers, or execution.
+Status: research ingestion foundation. No strategies, brokers, or execution.
 
 ## Modular monolith
 
@@ -11,6 +11,7 @@ until a measured operational need appears.
 ```
 src/quant_platform/
   core/         configuration, UTC clock, identifiers
+  data/         local CSV ingest, PIT daily bars, repositories
   storage/      PostgreSQL engine/session, SQLAlchemy Base
   monitoring/   structured logging
   api/          internal HTTP surface (health)
@@ -22,7 +23,7 @@ Documented future areas (no empty implementation packages in Phase 0):
 |------|----------------|---------|
 | `core` | Shared primitives, settings | implemented |
 | `domain` | Canonical types and invariants | documented |
-| `data` | Ingest, bronze/silver/gold, PIT | documented |
+| `data` | Ingest, bronze/silver/gold, PIT | local CSV + daily_bars (silver) |
 | `storage` | Persistence adapters | engine/session only |
 | `research` | Notebooks, experiment runners | not implemented |
 | `backtesting` | Simulation engine | not implemented |
@@ -75,17 +76,19 @@ flowchart LR
 The process starts in **research** mode. Settings reject `live`, `paper`,
 and any other value. There is no broker endpoint configuration.
 
-## Data architecture (future)
+## Data architecture
 
-Three layers. None of the tables or pipelines exist yet; the contract is
-binding for later work.
+Three layers. Phase 1.0 stores **normalized daily bars** (silver) from a
+**local CSV** (treated as a labelled source, not a live vendor). Bronze
+payload archives and gold feature tables are still future work.
 
 1. **RAW / BRONZE** — original vendor payload, immutable, with content
    hash and provenance (source, request identity, ingest path).
-2. **NORMALIZED / SILVER** — canonical internal schema, independent of
-   vendor field names.
+2. **NORMALIZED / SILVER** — canonical internal schema (`daily_bars`).
 3. **DERIVED / GOLD** — features, datasets, signals, model outputs, and
    backtest artifacts, all versioned.
+
+See [docs/data/DATA_INGESTION.md](../data/DATA_INGESTION.md).
 
 ### Point-in-time timestamps
 
@@ -132,8 +135,12 @@ an operation; execution must not be reachable from strategy code.
 ## Persistence
 
 PostgreSQL is the system of record. SQLAlchemy 2.x and Alembic are
-wired. Phase 0 / 0.1 stores **no** candles, quotes, trades, orders, fills, or
-strategy tables. SQLite is rejected by configuration.
+wired. Phase 1.0 stores research ingestion tables only: `data_sources`,
+`instruments`, `ingestion_runs`, `daily_bars`. There are still **no**
+orders, fills, trades, strategies, or broker tables. SQLite is rejected.
+
+Daily bars require timezone-aware UTC timestamps and
+`available_time > observation_time` (strict).
 
 Local Compose exposes Postgres on `127.0.0.1:5434` because host 5432 and 5433
 were already bound by other containers on the development machine. Check

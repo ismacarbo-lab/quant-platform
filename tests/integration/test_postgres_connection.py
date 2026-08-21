@@ -2,28 +2,24 @@
 
 from __future__ import annotations
 
-import os
-from collections.abc import Iterator
-
 import pytest
-from fastapi.testclient import TestClient
 from sqlalchemy.engine import Engine
-from sqlalchemy.exc import OperationalError
 
 from quant_platform.api.app import create_app
 from quant_platform.core.config import Settings
-from quant_platform.core.redact import redact_secret_text
-from quant_platform.storage.database import (
-    create_db_engine,
-    list_public_tables,
-    ping_database,
-)
+from quant_platform.storage.database import list_public_tables, ping_database
 
-_ALLOWED_INFRA_TABLES = frozenset({"alembic_version"})
-_DOMAIN_TABLES = frozenset(
+_ALLOWED_TABLES = frozenset(
     {
-        "candles",
-        "quotes",
+        "alembic_version",
+        "data_sources",
+        "instruments",
+        "ingestion_runs",
+        "daily_bars",
+    }
+)
+_TRADING_TABLES = frozenset(
+    {
         "trades",
         "orders",
         "fills",
@@ -36,38 +32,21 @@ _DOMAIN_TABLES = frozenset(
 pytestmark = pytest.mark.postgres
 
 
-@pytest.fixture
-def live_settings() -> Settings:
-    return Settings()
-
-
-@pytest.fixture
-def postgres_engine(live_settings: Settings) -> Iterator[Engine]:
-    engine = create_db_engine(live_settings, connect_timeout_seconds=3)
-    try:
-        ping_database(engine)
-    except OperationalError as exc:
-        engine.dispose()
-        if os.environ.get("QUANT_PLATFORM_REQUIRE_POSTGRES") == "1":
-            raise
-        pytest.skip(f"PostgreSQL is not reachable: {redact_secret_text(str(exc))}")
-    yield engine
-    engine.dispose()
-
-
 def test_select_one_against_postgres(postgres_engine: Engine) -> None:
     ping_database(postgres_engine)
 
 
-def test_no_domain_tables(postgres_engine: Engine) -> None:
+def test_no_trading_tables(postgres_engine: Engine) -> None:
     tables = set(list_public_tables(postgres_engine))
-    assert tables.isdisjoint(_DOMAIN_TABLES)
-    assert tables <= _ALLOWED_INFRA_TABLES
+    assert tables.isdisjoint(_TRADING_TABLES)
+    assert tables <= _ALLOWED_TABLES
 
 
 def test_health_still_works_without_querying_db(
     live_settings: Settings, postgres_engine: Engine
 ) -> None:
+    from fastapi.testclient import TestClient
+
     client = TestClient(create_app(live_settings))
     response = client.get("/health")
     assert response.status_code == 200
