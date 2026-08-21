@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime, time
+from decimal import Decimal
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -11,6 +12,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from quant_platform.core.time import utc_now
+from quant_platform.data.calendar import session_date_for_observation
 from quant_platform.data.models import (
     DailyBar,
     DataSource,
@@ -18,9 +20,23 @@ from quant_platform.data.models import (
     IngestionRun,
     IngestionStatus,
     Instrument,
+    InstrumentIdentifier,
+    MarketCalendar,
+    MarketSession,
     RawIngestionRecord,
 )
-from quant_platform.data.validation import DailyBarDraft, validate_daily_bar_draft
+from quant_platform.data.validation import (
+    DailyBarDraft,
+    DataValidationError,
+    IngestionErrorCode,
+    validate_daily_bar_draft,
+)
+
+
+def _optional_match(column: Any, value: object) -> Any:
+    if value is None:
+        return column.is_(None)
+    return column == value
 
 
 def upsert_data_source(
@@ -50,14 +66,22 @@ def upsert_instrument(
     name: str | None = None,
     currency: str | None = None,
     exchange: str | None = None,
+    calendar_id: UUID | None = None,
 ) -> Instrument:
     key = symbol.strip()
-    existing = session.scalar(select(Instrument).where(Instrument.symbol == key))
+    existing = session.scalar(
+        select(Instrument).where(
+            Instrument.symbol == key,
+            Instrument.asset_class == asset_class,
+            _optional_match(Instrument.exchange, exchange),
+            _optional_match(Instrument.currency, currency),
+        )
+    )
     if existing is not None:
-        existing.asset_class = asset_class
-        existing.name = name
-        existing.currency = currency
-        existing.exchange = exchange
+        if name is not None:
+            existing.name = name
+        if calendar_id is not None:
+            existing.calendar_id = calendar_id
         session.flush()
         return existing
     instrument = Instrument(
@@ -66,6 +90,7 @@ def upsert_instrument(
         name=name,
         currency=currency,
         exchange=exchange,
+        calendar_id=calendar_id,
     )
     session.add(instrument)
     session.flush()
@@ -143,6 +168,7 @@ def insert_daily_bars(
                 "close": draft.close,
                 "volume": draft.volume,
                 "ingestion_run_id": ingestion_run_id,
+                "is_correction": False,
                 "created_at": utc_now(),
             }
         )
@@ -259,3 +285,183 @@ def get_daily_bars(
     else:
         stmt = stmt.order_by(DailyBar.observation_time, DailyBar.available_time)
     return list(session.scalars(stmt))
+
+
+def upsert_market_calendar(
+    session: Session,
+    *,
+    code: str,
+    name: str,
+    timezone: str,
+) -> MarketCalendar:
+    existing = session.scalar(select(MarketCalendar).where(MarketCalendar.code == code))
+    if existing is not None:
+        existing.name = name
+        existing.timezone = timezone
+        session.flush()
+        return existing
+    calendar = MarketCalendar(code=code, name=name, timezone=timezone)
+    session.add(calendar)
+    session.flush()
+    return calendar
+
+
+def get_market_calendar_by_code(
+    session: Session, *, code: str
+) -> MarketCalendar | None:
+    return session.scalar(select(MarketCalendar).where(MarketCalendar.code == code))
+
+
+def upsert_market_session(
+    session: Session,
+    *,
+    calendar_id: UUID,
+    session_date: date,
+    is_open: bool,
+    open_time: time | None = None,
+    close_time: time | None = None,
+    note: str | None = None,
+) -> MarketSession:
+    existing = session.scalar(
+        select(MarketSession).where(
+            MarketSession.calendar_id == calendar_id,
+            MarketSession.session_date == session_date,
+        )
+    )
+    if existing is not None:
+        existing.is_open = is_open
+        existing.open_time = open_time
+        existing.close_time = close_time
+        existing.note = note
+        session.flush()
+        return existing
+    row = MarketSession(
+        calendar_id=calendar_id,
+        session_date=session_date,
+        is_open=is_open,
+        open_time=open_time,
+        close_time=close_time,
+        note=note,
+    )
+    session.add(row)
+    session.flush()
+    return row
+
+
+def require_open_session(
+    session: Session, *, instrument: Instrument, observation_time: datetime
+) -> None:
+    """Raise if the instrument calendar has no open session for this date.
+
+    Instruments without ``calendar_id`` skip the check.
+    """
+    if instrument.calendar_id is None:
+        return
+    calendar = session.get(MarketCalendar, instrument.calendar_id)
+    if calendar is None:
+        raise DataValidationError(
+            "instrument calendar is missing",
+            code=IngestionErrorCode.CLOSED_SESSION,
+        )
+    session_date = session_date_for_observation(observation_time, calendar.timezone)
+    row = session.scalar(
+        select(MarketSession).where(
+            MarketSession.calendar_id == calendar.id,
+            MarketSession.session_date == session_date,
+        )
+    )
+    if row is None or not row.is_open:
+        raise DataValidationError(
+            f"no open session on {session_date.isoformat()} "
+            f"for calendar {calendar.code}",
+            code=IngestionErrorCode.CLOSED_SESSION,
+        )
+
+
+def insert_instrument_identifier(
+    session: Session,
+    *,
+    instrument_id: UUID,
+    namespace: str,
+    value: str,
+    valid_from: datetime | None = None,
+    valid_to: datetime | None = None,
+) -> InstrumentIdentifier:
+    ident = InstrumentIdentifier(
+        instrument_id=instrument_id,
+        namespace=namespace.strip(),
+        value=value.strip(),
+        valid_from=valid_from,
+        valid_to=valid_to,
+    )
+    session.add(ident)
+    session.flush()
+    return ident
+
+
+def list_instrument_identifiers(
+    session: Session, *, instrument_id: UUID
+) -> list[InstrumentIdentifier]:
+    stmt = (
+        select(InstrumentIdentifier)
+        .where(InstrumentIdentifier.instrument_id == instrument_id)
+        .order_by(InstrumentIdentifier.namespace, InstrumentIdentifier.value)
+    )
+    return list(session.scalars(stmt))
+
+
+def insert_daily_bar_correction(
+    session: Session,
+    *,
+    superseded: DailyBar,
+    available_time: datetime,
+    open: Decimal,
+    high: Decimal,
+    low: Decimal,
+    close: Decimal,
+    volume: Decimal | None,
+    ingestion_run_id: UUID,
+    reason: str,
+) -> DailyBar:
+    """Insert a new PIT row. Does not update or delete ``superseded``."""
+    instrument = session.get(Instrument, superseded.instrument_id)
+    if instrument is None:
+        raise DataValidationError(
+            "superseded bar has no instrument",
+            code=IngestionErrorCode.VALIDATION_ERROR,
+        )
+    draft = validate_daily_bar_draft(
+        DailyBarDraft(
+            symbol=instrument.symbol,
+            observation_time=superseded.observation_time,
+            available_time=available_time,
+            open=open,
+            high=high,
+            low=low,
+            close=close,
+            volume=volume,
+        )
+    )
+    if not draft.available_time > superseded.available_time:
+        raise DataValidationError(
+            "correction available_time must be after the superseded bar",
+            code=IngestionErrorCode.STALE_CORRECTION,
+        )
+    bar = DailyBar(
+        instrument_id=superseded.instrument_id,
+        source_id=superseded.source_id,
+        observation_time=draft.observation_time,
+        available_time=draft.available_time,
+        open=draft.open,
+        high=draft.high,
+        low=draft.low,
+        close=draft.close,
+        volume=draft.volume,
+        ingestion_run_id=ingestion_run_id,
+        is_correction=True,
+        correction_reason=reason,
+        supersedes_daily_bar_id=superseded.id,
+    )
+    session.add(bar)
+    session.flush()
+    return bar

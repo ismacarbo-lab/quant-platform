@@ -40,12 +40,19 @@ def test_upsert_source_and_instrument(db_session: Session) -> None:
     )
     assert first.id == second.id
     assert second.vendor == "manual_fixture"
-    inst_a = upsert_instrument(db_session, symbol=symbol, asset_class="equity")
+    inst_a = upsert_instrument(
+        db_session, symbol=symbol, asset_class="equity", exchange="XNYS", currency="USD"
+    )
     inst_b = upsert_instrument(
-        db_session, symbol=symbol, asset_class="equity", currency="USD"
+        db_session,
+        symbol=symbol,
+        asset_class="equity",
+        exchange="XNYS",
+        currency="USD",
+        name="updated",
     )
     assert inst_a.id == inst_b.id
-    assert inst_b.currency == "USD"
+    assert inst_b.name == "updated"
 
 
 def test_insert_daily_bars_and_pit_query(db_session: Session) -> None:

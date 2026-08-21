@@ -5,8 +5,8 @@ Phase 0 foundation for a professional quantitative research platform.
 This repository currently provides a **research-only** software base:
 typed configuration, UTC clocks, structured logging, PostgreSQL, Alembic,
 an internal health API, **local CSV daily-bar ingestion** with point-in-time
-timestamps, and a **bronze audit layer** (raw payloads, hashes, row errors).
-It is **not** a trading system.
+timestamps, a **bronze audit layer**, composite **instrument identity**, and
+**manual calendars**. It is **not** a trading system.
 
 A pre-existing tree named `AI_VENTURE_OS_PROMPTS/` may sit next to this
 project. It is a separate product and is **not** part of `quant_platform`.
@@ -16,7 +16,7 @@ Do not mix the two.
 
 - Load local daily OHLCV CSV into PostgreSQL with point-in-time fields.
 - Keep bronze raw records and row-level ingestion errors for audit.
-- Run local research tooling on a safe default mode (`research`).
+- Distinguish instruments by symbol, asset class, exchange, and currency.
 
 ## What is not implemented
 

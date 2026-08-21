@@ -19,6 +19,9 @@ class IngestionErrorCode(StrEnum):
     FILE_NOT_FOUND = "file_not_found"
     MISSING_COLUMNS = "missing_columns"
     EMPTY_FILE = "empty_file"
+    CLOSED_SESSION = "closed_session"
+    INVALID_TIMEZONE = "invalid_timezone"
+    STALE_CORRECTION = "stale_correction"
 
 
 class DataValidationError(ValueError):

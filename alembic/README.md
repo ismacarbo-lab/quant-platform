@@ -3,8 +3,12 @@ Alembic is configured against PostgreSQL via `Settings.database_url`.
 Phase 1.0 revision `0001_ingestion` creates research ingestion tables
 (`data_sources`, `instruments`, `ingestion_runs`, `daily_bars`).
 Phase 1.1 revision `0002_bronze` adds bronze `raw_ingestion_records`,
-`ingestion_errors`, and run counters. Neither revision creates orders,
-trades, or broker tables.
+`ingestion_errors`, and run counters.
+Phase 1.2 revision `0003_identity` replaces global `symbol` uniqueness with
+`(symbol, asset_class, exchange, currency)` using PostgreSQL
+`UNIQUE NULLS NOT DISTINCT`, and adds `instrument_identifiers`,
+`market_calendars`, `market_sessions`, plus daily-bar correction columns.
+None of these revisions create orders, trades, or broker tables.
 
 ```bash
 docker compose up -d postgres

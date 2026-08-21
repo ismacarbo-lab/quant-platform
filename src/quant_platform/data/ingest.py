@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from uuid import UUID
 
 from sqlalchemy.orm import Session
 
@@ -14,6 +15,7 @@ from quant_platform.data.repository import (
     insert_daily_bars,
     insert_ingestion_error,
     insert_raw_record,
+    require_open_session,
     upsert_instrument,
 )
 from quant_platform.data.validation import DataValidationError, IngestionErrorCode
@@ -37,12 +39,17 @@ def ingest_daily_bars_csv(
     currency: str | None = None,
     exchange: str | None = None,
     error_mode: ErrorMode = ErrorMode.COLLECT_ERRORS,
+    validate_calendar: bool = False,
+    calendar_id: UUID | None = None,
 ) -> IngestResult:
     """Store raw rows, then silver bars or ingestion errors.
 
     Bronze records are written before validation. ``collect_errors`` continues
     after a bad row. ``fail_fast`` records the first error and returns with
     ``aborted=True`` (does not raise, so the session can be committed).
+
+    ``validate_calendar`` (default False) rejects bars whose instrument has a
+    calendar without an open session on the observation date.
     """
     accepted = 0
     rejected = 0
@@ -91,8 +98,35 @@ def ingest_daily_bars_csv(
                 asset_class=asset_class,
                 currency=currency,
                 exchange=exchange,
+                calendar_id=calendar_id,
             )
             instruments[draft.symbol] = instrument
+        if validate_calendar:
+            try:
+                require_open_session(
+                    session,
+                    instrument=instrument,
+                    observation_time=draft.observation_time,
+                )
+            except DataValidationError as exc:
+                insert_ingestion_error(
+                    session,
+                    ingestion_run_id=run.id,
+                    source_id=source.id,
+                    record_index=record_index,
+                    error_code=exc.code,
+                    error_message=str(exc),
+                    raw_payload=payload,
+                )
+                rejected += 1
+                if error_mode is ErrorMode.FAIL_FAST:
+                    return IngestResult(
+                        accepted_count=accepted,
+                        rejected_count=rejected,
+                        inserted_bars=inserted_bars,
+                        aborted=True,
+                    )
+                continue
         inserted_bars += insert_daily_bars(
             session,
             drafts=[draft],

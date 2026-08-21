@@ -1,17 +1,18 @@
-# Data ingestion — Phase 1.1
+# Data ingestion — Phase 1.2
 
-Research-only local OHLCV storage with a bronze audit layer. No vendor APIs,
-brokers, strategies, signals, or execution.
+Research-only local OHLCV storage with bronze audit, instrument identity,
+manual calendars, and explicit PIT corrections. No vendor APIs, brokers,
+strategies, signals, or execution.
 
 ## Scope
 
-Phase 1.0 stored silver `daily_bars`. Phase 1.1 adds:
+Phase 1.2 adds:
 
-- bronze `raw_ingestion_records` (payload + SHA-256)
-- bronze `ingestion_errors` (row-level quality failures)
-- `ingestion_runs.accepted_count` / `rejected_count`
-- CSV ingest that can **collect-errors** (default) or **fail-fast**
-- as-of reads that pick the latest visible PIT correction
+- composite instrument identity (`symbol` is no longer globally unique)
+- `instrument_identifiers` (local namespaces only)
+- manual `market_calendars` / `market_sessions`
+- optional calendar validation on CSV ingest (off by default)
+- explicit silver corrections (`is_correction`, `supersedes_daily_bar_id`)
 
 `APP_MODE` remains **research** only. There is no gold layer.
 
@@ -20,61 +21,93 @@ Phase 1.0 stored silver `daily_bars`. Phase 1.1 adds:
 | Layer | Tables | Role |
 |-------|--------|------|
 | Bronze | `raw_ingestion_records`, `ingestion_errors` | Exact received payload, hash, and why a row was rejected. Append-only audit. |
-| Silver | `daily_bars` | Validated, normalized OHLCV with point-in-time timestamps. |
-| Gold | — | Not implemented (features, signals, backtest artifacts). |
+| Silver | `daily_bars` | Validated, normalized OHLCV with point-in-time timestamps and optional correction links. |
+| Gold | — | Not implemented. |
 
-`data_sources`, `instruments`, and `ingestion_runs` are shared operational
-tables, not a medallion layer.
+`data_sources`, `instruments`, `instrument_identifiers`, `market_calendars`,
+`market_sessions`, and `ingestion_runs` are operational tables.
+
+## Instrument identity
+
+`instruments.id` remains the primary key. The natural key is:
+
+```text
+(symbol, asset_class, exchange, currency)
+```
+
+The same ticker may exist on two exchanges, in two currencies, or in two
+asset classes. `symbol` alone is **not** unique.
+
+PostgreSQL **`UNIQUE NULLS NOT DISTINCT`** (PG 15+) treats NULL `exchange` or
+`currency` as equal, so two rows that omit exchange are the same instrument.
+
+`upsert_instrument` matches that natural key and updates `name` / `calendar_id`
+only. It does not rewrite the key fields.
+
+## Alternate identifiers
+
+`instrument_identifiers` stores local aliases. Namespaces are placeholders,
+not vendor connections:
+
+- `local_symbol`
+- `figi_placeholder`
+- `isin_placeholder`
+- `vendor_symbol_placeholder`
+
+Unique `(namespace, value, valid_from)` also uses `NULLS NOT DISTINCT`.
+`valid_from` / `valid_to` are optional point-in-time bounds for the alias.
+
+## Calendars (manual only)
+
+`market_calendars` (`code`, `name`, IANA `timezone`) and `market_sessions`
+(`session_date`, `is_open`, optional open/close times, `note`) are **fixtures**.
+Nothing is downloaded from exchanges.
+
+`instruments.calendar_id` is optional. With `validate_calendar=True` on ingest:
+
+- instruments **without** a calendar skip the check
+- instruments **with** a calendar need a session row for the observation
+  civil date (in the calendar timezone) with `is_open=true`
+- missing session or `is_open=false` → `ingestion_error` code `closed_session`,
+  no silver row
+
+Default is `validate_calendar=False` so simple fixtures keep working.
 
 ## Tables
 
 | Table | Role |
 |-------|------|
-| `data_sources` | Named local source (`local_csv`, `manual_fixture`). `vendor` is a label, not a network client. |
-| `instruments` | Research symbol (`symbol` unique in this phase). |
-| `ingestion_runs` | One load attempt. Counters: `row_count`, `accepted_count`, `rejected_count`. |
-| `raw_ingestion_records` | One bronze row per CSV data row (`record_index` is 0-based). |
-| `ingestion_errors` | Rejected rows (or empty-file). |
-| `daily_bars` | Silver daily OHLCV with `observation_time` and `available_time`. |
-
-The JSON column on `ingestion_runs` is **`run_metadata`**.
-
-`payload_hash` is SHA-256 of canonical JSON (sorted keys, compact separators)
-after secret-like keys are replaced with `[redacted]`. There is an **index**
-on `(source_id, payload_hash)` so duplicates can be found. It is **not**
-unique: the same payload may appear in more than one run, and bronze keeps
-both for audit.
-
-Unique bronze key: `(ingestion_run_id, record_index)`.
+| `data_sources` | Named local source. `vendor` is a label, not a network client. |
+| `instruments` | Research instrument; natural key `(symbol, asset_class, exchange, currency)`. |
+| `instrument_identifiers` | Local aliases (no vendor APIs). |
+| `market_calendars` | Manual calendar. |
+| `market_sessions` | Open/closed civil dates. |
+| `ingestion_runs` | One load attempt with `accepted_count` / `rejected_count`. |
+| `raw_ingestion_records` | Bronze CSV row (`record_index` 0-based). |
+| `ingestion_errors` | Rejected rows. |
+| `daily_bars` | Silver OHLCV with PIT timestamps and optional correction link. |
 
 Unique silver PIT key: `(instrument_id, source_id, observation_time, available_time)`.
-A later correction is a **new** silver row with a new `available_time`, never
-an in-place overwrite.
 
-### Counters
+## Point-in-time and corrections
 
-`accepted_count` and `rejected_count` are stored on `ingestion_runs` (not
-derived at read time) so a finished run is inspectable without joins.
-`row_count` is the number of CSV data rows processed (`accepted + rejected`
-in the Phase 1.1 pipeline).
+Write invariant (strict): **`available_time > observation_time`**.
 
-## Point-in-time and as-of
+A correction is a **new** `daily_bars` row:
 
-- `observation_time` — when the bar refers to (CSV `date`; a calendar date is
-  midnight UTC that day).
-- `available_time` — earliest time the bar could have been known.
-- Write invariant (strict): **`available_time > observation_time`**.
+- `is_correction=true`
+- `correction_reason` set
+- `supersedes_daily_bar_id` points at the previous row
+- `available_time` **after** the superseded bar’s `available_time`
 
-`get_daily_bars(..., as_of=simulation_time)`:
+History is never updated in place. `insert_daily_bar_correction` enforces this.
 
-1. Keeps rows with `available_time <= simulation_time` (no future versions).
-2. For each `(source_id, observation_time)`, returns the row with the latest
-   `available_time` (latest correction known at that simulation time).
+`get_daily_bars(..., as_of=simulation_time)` still:
 
-Without `as_of`, every stored PIT version is returned (audit).
+1. Keeps `available_time <= simulation_time`
+2. Returns the latest `available_time` per `(source_id, observation_time)`
 
-Example: same observation day, `available_time` 2024-01-02 and 2024-01-05.
-As-of 2024-01-03 → first. As-of 2024-01-06 → second.
+Without `as_of`, every stored version is returned (audit).
 
 ## CSV format
 
@@ -83,28 +116,24 @@ symbol,date,open,high,low,close,volume,available_time
 FIXT,2024-01-02,10.00,11.00,9.50,10.50,1000,2024-01-03T00:00:00Z
 ```
 
-- `date` → `observation_time`
-- `available_time` is required and must include a timezone (`Z` or offset)
-- `volume` may be empty
-- `high >= low`, prices and volume non-negative
-- `high` must be ≥ open and close; `low` must be ≤ open and close
+One ingest file still maps all rows to the same `asset_class` / `exchange` /
+`currency` / optional calendar (CLI flags). Distinct identities need separate
+loads or repository calls.
 
-Fixtures: `tests/fixtures/daily_bars_sample.csv`,
-`tests/fixtures/daily_bars_mixed.csv`.
+### Error modes and calendar flag
 
-### Error modes
+| Mode | Default |
+|------|---------|
+| `collect_errors` | Script default |
+| `fail_fast` | `--fail-fast` |
+| `validate_calendar` | Off; `--validate-calendar` |
 
-| Mode | Library | Script |
-|------|---------|--------|
-| `collect_errors` | Continue after a bad row | **Default** |
-| `fail_fast` | Stop after the first bad row | `--fail-fast` |
+`--calendar CODE` attaches an **existing** `market_calendars.code`. Unknown
+codes abort before a run is created.
 
-File/header problems (missing file, missing columns) always abort before
-rows are stored. Bronze is written **before** silver validation.
-
-Error codes include `lookahead`, `invalid_ohlc`, `naive_timestamp`,
-`invalid_number`, `empty_symbol`, `empty_file`, `missing_columns`,
-`file_not_found`.
+Error codes include `lookahead`, `invalid_ohlc`, `closed_session`,
+`stale_correction`, `invalid_timezone`, `naive_timestamp`, `empty_symbol`,
+`empty_file`, `missing_columns`, `file_not_found`.
 
 ## Commands
 
@@ -116,26 +145,14 @@ uv run python scripts/load-daily-bars.py tests/fixtures/daily_bars_sample.csv \
   --source local_csv --vendor local_csv --asset-class equity
 ```
 
-Collect-errors is the default. Fail-fast:
+Optional:
 
 ```bash
-uv run python scripts/load-daily-bars.py tests/fixtures/daily_bars_mixed.csv --fail-fast
+uv run python scripts/load-daily-bars.py tests/fixtures/daily_bars_calendar.csv \
+  --calendar TEST --validate-calendar
 ```
 
-The loader prints `mode`, `source`, `error_mode`, `accepted_count`,
-`rejected_count`, `inserted_rows`, and `error_codes` when present. It does
-not print `DATABASE_URL`, passwords, or raw payloads.
-
-### How to read errors
-
-Use `list_ingestion_errors(session, ingestion_run_id=...)` and
-`get_raw_records_for_run(session, ingestion_run_id=...)`, or SQL:
-
-```sql
-SELECT record_index, error_code, error_message
-FROM ingestion_errors
-ORDER BY record_index NULLS LAST, created_at;
-```
+The loader does not print `DATABASE_URL`, passwords, or raw payloads.
 
 Tests:
 
@@ -146,6 +163,7 @@ uv run pytest -m postgres          # needs Postgres; applies migrations
 
 ## Not implemented
 
-Gold layer, corporate actions, calendars, survivorship bias, strategies,
-signals, backtesting, risk, execution, orders, portfolio, positions, trades,
-paper/live trading, brokers, scheduled jobs, extra HTTP APIs.
+Gold layer, downloaded calendars, exchange connectivity, vendor APIs,
+corporate actions, splits/dividends, strategies, signals, backtesting, risk,
+execution, orders, portfolio, positions, trades, paper/live trading, brokers,
+scheduled jobs, extra HTTP APIs.

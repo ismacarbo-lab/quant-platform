@@ -14,6 +14,7 @@ from quant_platform.data.models import IngestionRun, IngestionStatus
 from quant_platform.data.repository import (
     create_ingestion_run,
     finish_ingestion_run,
+    get_market_calendar_by_code,
     list_ingestion_errors,
     upsert_data_source,
 )
@@ -34,6 +35,16 @@ def main(argv: list[str] | None = None) -> int:
         "--fail-fast",
         action="store_true",
         help="Stop on the first invalid row (default: collect-errors).",
+    )
+    parser.add_argument(
+        "--calendar",
+        default=None,
+        help="Existing market_calendars.code to attach to ingested instruments.",
+    )
+    parser.add_argument(
+        "--validate-calendar",
+        action="store_true",
+        help="Reject bars on closed/missing sessions (default: off).",
     )
     args = parser.parse_args(argv)
 
@@ -62,10 +73,24 @@ def main(argv: list[str] | None = None) -> int:
         source = upsert_data_source(
             session, name=args.source, vendor=args.vendor, description="local CSV"
         )
+        calendar_id = None
+        if args.calendar:
+            calendar = get_market_calendar_by_code(session, code=args.calendar)
+            if calendar is None:
+                print(
+                    f"error: unknown calendar {args.calendar!r}",
+                    file=sys.stderr,
+                )
+                return 1
+            calendar_id = calendar.id
         run = create_ingestion_run(
             session,
             source_id=source.id,
-            run_metadata={"kind": "local_csv", "error_mode": error_mode.value},
+            run_metadata={
+                "kind": "local_csv",
+                "error_mode": error_mode.value,
+                "validate_calendar": args.validate_calendar,
+            },
         )
         session.commit()
         run_id = run.id
@@ -78,6 +103,8 @@ def main(argv: list[str] | None = None) -> int:
             currency=args.currency,
             exchange=args.exchange,
             error_mode=error_mode,
+            validate_calendar=args.validate_calendar,
+            calendar_id=calendar_id,
         )
         accepted = result.accepted_count
         rejected = result.rejected_count
@@ -120,6 +147,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"mode={settings.app_mode.value}")
     print(f"source={args.source}")
     print(f"error_mode={error_mode.value}")
+    print(f"validate_calendar={args.validate_calendar}")
     print(f"accepted_count={accepted}")
     print(f"rejected_count={rejected}")
     print(f"inserted_rows={inserted}")

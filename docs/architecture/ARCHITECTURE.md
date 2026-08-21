@@ -1,7 +1,8 @@
-# Architecture — Phase 1.1
+# Architecture — Phase 1.2
 
-Status: research ingestion with bronze audit and silver daily bars. No
-strategies, brokers, or execution.
+Status: research ingestion with bronze audit, silver daily bars, composite
+instrument identity, and manual calendars. No strategies, brokers, or
+execution.
 
 ## Modular monolith
 
@@ -24,7 +25,7 @@ Documented future areas (no empty implementation packages in Phase 0):
 |------|----------------|---------|
 | `core` | Shared primitives, settings | implemented |
 | `domain` | Canonical types and invariants | documented |
-| `data` | Ingest, bronze/silver/gold, PIT | bronze raw+errors, silver daily_bars |
+| `data` | Ingest, bronze/silver/gold, PIT | bronze, silver bars, identity, calendars |
 | `storage` | Persistence adapters | engine/session only |
 | `research` | Notebooks, experiment runners | not implemented |
 | `backtesting` | Simulation engine | not implemented |
@@ -79,17 +80,21 @@ and any other value. There is no broker endpoint configuration.
 
 ## Data architecture
 
-Three layers. Phase 1.1 stores **bronze raw rows and errors** plus
-**normalized daily bars** (silver) from a **local CSV** (a labelled source,
-not a live vendor). Gold feature tables are still future work.
+Three layers. Phase 1.2 stores **bronze raw rows and errors**, **normalized
+daily bars** (silver), composite **instrument identity**, and **manual
+calendars**. Gold feature tables are still future work.
 
 1. **RAW / BRONZE** — CSV row payload as received, SHA-256 content hash,
    `ingestion_run` provenance, and row-level `ingestion_errors`.
 2. **NORMALIZED / SILVER** — canonical internal schema (`daily_bars`).
    Corrections are new PIT rows (`available_time` must move forward); history
-   is not overwritten.
+   is not overwritten. `is_correction` / `supersedes_daily_bar_id` document
+   the link.
 3. **DERIVED / GOLD** — features, datasets, signals, model outputs, and
    backtest artifacts, all versioned (not implemented).
+
+Instruments are keyed by `(symbol, asset_class, exchange, currency)` using
+PostgreSQL `UNIQUE NULLS NOT DISTINCT`. Calendars are local fixtures only.
 
 As-of reads: `available_time <= simulation_time`, latest correction per
 observation. See [docs/data/DATA_INGESTION.md](../data/DATA_INGESTION.md).
@@ -139,10 +144,12 @@ an operation; execution must not be reachable from strategy code.
 ## Persistence
 
 PostgreSQL is the system of record. SQLAlchemy 2.x and Alembic are
-wired. Phase 1.1 stores research ingestion tables only: `data_sources`,
-`instruments`, `ingestion_runs`, `raw_ingestion_records`, `ingestion_errors`,
-`daily_bars`. There are still **no** orders, fills, trades, strategies, or
-broker tables. SQLite is rejected.
+wired. Phase 1.2 stores research ingestion tables only: `data_sources`,
+`instruments`, `instrument_identifiers`, `market_calendars`, `market_sessions`,
+`ingestion_runs`, `raw_ingestion_records`, `ingestion_errors`, `daily_bars`.
+There are still **no** orders, fills, trades, strategies, or broker tables.
+SQLite is rejected. Instrument uniqueness uses PostgreSQL
+`UNIQUE NULLS NOT DISTINCT` (PG 15+).
 
 Daily bars require timezone-aware UTC timestamps and
 `available_time > observation_time` (strict).
