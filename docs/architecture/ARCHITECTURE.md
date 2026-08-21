@@ -1,0 +1,140 @@
+# Architecture — Phase 0
+
+Status: foundation only. No strategies, market data, brokers, or execution.
+
+## Modular monolith
+
+`quant_platform` is a **modular monolith**: one deployable Python package
+with explicit module boundaries. Future features land in the same process
+until a measured operational need appears.
+
+```
+src/quant_platform/
+  core/         configuration, UTC clock, identifiers
+  storage/      PostgreSQL engine/session, SQLAlchemy Base
+  monitoring/   structured logging
+  api/          internal HTTP surface (health)
+```
+
+Documented future areas (no empty implementation packages in Phase 0):
+
+| Area | Responsibility | Phase 0 |
+|------|----------------|---------|
+| `core` | Shared primitives, settings | implemented |
+| `domain` | Canonical types and invariants | documented |
+| `data` | Ingest, bronze/silver/gold, PIT | documented |
+| `storage` | Persistence adapters | engine/session only |
+| `research` | Notebooks, experiment runners | not implemented |
+| `backtesting` | Simulation engine | not implemented |
+| `strategies` | Signal generation | not implemented |
+| `ml` | Model training/inference | not implemented |
+| `portfolio` | Positions, target holdings | not implemented |
+| `risk` | Pre-trade and portfolio checks | not implemented (critical future) |
+| `execution` | Order lifecycle, broker adapters | not implemented (critical future) |
+| `monitoring` | Logs, later metrics/traces | structured logs only |
+| `api` | Internal HTTP | `/health` only |
+
+## Dependency direction
+
+Allowed direction is inward toward `core` / `domain`. Infrastructure
+adapters (`storage`, broker adapters later) depend on domain ports, not
+the reverse.
+
+**Hard restriction:** `strategy` must never depend on a broker.
+
+Future operational flow (not implemented in Phase 0):
+
+```text
+SIGNAL
+  -> VALIDATION
+  -> RISK CHECK          (may reject)
+  -> PORTFOLIO / EXECUTION GATE
+  -> HUMAN APPROVAL OR PAPER MODE
+  -> ORDER
+  -> BROKER ADAPTER
+```
+
+```mermaid
+flowchart LR
+  S[Strategy / signal] --> V[Validation]
+  V --> R[Risk engine]
+  R -->|reject| X[No order]
+  R -->|accept| G[Portfolio / execution gate]
+  G --> A[Human approval or paper mode]
+  A --> O[Order]
+  O --> B[Broker adapter]
+```
+
+- Risk is a gate, not a helper inside the strategy.
+- Execution and strategy stay decoupled.
+- Paper trading may appear later; **live trading is not enabled** and is
+  not a valid `APP_MODE` in this phase.
+
+## Application mode
+
+The process starts in **research** mode. Settings reject `live`, `paper`,
+and any other value. There is no broker endpoint configuration.
+
+## Data architecture (future)
+
+Three layers. None of the tables or pipelines exist yet; the contract is
+binding for later work.
+
+1. **RAW / BRONZE** — original vendor payload, immutable, with content
+   hash and provenance (source, request identity, ingest path).
+2. **NORMALIZED / SILVER** — canonical internal schema, independent of
+   vendor field names.
+3. **DERIVED / GOLD** — features, datasets, signals, model outputs, and
+   backtest artifacts, all versioned.
+
+### Point-in-time timestamps
+
+When a time-dependent observation is stored or consumed, distinguish at
+least:
+
+| Field | Meaning |
+|-------|---------|
+| `event_time` / `effective_time` | When the economic event occurred |
+| `published_time` | When the vendor published it |
+| `available_time` | Earliest time the observation could have been known |
+| `ingested_at` | When this platform stored it (UTC) |
+| `revision` / `version` | Correction identity |
+
+### Look-ahead invariant
+
+A historical dataset used by a strategy or model **must not** include
+observations where:
+
+```text
+available_time > simulation_time
+```
+
+This is a critical future invariant against look-ahead / data leakage.
+
+## Time and identifiers
+
+- All internal timestamps are timezone-aware UTC (`quant_platform.core.time.utc_now`).
+- Run/correlation ids come from `quant_platform.core.ids.new_run_id` and
+  can be bound into structured logs.
+
+## Observability
+
+Phase 0 uses a single JSON logging pattern (`quant_platform.monitoring.logging`).
+There is no metrics platform, tracing backend, or alerting stack yet.
+Secret-like extra keys are redacted.
+
+## Risk Engine and Execution Engine
+
+These will be **critical** future components. They are not implemented
+here (including no placeholder kill switch). Risk must be able to reject
+an operation; execution must not be reachable from strategy code.
+
+## Persistence
+
+PostgreSQL is the system of record. SQLAlchemy 2.x and Alembic are
+wired. Phase 0 stores **no** candles, quotes, trades, orders, fills, or
+strategy tables. SQLite is rejected by configuration.
+
+## API
+
+`GET /health` is process-local and does not touch PostgreSQL or vendors.

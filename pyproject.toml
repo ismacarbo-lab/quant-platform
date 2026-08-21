@@ -1,0 +1,66 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "quant-platform"
+version = "0.1.0"
+description = "Foundation for a quantitative research platform (Phase 0). No trading, brokers, or market-data integrations."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "alembic>=1.14",
+    "fastapi>=0.115",
+    "pydantic-settings>=2.6",
+    "psycopg[binary]>=3.2",
+    "sqlalchemy>=2.0.36",
+    "uvicorn>=0.32",
+]
+
+[dependency-groups]
+dev = [
+    "hypothesis>=6.122",
+    "httpx>=0.28",
+    "mypy>=1.13",
+    "pytest>=8.3",
+    "ruff>=0.8",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/quant_platform"]
+
+[tool.uv]
+package = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = ["-q", "--strict-markers"]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 88
+src = ["src", "tests"]
+extend-exclude = [
+    "AI_VENTURE_OS_PROMPTS",
+    "AI_VENTURE_OS_PROMPTS.zip",
+    ".tools",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "S", "RUF"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S104", "S105"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+mypy_path = "src"
+packages = ["quant_platform"]
+warn_unused_ignores = true
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = ["alembic.*"]
+ignore_missing_imports = true

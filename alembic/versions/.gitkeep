@@ -1,0 +1,2 @@
+# Keep this directory so Alembic can locate revision scripts.
+# Phase 0 has no schema revisions: there are no financial tables yet.

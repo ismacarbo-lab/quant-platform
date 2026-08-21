@@ -1,0 +1,25 @@
+# Local development PostgreSQL only.
+# Credentials are fictional placeholders and must never be used in production.
+# Override via docker-compose.override.yml or environment variables if needed.
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: quant-platform-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-quant}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-quant_dev_only_not_for_production}
+      POSTGRES_DB: ${POSTGRES_DB:-quant_platform}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - quant_platform_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-quant} -d ${POSTGRES_DB:-quant_platform}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  quant_platform_pgdata:

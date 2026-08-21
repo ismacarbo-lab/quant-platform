@@ -1,0 +1,55 @@
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+**/secrets/**
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+.tools/
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Tooling
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.hypothesis/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Runtime
+*.log
+logs/
+tmp/
+.cache/
+
+# Local databases (never substitute SQLite for PostgreSQL in this project)
+*.sqlite
+*.sqlite3
+*.db
+
+# Docker local overrides
+docker-compose.override.yml
+
+# Pre-existing unrelated workspace (separate product; has its own git history)
+AI_VENTURE_OS_PROMPTS/
+AI_VENTURE_OS_PROMPTS.zip
