@@ -1,7 +1,6 @@
 """Ping local PostgreSQL using application settings.
 
-Creates no tables and does not touch financial vendors. Intended for
-Phase 0.1 runtime verification:
+Creates no tables and does not touch financial vendors.
 
     uv run python scripts/check-db.py
 """
@@ -11,6 +10,7 @@ from __future__ import annotations
 import sys
 
 from quant_platform.core.config import get_settings
+from quant_platform.core.redact import redact_secret_text
 from quant_platform.storage.database import (
     create_db_engine,
     list_public_tables,
@@ -31,8 +31,12 @@ def main() -> int:
 
     engine = create_db_engine(settings, connect_timeout_seconds=5)
     try:
-        ping_database(engine)
-        tables = list_public_tables(engine)
+        try:
+            ping_database(engine)
+            tables = list_public_tables(engine)
+        except Exception as exc:
+            print(f"error: {redact_secret_text(str(exc))}", file=sys.stderr)
+            return 1
     finally:
         engine.dispose()
 

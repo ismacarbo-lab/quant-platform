@@ -80,3 +80,22 @@ def test_secret_like_extra_fields_are_redacted() -> None:
     assert payload["api_key"] == "[redacted]"
     assert payload["token"] == "[redacted]"
     assert "should-not-appear" not in stream.getvalue()
+
+
+def test_database_url_password_is_redacted_in_log_message() -> None:
+    stream = StringIO()
+    handler = logging.StreamHandler(stream)
+    handler.setFormatter(JsonLogFormatter())
+    log = get_logger("tests.url")
+    log.handlers.clear()
+    log.addHandler(handler)
+    log.setLevel(logging.INFO)
+    log.propagate = False
+    log.info(
+        "connect %s",
+        "postgresql+psycopg://quant:leaked-pass@127.0.0.1:5434/quant_platform",
+    )
+    rendered = stream.getvalue()
+    assert "leaked-pass" not in rendered
+    payload = json.loads(rendered)
+    assert "[redacted]" in payload["message"]

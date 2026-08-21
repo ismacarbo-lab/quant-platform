@@ -37,7 +37,7 @@ testpaths = ["tests"]
 pythonpath = ["src"]
 addopts = ["-q", "--strict-markers"]
 markers = [
-    "postgres: requires local PostgreSQL from docker compose",
+    "postgres: requires PostgreSQL (Compose locally, or CI service). Skips if unreachable unless QUANT_PLATFORM_REQUIRE_POSTGRES=1.",
 ]
 
 [tool.ruff]

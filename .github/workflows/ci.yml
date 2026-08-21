@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: lint-typecheck-fast-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.13"
+          enable-cache: true
+      - name: Install dependencies
+        run: uv sync --frozen
+      - name: Ruff lint
+        run: uv run ruff check .
+      - name: Ruff format
+        run: uv run ruff format --check .
+      - name: mypy
+        run: uv run mypy src
+      - name: Fast tests (no PostgreSQL)
+        run: uv run pytest -m "not postgres"
+      - name: Docker Compose config
+        run: docker compose config
+
+  postgres:
+    name: postgres-integration
+    runs-on: ubuntu-latest
+    env:
+      APP_MODE: research
+      DATABASE_URL: postgresql+psycopg://quant:quant_dev_only_not_for_production@127.0.0.1:5432/quant_platform
+      QUANT_PLATFORM_REQUIRE_POSTGRES: "1"
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: quant
+          POSTGRES_PASSWORD: quant_dev_only_not_for_production
+          POSTGRES_DB: quant_platform
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U quant -d quant_platform"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.13"
+          enable-cache: true
+      - name: Install dependencies
+        run: uv sync --frozen
+      - name: PostgreSQL tests
+        run: uv run pytest -m postgres
+      - name: Database ping
+        run: uv run python scripts/check-db.py

@@ -56,15 +56,25 @@ cp .env.example .env
 
 ## Tests
 
+Fast tests (no Docker, no PostgreSQL):
+
+```bash
+uv run pytest -m "not postgres"
+```
+
+All tests (Postgres-marked tests skip if the database is down):
+
 ```bash
 uv run pytest
 ```
 
-Unit tests do not call the network and do not require PostgreSQL to be running.
+Postgres-only:
 
-Integration tests that need PostgreSQL skip cleanly if the database is down
-(`tests/integration/test_postgres_connection.py`). With Compose up they run
-`SELECT 1` and assert that no domain tables exist.
+```bash
+uv run pytest -m postgres
+```
+
+Full command list: [docs/development/DEVELOPER_WORKFLOW.md](docs/development/DEVELOPER_WORKFLOW.md).
 
 ## Quality gates
 
@@ -72,8 +82,12 @@ Integration tests that need PostgreSQL skip cleanly if the database is down
 uv run ruff check .
 uv run ruff format --check .
 uv run mypy src
-uv run pytest
+uv run pytest -m "not postgres"
+docker compose config
 ```
+
+Or `make quality`. GitHub Actions (`.github/workflows/ci.yml`) runs the same
+fast path on every push/PR, plus an optional Postgres job. No GitHub secrets.
 
 ## PostgreSQL (local development)
 
@@ -148,6 +162,9 @@ GET /health
 ```
 
 It does not query the database or any external service.
+
+See [docs/development/DEVELOPER_WORKFLOW.md](docs/development/DEVELOPER_WORKFLOW.md)
+for install, Compose, Alembic, port 5434 conflicts, and CI.
 
 ## Architecture
 

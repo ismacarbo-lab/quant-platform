@@ -17,6 +17,7 @@ from typing import Any, Final
 
 from quant_platform.core.config import Settings
 from quant_platform.core.ids import new_run_id
+from quant_platform.core.redact import redact_secret_text
 
 _run_id: ContextVar[str | None] = ContextVar("quant_platform_run_id", default=None)
 
@@ -65,6 +66,8 @@ def bound_run_id(run_id: str | None = None) -> Iterator[str]:
 def _redact(key: str, value: Any) -> Any:
     if key.lower() in _SECRET_KEYS:
         return "[redacted]"
+    if isinstance(value, str):
+        return redact_secret_text(value)
     return value
 
 
@@ -77,13 +80,15 @@ class JsonLogFormatter(logging.Formatter):
             "timestamp": timestamp,
             "level": record.levelname,
             "component": record.name,
-            "message": record.getMessage(),
+            "message": redact_secret_text(record.getMessage()),
         }
         run_id = getattr(record, "run_id", None) or get_run_id()
         if run_id:
             payload["run_id"] = run_id
         if record.exc_info:
-            payload["exc_info"] = self.formatException(record.exc_info)
+            payload["exc_info"] = redact_secret_text(
+                self.formatException(record.exc_info)
+            )
         for key, value in record.__dict__.items():
             if key in payload or key.startswith("_"):
                 continue

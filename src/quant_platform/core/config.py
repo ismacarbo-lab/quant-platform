@@ -12,6 +12,8 @@ from functools import lru_cache
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from quant_platform.core.redact import redact_secret_text
+
 
 class AppMode(StrEnum):
     """Operational mode.
@@ -81,6 +83,11 @@ class Settings(BaseSettings):
     @property
     def is_research_mode(self) -> bool:
         return self.app_mode is AppMode.RESEARCH
+
+    @property
+    def database_url_display(self) -> str:
+        """DATABASE_URL with the password masked. Safe for logs and errors."""
+        return redact_secret_text(self.database_url)
 
 
 @lru_cache(maxsize=1)

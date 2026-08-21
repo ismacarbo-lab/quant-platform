@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import Iterator
 
 import pytest
@@ -11,6 +12,7 @@ from sqlalchemy.exc import OperationalError
 
 from quant_platform.api.app import create_app
 from quant_platform.core.config import Settings
+from quant_platform.core.redact import redact_secret_text
 from quant_platform.storage.database import (
     create_db_engine,
     list_public_tables,
@@ -46,7 +48,9 @@ def postgres_engine(live_settings: Settings) -> Iterator[Engine]:
         ping_database(engine)
     except OperationalError as exc:
         engine.dispose()
-        pytest.skip(f"PostgreSQL is not reachable: {exc}")
+        if os.environ.get("QUANT_PLATFORM_REQUIRE_POSTGRES") == "1":
+            raise
+        pytest.skip(f"PostgreSQL is not reachable: {redact_secret_text(str(exc))}")
     yield engine
     engine.dispose()
 

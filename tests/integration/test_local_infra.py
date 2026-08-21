@@ -21,3 +21,24 @@ def test_env_example_has_no_live_mode_and_uses_postgres() -> None:
     url_lines = [line for line in text.splitlines() if line.startswith("DATABASE_URL=")]
     assert url_lines
     assert "sqlite" not in url_lines[0].lower()
+
+
+def test_env_is_gitignored_and_example_is_tracked() -> None:
+    gitignore = (ROOT / ".gitignore").read_text(encoding="utf-8")
+    lines = {
+        line.strip()
+        for line in gitignore.splitlines()
+        if line.strip() and not line.startswith("#")
+    }
+    assert ".env" in lines
+    assert ".env.*" in lines
+    assert "!.env.example" in lines
+    assert (ROOT / ".env.example").is_file()
+
+
+def test_ci_workflow_does_not_require_github_secrets() -> None:
+    workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    assert "secrets." not in workflow
+    assert "APP_MODE: research" in workflow
+    assert 'pytest -m "not postgres"' in workflow
+    assert "pytest -m postgres" in workflow
