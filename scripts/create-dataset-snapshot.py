@@ -9,6 +9,7 @@ from pathlib import Path
 
 from quant_platform.core.config import get_settings
 from quant_platform.core.redact import redact_secret_text
+from quant_platform.research.catalog import register_dataset_snapshot
 from quant_platform.research.errors import DatasetErrorCode, DatasetValidationError
 from quant_platform.research.snapshot_types import build_dataset_snapshot_request
 from quant_platform.research.snapshots import create_daily_bars_snapshot
@@ -75,6 +76,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Quality warning threshold for consecutive missing open sessions.",
     )
     parser.add_argument("--notes", default=None, help="Optional snapshot note.")
+    parser.add_argument(
+        "--register",
+        action="store_true",
+        help="Store snapshot metadata in the PostgreSQL catalog.",
+    )
     args = parser.parse_args(argv)
 
     settings = get_settings()
@@ -105,12 +111,21 @@ def main(argv: list[str] | None = None) -> int:
     engine = create_db_engine(settings, connect_timeout_seconds=5)
     factory = create_session_factory(engine)
     session = factory()
+    catalog_action: str | None = None
     try:
         result = create_daily_bars_snapshot(session, request, args.output_dir)
+        if args.register:
+            registration = register_dataset_snapshot(
+                session, result.manifest, base_path=args.output_dir
+            )
+            session.commit()
+            catalog_action = registration.action
     except DatasetValidationError as exc:
+        session.rollback()
         print(f"error: {exc} ({exc.code})", file=sys.stderr)
         return 1
     except Exception as exc:
+        session.rollback()
         print(f"error: {redact_secret_text(str(exc))}", file=sys.stderr)
         return 1
     finally:
@@ -126,6 +141,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"quality_hash={manifest.quality_hash}")
     print(f"manifest_hash={manifest.manifest_hash}")
     print(f"manifest={result.manifest_path}")
+    if catalog_action is not None:
+        print(f"catalog={catalog_action}")
     return 0
 
 

@@ -23,6 +23,7 @@ _ALLOWED_TABLES = frozenset(
         "instrument_identifiers",
         "exchanges",
         "corporate_actions",
+        "dataset_snapshots",
     }
 )
 _TRADING_TABLES = frozenset(

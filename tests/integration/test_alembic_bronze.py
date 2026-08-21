@@ -22,6 +22,7 @@ _IDENTITY_TABLES = frozenset(
     {"market_calendars", "market_sessions", "instrument_identifiers"}
 )
 _MASTER_TABLES = frozenset({"exchanges", "corporate_actions"})
+_CATALOG_TABLES = frozenset({"dataset_snapshots"})
 _SILVER_TABLES = frozenset(
     {"data_sources", "instruments", "ingestion_runs", "daily_bars"}
 )
@@ -37,6 +38,7 @@ def test_bronze_revision_downgrade_and_upgrade(postgres_engine: Engine) -> None:
         assert tables.isdisjoint(_BRONZE_TABLES)
         assert tables.isdisjoint(_IDENTITY_TABLES)
         assert tables.isdisjoint(_MASTER_TABLES)
+        assert tables.isdisjoint(_CATALOG_TABLES)
         assert _SILVER_TABLES <= tables
     finally:
         command.upgrade(cfg, "head")
@@ -46,6 +48,7 @@ def test_bronze_revision_downgrade_and_upgrade(postgres_engine: Engine) -> None:
     assert _SILVER_TABLES <= tables
     assert _IDENTITY_TABLES <= tables
     assert _MASTER_TABLES <= tables
+    assert _CATALOG_TABLES <= tables
 
 
 def test_identity_revision_downgrade_and_upgrade(postgres_engine: Engine) -> None:
@@ -57,6 +60,7 @@ def test_identity_revision_downgrade_and_upgrade(postgres_engine: Engine) -> Non
         tables = set(list_public_tables(postgres_engine))
         assert tables.isdisjoint(_IDENTITY_TABLES)
         assert tables.isdisjoint(_MASTER_TABLES)
+        assert tables.isdisjoint(_CATALOG_TABLES)
         assert _BRONZE_TABLES <= tables
         assert _SILVER_TABLES <= tables
     finally:
@@ -66,6 +70,7 @@ def test_identity_revision_downgrade_and_upgrade(postgres_engine: Engine) -> Non
     assert _IDENTITY_TABLES <= tables
     assert _BRONZE_TABLES <= tables
     assert _MASTER_TABLES <= tables
+    assert _CATALOG_TABLES <= tables
 
 
 def test_master_revision_downgrade_and_upgrade(postgres_engine: Engine) -> None:
@@ -76,6 +81,7 @@ def test_master_revision_downgrade_and_upgrade(postgres_engine: Engine) -> None:
         inspect(postgres_engine).clear_cache()
         tables = set(list_public_tables(postgres_engine))
         assert tables.isdisjoint(_MASTER_TABLES)
+        assert tables.isdisjoint(_CATALOG_TABLES)
         assert _IDENTITY_TABLES <= tables
         assert _BRONZE_TABLES <= tables
         assert _SILVER_TABLES <= tables
@@ -85,3 +91,4 @@ def test_master_revision_downgrade_and_upgrade(postgres_engine: Engine) -> None:
     tables = set(list_public_tables(postgres_engine))
     assert _MASTER_TABLES <= tables
     assert _IDENTITY_TABLES <= tables
+    assert _CATALOG_TABLES <= tables

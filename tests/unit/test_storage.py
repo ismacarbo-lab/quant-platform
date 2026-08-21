@@ -16,7 +16,7 @@ def test_base_registers_ingestion_tables_not_trading() -> None:
     assert {"data_sources", "instruments", "ingestion_runs", "daily_bars"} <= names
     assert {"raw_ingestion_records", "ingestion_errors"} <= names
     assert {"market_calendars", "market_sessions", "instrument_identifiers"} <= names
-    assert {"exchanges", "corporate_actions"} <= names
+    assert {"exchanges", "corporate_actions", "dataset_snapshots"} <= names
     assert names.isdisjoint({"orders", "trades", "fills", "signals", "strategies"})
     assert {DailyBar.__tablename__, DataSource.__tablename__} <= names
     assert Instrument.__tablename__ in names

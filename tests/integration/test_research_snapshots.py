@@ -49,6 +49,7 @@ _RESEARCH_TABLES = frozenset(
         "market_calendars",
         "market_sessions",
         "raw_ingestion_records",
+        "dataset_snapshots",
     }
 )
 

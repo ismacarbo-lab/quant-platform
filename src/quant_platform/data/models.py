@@ -453,3 +453,58 @@ class IngestionError(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utc_now
     )
+
+
+class DatasetSnapshotRecord(Base):
+    """Catalog metadata for a local research snapshot. Does not store OHLCV rows."""
+
+    __tablename__ = "dataset_snapshots"
+    __table_args__ = (
+        UniqueConstraint("snapshot_id", name="uq_dataset_snapshots_snapshot_id"),
+        UniqueConstraint("manifest_hash", name="uq_dataset_snapshots_manifest_hash"),
+        CheckConstraint("row_count >= 0", name="ck_dataset_snapshots_row_count"),
+        CheckConstraint(
+            "instrument_count >= 0", name="ck_dataset_snapshots_instrument_count"
+        ),
+        CheckConstraint(
+            "warning_count >= 0", name="ck_dataset_snapshots_warning_count"
+        ),
+        CheckConstraint("error_count >= 0", name="ck_dataset_snapshots_error_count"),
+        Index("ix_dataset_snapshots_content_hash", "content_hash"),
+        Index("ix_dataset_snapshots_as_of", "as_of"),
+        Index("ix_dataset_snapshots_window", "start_time", "end_time"),
+        Index("ix_dataset_snapshots_git_commit", "git_commit"),
+        Index("ix_dataset_snapshots_is_usable", "is_usable"),
+        Index("ix_dataset_snapshots_error_count", "error_count"),
+    )
+
+    id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), primary_key=True, default=uuid4
+    )
+    snapshot_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    content_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    quality_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    manifest_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    package_version: Mapped[str] = mapped_column(String(32), nullable=False)
+    git_commit: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    as_of: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    start_time: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    row_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    instrument_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    warning_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    error_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    is_reproducible: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    is_usable: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    dataset_request: Mapped[dict[str, object]] = mapped_column(JSONB, nullable=False)
+    quality_summary: Mapped[dict[str, object]] = mapped_column(JSONB, nullable=False)
+    artifacts: Mapped[list[dict[str, object]]] = mapped_column(JSONB, nullable=False)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    registered_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )

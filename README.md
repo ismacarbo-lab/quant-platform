@@ -8,8 +8,9 @@ an internal health API, **local CSV daily-bar ingestion** with point-in-time
 timestamps, a **bronze audit layer**, an **instrument master** (exchanges,
 composite identity, identifiers), **manual calendars**, **stored
 corporate actions** (not applied to prices), a **research dataset API**
-(`as_of` required), **dataset quality reports**, and **local dataset
-snapshots**. It is **not** a trading system.
+(`as_of` required), **dataset quality reports**, **local dataset
+snapshots**, and a **PostgreSQL snapshot catalog**. It is **not** a trading
+system.
 
 A pre-existing tree named `AI_VENTURE_OS_PROMPTS/` may sit next to this
 project. It is a separate product and is **not** part of `quant_platform`.
@@ -24,6 +25,7 @@ Do not mix the two.
 - Diagnose dataset coverage, calendar gaps, PIT corrections, and ingestion errors
   before any backtest exists.
 - Save a local, hashed snapshot of a dataset request, CSV, and quality report.
+- Register snapshot metadata in PostgreSQL (hashes, request, relative artifacts).
 
 ## What is not implemented
 
@@ -154,8 +156,8 @@ postgresql+psycopg://quant:quant_dev_only_not_for_production@127.0.0.1:5434/quan
 ```
 
 There are still **no** trading tables (orders, fills, signals, strategies).
-Alembic revisions `0001_ingestion` … `0004_master` create research ingestion
-and instrument-master tables only.
+Alembic revisions `0001_ingestion` … `0005_catalog` create research ingestion,
+instrument-master, and snapshot-catalog tables only.
 
 ## Migrations
 
@@ -196,6 +198,8 @@ Dataset quality reports (coverage, calendars, PIT, ingestion errors):
 [docs/research/DATASET_QUALITY.md](docs/research/DATASET_QUALITY.md).
 Reproducible local snapshots (CSV + quality JSON + hashed manifest):
 [docs/research/DATASET_SNAPSHOTS.md](docs/research/DATASET_SNAPSHOTS.md).
+Snapshot catalog (PostgreSQL metadata, hashes, list/compare):
+[docs/research/DATASET_CATALOG.md](docs/research/DATASET_CATALOG.md).
 
 See [docs/development/DEVELOPER_WORKFLOW.md](docs/development/DEVELOPER_WORKFLOW.md)
 for install, Compose, Alembic, port 5434 conflicts, and CI.

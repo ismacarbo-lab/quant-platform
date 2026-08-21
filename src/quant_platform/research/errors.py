@@ -18,6 +18,8 @@ class DatasetErrorCode(StrEnum):
     OUT_OF_RANGE = "out_of_range"
     INVALID_OHLC = "invalid_ohlc"
     CLOSED_SESSION = "closed_session"
+    CATALOG_INVALID = "catalog_invalid"
+    CATALOG_CONFLICT = "catalog_conflict"
 
 
 class DatasetValidationError(ValueError):

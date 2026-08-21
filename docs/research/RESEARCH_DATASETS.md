@@ -122,5 +122,5 @@ uv run pytest -m postgres          # PIT, calendars, corporate actions
 - vendor downloads, ML, LLM runtime
 - dataset quality is documented in [DATASET_QUALITY.md](DATASET_QUALITY.md);
   it is a report, not a backtester
-- local snapshots are documented in [DATASET_SNAPSHOTS.md](DATASET_SNAPSHOTS.md);
-  they are folders on disk, not a catalog or object store
+- local snapshots are documented in [DATASET_SNAPSHOTS.md](DATASET_SNAPSHOTS.md)
+- the snapshot catalog is documented in [DATASET_CATALOG.md](DATASET_CATALOG.md)

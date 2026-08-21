@@ -7,8 +7,8 @@ report, content hashes, package version, and git commit when available.
 This is not a backtester, not object storage, and not an HTTP API. Snapshots
 live on disk next to the operator. No S3/GCS/Azure, no vendors, no trading.
 
-Package: `quant_platform.research.snapshots` (plus `snapshot_types`). No new
-database tables.
+Package: `quant_platform.research.snapshots` (plus `snapshot_types`).
+Local folders only until Phase 2.3 registers metadata in PostgreSQL.
 
 ## What a snapshot stores
 
@@ -82,9 +82,11 @@ uv run python scripts/create-dataset-snapshot.py \
   --output-dir ./artifacts/snapshots/aapl-xnas-2024
 ```
 
-`--as-of` and `--output-dir` are required. The script does not print
-`DATABASE_URL`. Git metadata is `git rev-parse HEAD` in this repository only;
-it does not commit, push, or use `/home/isma`'s accidental git directory.
+`--as-of` and `--output-dir` are required. Optional `--register` stores
+metadata in PostgreSQL; see [DATASET_CATALOG.md](DATASET_CATALOG.md).
+The script does not print `DATABASE_URL`. Git metadata is `git rev-parse HEAD`
+in this repository only; it does not commit, push, or use `/home/isma`'s
+accidental git directory.
 
 Python:
 
@@ -115,12 +117,14 @@ folder. Uncommitted working-tree edits are **not** hashed.
 
 ## Current limitations
 
-- Snapshots are directories, not a catalog table.
+- The CSV/JSON files live on disk; the Phase 2.3 catalog stores **metadata only**.
 - Quality JSON uses the dataset calendar the same way quality reports do
   (diagnostics; holiday bars stay visible in the report). The CSV follows
   `get_daily_bars_dataset` (holiday bars dropped if `calendar_code` is set).
 - `get_git_commit()` returns `None` when git is missing or cwd is not a repo.
 - No cloud upload, no signature besides SHA-256.
+
+Catalog registration and listing: [DATASET_CATALOG.md](DATASET_CATALOG.md).
 
 ## Tests
 

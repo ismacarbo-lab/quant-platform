@@ -137,6 +137,22 @@ uv run python scripts/create-dataset-snapshot.py \
 
 See [docs/research/DATASET_SNAPSHOTS.md](../research/DATASET_SNAPSHOTS.md).
 
+Register snapshot metadata in PostgreSQL (`--register`) and list it:
+
+```bash
+uv run python scripts/create-dataset-snapshot.py \
+  --as-of 2024-01-10T00:00:00Z \
+  --start 2024-01-01T00:00:00Z \
+  --end 2024-01-05T00:00:00Z \
+  --symbol FIXT \
+  --output-dir /tmp/fixt-snapshot \
+  --register
+
+uv run python scripts/list-dataset-snapshots.py --usable-only --json
+```
+
+See [docs/research/DATASET_CATALOG.md](../research/DATASET_CATALOG.md).
+
 Stop (keeps the volume):
 
 ```bash
