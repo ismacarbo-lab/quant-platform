@@ -33,6 +33,25 @@ from quant_platform.research.types import (
 )
 
 
+def list_instruments_for_dataset(
+    session: Session, request: DailyBarsDatasetRequest
+) -> tuple[tuple[Instrument, Exchange | None], ...]:
+    """Return instruments matching the request identity filters.
+
+    Used by dataset quality reports so instruments with zero bars still
+    appear in coverage. ``allow_unfiltered`` without identity filters is
+    the caller's problem; this returns every instrument in that case.
+    """
+    _ensure_validated_request(request)
+    stmt: Select[Any] = (
+        select(Instrument, Exchange)
+        .outerjoin(Exchange, Instrument.exchange_id == Exchange.id)
+        .order_by(Instrument.symbol, Instrument.asset_class, Instrument.id)
+    )
+    stmt = _instrument_filters(stmt, request)
+    return tuple(session.execute(stmt).tuples().all())
+
+
 def get_daily_bars_dataset(
     session: Session,
     request: DailyBarsDatasetRequest,

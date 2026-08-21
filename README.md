@@ -7,8 +7,9 @@ typed configuration, UTC clocks, structured logging, PostgreSQL, Alembic,
 an internal health API, **local CSV daily-bar ingestion** with point-in-time
 timestamps, a **bronze audit layer**, an **instrument master** (exchanges,
 composite identity, identifiers), **manual calendars**, **stored
-corporate actions** (not applied to prices), and a **research dataset API**
-(`as_of` required). It is **not** a trading system.
+corporate actions** (not applied to prices), a **research dataset API**
+(`as_of` required), and **dataset quality reports**. It is **not** a trading
+system.
 
 A pre-existing tree named `AI_VENTURE_OS_PROMPTS/` may sit next to this
 project. It is a separate product and is **not** part of `quant_platform`.
@@ -20,6 +21,8 @@ Do not mix the two.
 - Keep bronze raw records and row-level ingestion errors for audit.
 - Identify instruments by `(symbol, asset_class, exchange_id, currency)`.
 - Build deterministic research datasets with a mandatory `as_of`.
+- Diagnose dataset coverage, calendar gaps, PIT corrections, and ingestion errors
+  before any backtest exists.
 
 ## What is not implemented
 
@@ -188,6 +191,8 @@ Data ingestion (local CSV only):
 
 Research datasets (Python API + optional CSV export):
 [docs/research/RESEARCH_DATASETS.md](docs/research/RESEARCH_DATASETS.md).
+Dataset quality reports (coverage, calendars, PIT, ingestion errors):
+[docs/research/DATASET_QUALITY.md](docs/research/DATASET_QUALITY.md).
 
 See [docs/development/DEVELOPER_WORKFLOW.md](docs/development/DEVELOPER_WORKFLOW.md)
 for install, Compose, Alembic, port 5434 conflicts, and CI.

@@ -108,6 +108,21 @@ uv run python scripts/export-daily-dataset.py \
 
 See [docs/research/RESEARCH_DATASETS.md](../research/RESEARCH_DATASETS.md).
 
+Diagnose coverage, calendar gaps, PIT corrections, and related ingestion
+errors (`--as-of` required):
+
+```bash
+uv run python scripts/report-dataset-quality.py \
+  --as-of 2024-01-10T00:00:00Z \
+  --start 2024-01-01T00:00:00Z \
+  --end 2024-01-05T00:00:00Z \
+  --symbol FIXT \
+  --calendar XNAS
+```
+
+Optional `--output PATH` writes JSON. See
+[docs/research/DATASET_QUALITY.md](../research/DATASET_QUALITY.md).
+
 Stop (keeps the volume):
 
 ```bash

@@ -1,7 +1,8 @@
-# Architecture — Phase 2.0
+# Architecture — Phase 2.1
 
-Status: research ingestion plus an internal **dataset query API**. No LLM
-runtime, strategies, brokers, or execution.
+Status: research ingestion, an internal **dataset query API**, and
+**dataset quality reports**. No LLM runtime, strategies, brokers, or
+execution.
 
 ## Modular monolith
 
@@ -13,7 +14,7 @@ until a measured operational need appears.
 src/quant_platform/
   core/         configuration, UTC clock, identifiers
   data/         local CSV ingest, PIT daily bars, repositories
-  research/     point-in-time dataset queries and CSV export
+  research/     point-in-time dataset queries, CSV export, quality reports
   storage/      PostgreSQL engine/session, SQLAlchemy Base
   monitoring/   structured logging
   api/          internal HTTP surface (health)
@@ -27,7 +28,7 @@ Documented future areas (no empty implementation packages in Phase 0):
 | `domain` | Canonical types and invariants | documented |
 | `data` | Ingest, bronze/silver/gold, PIT | bronze, silver, identity, calendars, CA store |
 | `storage` | Persistence adapters | engine/session only |
-| `research` | Dataset queries, experiment runners | PIT daily-bar datasets; no notebooks |
+| `research` | Dataset queries, experiment runners | PIT daily-bar datasets and quality reports; no notebooks |
 | `backtesting` | Simulation engine | not implemented |
 | `strategies` | Signal generation | not implemented |
 | `ml` | Model training/inference | not implemented |
@@ -105,8 +106,9 @@ research dataset API **requires** `as_of`. See
 [docs/data/DATA_INGESTION.md](../data/DATA_INGESTION.md),
 [INSTRUMENT_MASTER.md](../data/INSTRUMENT_MASTER.md),
 [MARKET_CALENDARS.md](../data/MARKET_CALENDARS.md),
-[CORPORATE_ACTIONS.md](../data/CORPORATE_ACTIONS.md), and
-[RESEARCH_DATASETS.md](../research/RESEARCH_DATASETS.md).
+[CORPORATE_ACTIONS.md](../data/CORPORATE_ACTIONS.md),
+[RESEARCH_DATASETS.md](../research/RESEARCH_DATASETS.md), and
+[DATASET_QUALITY.md](../research/DATASET_QUALITY.md).
 
 ### Point-in-time timestamps
 
@@ -171,8 +173,9 @@ connectivity with `uv run python scripts/check-db.py` (SELECT 1 only).
 
 Application mode remains **research** only.
 
-Phase 2.0 adds `quant_platform.research` for tabular datasets. It does not
-add HTTP routes, gold tables, or Alembic revisions.
+Phase 2.0 adds `quant_platform.research` for tabular datasets. Phase 2.1
+adds quality reports on those datasets. Neither adds HTTP routes, gold
+tables, or Alembic revisions.
 
 ## AI usage boundary
 

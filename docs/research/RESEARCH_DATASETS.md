@@ -98,6 +98,11 @@ dataset = get_daily_bars_dataset(session, request)
 write_daily_bars_csv(dataset, Path("daily-dataset.csv"))
 ```
 
+Quality reports (`get_dataset_quality_report`) consume this API. They do
+**not** filter out holiday bars: closed-session rows must stay visible so
+coverage diagnostics can flag them. See
+[DATASET_QUALITY.md](DATASET_QUALITY.md).
+
 ## Tests
 
 ```bash
@@ -112,3 +117,5 @@ uv run pytest -m postgres          # PIT, calendars, corporate actions
 - adjusted prices, signals, indicators-as-signals
 - backtesting, strategies, portfolio, risk, execution, brokers
 - vendor downloads, ML, LLM runtime
+- dataset quality is documented in [DATASET_QUALITY.md](DATASET_QUALITY.md);
+  it is a report, not a backtester
