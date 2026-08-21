@@ -17,6 +17,9 @@ Phase 1.4 adds:
 
 `APP_MODE` remains **research** only. There is no gold layer.
 
+Research datasets (query API, mandatory `as_of`, CSV export):
+[docs/research/RESEARCH_DATASETS.md](../research/RESEARCH_DATASETS.md).
+
 Details:
 
 - [Instrument master](INSTRUMENT_MASTER.md)
@@ -158,4 +161,5 @@ uv run pytest -m postgres          # needs Postgres; applies migrations
 Gold layer, downloaded calendars, exchange/MIC/FIGI/ISIN APIs, applying
 corporate actions to prices, strategies, signals, backtesting, risk,
 execution, orders, portfolio, positions, trades, paper/live trading, brokers,
-scheduled jobs, extra HTTP APIs.
+scheduled jobs, extra HTTP APIs. Dataset **export** is local CSV only; there
+is no Parquet/pandas layer.

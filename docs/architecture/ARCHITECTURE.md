@@ -1,7 +1,6 @@
-# Architecture — Phase 1.4
+# Architecture — Phase 2.0
 
-Status: research ingestion with an instrument master, manual calendars,
-corporate-action **storage**, and an explicit AI usage boundary. No LLM
+Status: research ingestion plus an internal **dataset query API**. No LLM
 runtime, strategies, brokers, or execution.
 
 ## Modular monolith
@@ -14,6 +13,7 @@ until a measured operational need appears.
 src/quant_platform/
   core/         configuration, UTC clock, identifiers
   data/         local CSV ingest, PIT daily bars, repositories
+  research/     point-in-time dataset queries and CSV export
   storage/      PostgreSQL engine/session, SQLAlchemy Base
   monitoring/   structured logging
   api/          internal HTTP surface (health)
@@ -27,7 +27,7 @@ Documented future areas (no empty implementation packages in Phase 0):
 | `domain` | Canonical types and invariants | documented |
 | `data` | Ingest, bronze/silver/gold, PIT | bronze, silver, identity, calendars, CA store |
 | `storage` | Persistence adapters | engine/session only |
-| `research` | Notebooks, experiment runners | not implemented |
+| `research` | Dataset queries, experiment runners | PIT daily-bar datasets; no notebooks |
 | `backtesting` | Simulation engine | not implemented |
 | `strategies` | Signal generation | not implemented |
 | `ml` | Model training/inference | not implemented |
@@ -100,10 +100,13 @@ PostgreSQL `UNIQUE NULLS NOT DISTINCT`. Calendars are local fixtures only.
 Corporate actions are stored facts; they do not rewrite bars.
 
 As-of reads: `available_time <= simulation_time`, latest correction per
-observation. See [docs/data/DATA_INGESTION.md](../data/DATA_INGESTION.md),
+observation. Ingestion `get_daily_bars` may omit `as_of` for audit. The
+research dataset API **requires** `as_of`. See
+[docs/data/DATA_INGESTION.md](../data/DATA_INGESTION.md),
 [INSTRUMENT_MASTER.md](../data/INSTRUMENT_MASTER.md),
-[MARKET_CALENDARS.md](../data/MARKET_CALENDARS.md), and
-[CORPORATE_ACTIONS.md](../data/CORPORATE_ACTIONS.md).
+[MARKET_CALENDARS.md](../data/MARKET_CALENDARS.md),
+[CORPORATE_ACTIONS.md](../data/CORPORATE_ACTIONS.md), and
+[RESEARCH_DATASETS.md](../research/RESEARCH_DATASETS.md).
 
 ### Point-in-time timestamps
 
@@ -167,6 +170,9 @@ connectivity with `uv run python scripts/check-db.py` (SELECT 1 only).
 `GET /health` still does not query the database.
 
 Application mode remains **research** only.
+
+Phase 2.0 adds `quant_platform.research` for tabular datasets. It does not
+add HTTP routes, gold tables, or Alembic revisions.
 
 ## AI usage boundary
 

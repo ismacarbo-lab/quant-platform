@@ -95,6 +95,19 @@ and `--validate-calendar` (rejects closed sessions). Row errors live in
 [MARKET_CALENDARS.md](../data/MARKET_CALENDARS.md), and
 [CORPORATE_ACTIONS.md](../data/CORPORATE_ACTIONS.md).
 
+Export a point-in-time daily dataset (`--as-of` required):
+
+```bash
+uv run python scripts/export-daily-dataset.py \
+  --as-of 2024-01-10T00:00:00Z \
+  --start 2024-01-01T00:00:00Z \
+  --end 2024-01-05T00:00:00Z \
+  --symbol FIXT \
+  --output /tmp/daily-dataset.csv
+```
+
+See [docs/research/RESEARCH_DATASETS.md](../research/RESEARCH_DATASETS.md).
+
 Stop (keeps the volume):
 
 ```bash

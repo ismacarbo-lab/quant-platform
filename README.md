@@ -6,8 +6,9 @@ This repository currently provides a **research-only** software base:
 typed configuration, UTC clocks, structured logging, PostgreSQL, Alembic,
 an internal health API, **local CSV daily-bar ingestion** with point-in-time
 timestamps, a **bronze audit layer**, an **instrument master** (exchanges,
-composite identity, identifiers), **manual calendars**, and **stored
-corporate actions** (not applied to prices). It is **not** a trading system.
+composite identity, identifiers), **manual calendars**, **stored
+corporate actions** (not applied to prices), and a **research dataset API**
+(`as_of` required). It is **not** a trading system.
 
 A pre-existing tree named `AI_VENTURE_OS_PROMPTS/` may sit next to this
 project. It is a separate product and is **not** part of `quant_platform`.
@@ -18,6 +19,7 @@ Do not mix the two.
 - Load local daily OHLCV CSV into PostgreSQL with point-in-time fields.
 - Keep bronze raw records and row-level ingestion errors for audit.
 - Identify instruments by `(symbol, asset_class, exchange_id, currency)`.
+- Build deterministic research datasets with a mandatory `as_of`.
 
 ## What is not implemented
 
@@ -183,6 +185,9 @@ Data ingestion (local CSV only):
 [docs/data/INSTRUMENT_MASTER.md](docs/data/INSTRUMENT_MASTER.md),
 [docs/data/MARKET_CALENDARS.md](docs/data/MARKET_CALENDARS.md),
 [docs/data/CORPORATE_ACTIONS.md](docs/data/CORPORATE_ACTIONS.md).
+
+Research datasets (Python API + optional CSV export):
+[docs/research/RESEARCH_DATASETS.md](docs/research/RESEARCH_DATASETS.md).
 
 See [docs/development/DEVELOPER_WORKFLOW.md](docs/development/DEVELOPER_WORKFLOW.md)
 for install, Compose, Alembic, port 5434 conflicts, and CI.
