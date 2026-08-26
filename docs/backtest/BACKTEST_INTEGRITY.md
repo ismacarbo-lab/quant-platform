@@ -1,4 +1,4 @@
-# Backtest artifact integrity — Phase 4.1 / 4.2
+# Backtest artifact integrity — Phase 4.1 / 4.2 / 4.3
 
 Read-only checks that a local dry-run backtest folder still matches its
 manifest and, when asked, the PostgreSQL `backtest_runs` catalog.
@@ -22,6 +22,7 @@ economically interesting.
 Engine: [BACKTEST_ENGINE.md](BACKTEST_ENGINE.md).
 Policy: [NOOP_POLICY.md](NOOP_POLICY.md).
 Research policy interface: [RESEARCH_POLICY_INTERFACE.md](RESEARCH_POLICY_INTERFACE.md).
+Policy output: [POLICY_OUTPUT_INTEGRITY.md](POLICY_OUTPUT_INTEGRITY.md).
 Replay readiness (different gate): [BACKTEST_READINESS.md](../simulation/BACKTEST_READINESS.md).
 
 ## What is verified
@@ -43,6 +44,7 @@ For a backtest directory:
 - `policy_output_hash` matches `policy_output.json`
 - summary counts match the nested `manifest.summary` object and the
   warnings/errors lists
+- observation kinds, severities, and UTC timestamps in `policy_output.json`
 - observations do not contain investment-decision wording
 - no `DATABASE_URL`, passwords, or connection-string markers
 
@@ -92,8 +94,8 @@ Scripts and this document use the field-level diff.
 
 ## `usable_result`
 
-`evaluate_backtest_result_usability` answers: is this registered NoOp
-result intact enough to keep as research evidence?
+`evaluate_backtest_result_usability` answers: is this registered
+research-policy result intact enough to keep as evidence?
 
 `usable_result` is true only when:
 
@@ -102,7 +104,10 @@ result intact enough to keep as research evidence?
 - catalog `is_reproducible` and `is_usable` are true
 - catalog `error_count == 0`
 - local artifact verification has no errors
-- `policy_name` is `noop`
+- `policy_name` is a registered research policy (`noop` or
+  `event_counting`)
+- `policy_output_ok` is true (valid `policy_output.json`, matching hash,
+  no operative wording)
 - `backtest_hash` and `manifest_hash` look like `sha256:<64 hex>`
 
 If `replay_id` is missing from `simulation_replay_runs`, the report adds a
@@ -122,6 +127,10 @@ uv run python scripts/verify-backtest-run.py \
 uv run python scripts/verify-backtest-run.py \
   --run-dir /tmp/fixt-backtest \
   --json
+uv run python scripts/verify-policy-output.py \
+  --backtest-run-dir /tmp/fixt-backtest
+uv run python scripts/report-policy-output.py \
+  --backtest-run-dir /tmp/fixt-backtest
 ```
 
 `--base-dir` for catalog/usability may be the run folder itself, or a

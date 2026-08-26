@@ -10,6 +10,7 @@ Package: `quant_platform.backtest.policy_interface`,
 Engine: [BACKTEST_ENGINE.md](BACKTEST_ENGINE.md).
 NoOp: [NOOP_POLICY.md](NOOP_POLICY.md).
 Integrity: [BACKTEST_INTEGRITY.md](BACKTEST_INTEGRITY.md).
+Policy output reports: [POLICY_OUTPUT_INTEGRITY.md](POLICY_OUTPUT_INTEGRITY.md).
 
 ## What ResearchPolicy is
 
@@ -112,7 +113,9 @@ uv run python scripts/run-backtest.py \
 ```
 
 Local artifacts now include `policy_output.json` next to `summary.json`
-and `manifest.json`. PostgreSQL stores `policy_config` (JSONB) and
+and `manifest.json`. Phase 4.3 adds observation reports and a dedicated
+verifier for that file (`report-policy-output.py`,
+`verify-policy-output.py`). PostgreSQL stores `policy_config` (JSONB) and
 `policy_output_hash` (text, nullable on old rows). Event streams stay
 on disk, not in JSONB.
 

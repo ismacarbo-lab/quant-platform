@@ -14,8 +14,9 @@ dataset replay** with an auditable event stream, **replay-run
 artifacts** with a PostgreSQL metadata catalog, a **backtest
 readiness gate**, a **dry-run backtest engine**
 (`NoOpBacktestPolicy` / `ResearchPolicy`: counts, hashes, observations,
-no orders), **backtest artifact integrity**, and a **research-policy
-interface** without signals. It is **not** a trading system.
+no orders), **backtest artifact integrity**, a **research-policy
+interface** without signals, and **policy-output observation reports**.
+It is **not** a trading system.
 
 A pre-existing tree named `AI_VENTURE_OS_PROMPTS/` may sit next to this
 project. It is a separate product and is **not** part of `quant_platform`.
@@ -238,6 +239,8 @@ Backtest artifact integrity (verify, compare, usable_result):
 [docs/backtest/BACKTEST_INTEGRITY.md](docs/backtest/BACKTEST_INTEGRITY.md).
 Research policy interface (observations, not strategies):
 [docs/backtest/RESEARCH_POLICY_INTERFACE.md](docs/backtest/RESEARCH_POLICY_INTERFACE.md).
+Policy output reports and integrity:
+[docs/backtest/POLICY_OUTPUT_INTEGRITY.md](docs/backtest/POLICY_OUTPUT_INTEGRITY.md).
 
 See [docs/development/DEVELOPER_WORKFLOW.md](docs/development/DEVELOPER_WORKFLOW.md)
 for install, Compose, Alembic, port 5434 conflicts, and CI.

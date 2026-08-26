@@ -234,6 +234,10 @@ uv run python scripts/run-backtest.py \
 
 uv run python scripts/list-backtest-runs.py --usable-only --json
 uv run python scripts/verify-backtest-run.py --run-dir /tmp/fixt-backtest
+uv run python scripts/verify-policy-output.py \
+  --backtest-run-dir /tmp/fixt-backtest
+uv run python scripts/report-policy-output.py \
+  --backtest-run-dir /tmp/fixt-backtest
 uv run python scripts/compare-backtest-runs.py --left ID_A --right ID_B
 uv run python scripts/check-backtest-usability.py \
   --backtest-id ID_A \
@@ -243,7 +247,8 @@ uv run python scripts/check-backtest-usability.py \
 See [docs/backtest/BACKTEST_ENGINE.md](../backtest/BACKTEST_ENGINE.md),
 [docs/backtest/NOOP_POLICY.md](../backtest/NOOP_POLICY.md),
 [docs/backtest/BACKTEST_INTEGRITY.md](../backtest/BACKTEST_INTEGRITY.md),
-and [docs/backtest/RESEARCH_POLICY_INTERFACE.md](../backtest/RESEARCH_POLICY_INTERFACE.md).
+[docs/backtest/RESEARCH_POLICY_INTERFACE.md](../backtest/RESEARCH_POLICY_INTERFACE.md),
+and [docs/backtest/POLICY_OUTPUT_INTEGRITY.md](../backtest/POLICY_OUTPUT_INTEGRITY.md).
 
 Event JSON fixtures for tests live in `tests/fixtures/replay_events/`.
 

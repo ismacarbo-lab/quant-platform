@@ -36,6 +36,10 @@ from quant_platform.backtest.integrity_types import (
     BacktestArtifactVerificationReport,
     BacktestIntegrityCode,
 )
+from quant_platform.backtest.observation_reports import (
+    ObservationReport,
+    build_observation_report,
+)
 from quant_platform.backtest.observations import (
     PolicyRunOutput,
     ResearchObservation,
@@ -47,6 +51,14 @@ from quant_platform.backtest.policy import (
     NoOpBacktestPolicy,
 )
 from quant_platform.backtest.policy_interface import ResearchPolicy
+from quant_platform.backtest.policy_output_integrity import (
+    compare_policy_outputs,
+    verify_policy_output,
+)
+from quant_platform.backtest.policy_output_types import (
+    PolicyOutputComparison,
+    PolicyOutputVerificationReport,
+)
 from quant_platform.backtest.policy_registry import (
     get_research_policy,
     registered_policy_names,
@@ -97,6 +109,9 @@ __all__ = [
     "EventCountingBacktestPolicy",
     "EventCountingResearchPolicy",
     "NoOpBacktestPolicy",
+    "ObservationReport",
+    "PolicyOutputComparison",
+    "PolicyOutputVerificationReport",
     "PolicyRunOutput",
     "ResearchObservation",
     "ResearchPolicy",
@@ -104,8 +119,10 @@ __all__ = [
     "backtest_run_is_usable",
     "build_backtest_run_catalog_filters",
     "build_backtest_usability_report",
+    "build_observation_report",
     "compare_backtest_runs",
     "compare_catalog_backtest_runs",
+    "compare_policy_outputs",
     "derive_backtest_id",
     "diff_backtest_runs",
     "diff_catalog_backtest_runs",
@@ -129,6 +146,7 @@ __all__ = [
     "validate_backtest_run_manifest",
     "verify_backtest_artifacts",
     "verify_backtest_catalog",
+    "verify_policy_output",
     "verify_registered_backtest_run",
     "write_backtest_artifacts",
 ]

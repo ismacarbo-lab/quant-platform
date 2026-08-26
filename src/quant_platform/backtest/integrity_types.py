@@ -23,6 +23,12 @@ class BacktestIntegrityCode(StrEnum):
     MANIFEST_HASH_MISMATCH = "manifest_hash_mismatch"
     BACKTEST_HASH_MISMATCH = "backtest_hash_mismatch"
     POLICY_OUTPUT_HASH_MISMATCH = "policy_output_hash_mismatch"
+    MISSING_POLICY_OUTPUT = "missing_policy_output"
+    INVALID_POLICY_OUTPUT_JSON = "invalid_policy_output_json"
+    FORBIDDEN_OPERATIONAL_LANGUAGE = "forbidden_operational_language"
+    INVALID_OBSERVATION_KIND = "invalid_observation_kind"
+    INVALID_OBSERVATION_SEVERITY = "invalid_observation_severity"
+    TIMESTAMP_NOT_UTC = "timestamp_not_utc"
     SECRET_LIKE_VALUE = "secret_like_value"  # noqa: S105
     COUNT_MISMATCH = "count_mismatch"
     UNSUPPORTED_POLICY = "unsupported_policy"
@@ -108,6 +114,7 @@ class BacktestArtifactVerificationReport:
     policy_name: str | None
     event_count: int | None
     policy_output_hash: str | None
+    policy_output_ok: bool = True
 
     def as_mapping(self) -> dict[str, object]:
         return {
@@ -130,6 +137,7 @@ class BacktestArtifactVerificationReport:
             "policy_name": self.policy_name,
             "event_count": self.event_count,
             "policy_output_hash": self.policy_output_hash,
+            "policy_output_ok": self.policy_output_ok,
         }
 
 

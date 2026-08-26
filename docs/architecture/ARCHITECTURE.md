@@ -1,4 +1,4 @@
-# Architecture — Phase 4.2
+# Architecture — Phase 4.3
 
 Status: research ingestion, an internal **dataset query API**, **dataset
 quality reports**, **local hashed snapshots**, a **PostgreSQL snapshot
@@ -7,10 +7,11 @@ dataset replay** with an auditable event stream (bars, optional sessions
 and corporate actions, explicit replay boundaries), **local replay-run
 artifacts**, a **PostgreSQL replay-run metadata catalog**, a
 **backtest readiness gate**, a **dry-run backtest engine**
-(NoOp policy; no orders, fills, portfolio, or PnL), and **read-only
-**backtest artifact integrity** plus result comparison / usability, and a
+(NoOp policy; no orders, fills, portfolio, or PnL), **read-only
+backtest artifact integrity** plus result comparison / usability, a
 **research-policy interface** (observations and counters; no signals or
-orders). No LLM runtime, strategies, brokers, or execution.
+orders), and **policy-output observation reports** with dedicated
+integrity checks. No LLM runtime, strategies, brokers, or execution.
 
 ## Modular monolith
 
@@ -40,7 +41,7 @@ Documented future areas (no empty implementation packages in Phase 0):
 | `storage` | Persistence adapters | engine/session only |
 | `research` | Dataset queries, experiment runners | PIT datasets, quality reports, snapshots, catalog, integrity; no notebooks |
 | `simulation` | Dataset replay timeline | events, boundaries, stream hash, audit, run artifacts + catalog, readiness gate; no strategies |
-| `backtesting` | Simulation engine | Phase 4.2 package `backtest/`: dry-run, research policy, integrity; no orders/PnL |
+| `backtesting` | Simulation engine | Phase 4.3 package `backtest/`: dry-run, research policy, observation reports, integrity; no orders/PnL |
 | `strategies` | Signal generation | not implemented |
 | `ml` | Model training/inference | not implemented |
 | `portfolio` | Positions, target holdings | not implemented |
@@ -226,6 +227,8 @@ a result-usability gate (no schema change).
 Phase 4.2 adds a research-policy interface and
 `0008_backtest_policy_metadata` (`policy_config`, `policy_output_hash`;
 still no orders).
+Phase 4.3 adds observation reports and policy-output integrity
+(no schema change).
 None of these add HTTP routes or gold/trading tables.
 
 ## AI usage boundary

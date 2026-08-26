@@ -32,7 +32,7 @@ from quant_platform.research.snapshots import is_sha256_digest
 from quant_platform.simulation.run_catalog import get_replay_run_by_id
 
 USABILITY_KIND = "backtest_result_usability"
-USABILITY_FORMAT_VERSION = 1
+USABILITY_FORMAT_VERSION = 2
 
 _ARTIFACT_MISSING_CODES = frozenset(
     {
@@ -41,6 +41,7 @@ _ARTIFACT_MISSING_CODES = frozenset(
         BacktestIntegrityCode.MISSING_RUN_DIR.value,
         BacktestIntegrityCode.MISSING_ARTIFACT.value,
         BacktestIntegrityCode.EMPTY_ARTIFACT_PATH.value,
+        BacktestIntegrityCode.MISSING_POLICY_OUTPUT.value,
     }
 )
 _HASH_MISMATCH_CODES = frozenset(
@@ -50,6 +51,15 @@ _HASH_MISMATCH_CODES = frozenset(
         BacktestIntegrityCode.CATALOG_MANIFEST_MISMATCH.value,
         BacktestIntegrityCode.COUNT_MISMATCH.value,
         BacktestIntegrityCode.POLICY_OUTPUT_HASH_MISMATCH.value,
+    }
+)
+_POLICY_OUTPUT_INVALID_CODES = frozenset(
+    {
+        BacktestIntegrityCode.FORBIDDEN_OPERATIONAL_LANGUAGE.value,
+        BacktestIntegrityCode.INVALID_OBSERVATION_KIND.value,
+        BacktestIntegrityCode.INVALID_OBSERVATION_SEVERITY.value,
+        BacktestIntegrityCode.TIMESTAMP_NOT_UTC.value,
+        BacktestIntegrityCode.INVALID_POLICY_OUTPUT_JSON.value,
     }
 )
 
@@ -71,6 +81,7 @@ class BacktestUsabilityCode(StrEnum):
     ERRORS_PRESENT = "errors_present"
     APP_MODE_NOT_RESEARCH = "app_mode_not_research"
     REPLAY_CATALOG_MISSING = "replay_catalog_missing"
+    POLICY_OUTPUT_INVALID = "policy_output_invalid"
 
 
 @dataclass(frozen=True, slots=True)
@@ -104,6 +115,7 @@ class BacktestUsabilityGate:
     backtest_hash_valid: bool
     manifest_hash_valid: bool
     replay_registered: bool
+    policy_output_ok: bool
     error_count: int
     warning_count: int
 
@@ -118,6 +130,7 @@ class BacktestUsabilityGate:
             "backtest_hash_valid": self.backtest_hash_valid,
             "manifest_hash_valid": self.manifest_hash_valid,
             "replay_registered": self.replay_registered,
+            "policy_output_ok": self.policy_output_ok,
             "error_count": self.error_count,
             "warning_count": self.warning_count,
         }
@@ -253,6 +266,7 @@ def build_backtest_usability_report(
         1 for item in ranked if item.severity == BacktestUsabilitySeverity.INFO
     )
     artifacts_ok = integrity is not None and integrity.ok
+    policy_output_ok = integrity is not None and integrity.policy_output_ok
     backtest_hash = None if entry is None else entry.backtest_hash
     manifest_hash = None if entry is None else entry.manifest_hash
     policy_name = None if entry is None else entry.policy_name
@@ -272,6 +286,7 @@ def build_backtest_usability_report(
         and policy_ok
         and backtest_hash_valid
         and manifest_hash_valid
+        and policy_output_ok
         and error_count == 0
     )
     gate = BacktestUsabilityGate(
@@ -284,6 +299,7 @@ def build_backtest_usability_report(
         backtest_hash_valid=backtest_hash_valid,
         manifest_hash_valid=manifest_hash_valid,
         replay_registered=replay_registered,
+        policy_output_ok=policy_output_ok,
         error_count=error_count,
         warning_count=warning_count,
     )
@@ -391,6 +407,8 @@ def _map_integrity_code(code: str) -> str:
         return BacktestUsabilityCode.ARTIFACT_MISSING.value
     if code in _HASH_MISMATCH_CODES:
         return BacktestUsabilityCode.ARTIFACT_HASH_MISMATCH.value
+    if code in _POLICY_OUTPUT_INVALID_CODES:
+        return BacktestUsabilityCode.POLICY_OUTPUT_INVALID.value
     if code == BacktestIntegrityCode.UNSUPPORTED_POLICY.value:
         return BacktestUsabilityCode.UNSUPPORTED_POLICY.value
     if code == BacktestIntegrityCode.INVALID_HASH.value:

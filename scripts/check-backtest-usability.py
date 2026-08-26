@@ -63,6 +63,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"error_count={report.error_count}")
     print(f"warning_count={report.warning_count}")
     print(f"artifacts_ok={str(report.gate.artifacts_ok).lower()}")
+    print(f"policy_output_ok={str(report.gate.policy_output_ok).lower()}")
     print(f"replay_registered={str(report.gate.replay_registered).lower()}")
     print(f"run_root={report.run_root or ''}")
     for issue in report.issues:

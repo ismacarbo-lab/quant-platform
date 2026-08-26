@@ -23,10 +23,8 @@ from quant_platform.backtest.integrity_types import (
     BacktestIntegrityCode,
     BacktestIntegritySeverity,
 )
-from quant_platform.backtest.observations import (
-    contains_operative_language,
-    hash_policy_output_mapping,
-)
+from quant_platform.backtest.policy_output_integrity import verify_policy_output
+from quant_platform.backtest.policy_output_types import PolicyOutputVerificationIssue
 from quant_platform.backtest.results import hash_backtest_mapping
 from quant_platform.backtest.types import (
     ALLOWED_POLICY_NAMES,
@@ -356,69 +354,13 @@ def verify_backtest_artifacts(
                         )
                     )
     policy_relative = listed.get("policy_output", POLICY_OUTPUT_ARTIFACT_NAME)
-    policy_path = (
-        None
-        if artifact_path_is_unsafe(policy_relative)
-        else resolved_root / policy_relative
-    )
-    if policy_path is not None and policy_path.is_file():
-        policy_text = policy_path.read_text(encoding="utf-8")
-        if manifest_contains_secrets(policy_text):
-            issues.append(
-                _issue(
-                    BacktestIntegritySeverity.ERROR,
-                    BacktestIntegrityCode.SECRET_LIKE_VALUE,
-                    "policy_output contains a secret-like marker",
-                    path=POLICY_OUTPUT_ARTIFACT_NAME,
-                )
-            )
-        if contains_operative_language(policy_text):
-            issues.append(
-                _issue(
-                    BacktestIntegritySeverity.ERROR,
-                    BacktestIntegrityCode.UNSUPPORTED_POLICY,
-                    "policy_output contains investment-decision wording",
-                    path=POLICY_OUTPUT_ARTIFACT_NAME,
-                )
-            )
-        policy_payload = _load_object(policy_text, POLICY_OUTPUT_ARTIFACT_NAME, issues)
-        if policy_payload is not None:
-            try:
-                recomputed_policy_hash = hash_policy_output_mapping(policy_payload)
-            except BacktestError:
-                issues.append(
-                    _issue(
-                        BacktestIntegritySeverity.ERROR,
-                        BacktestIntegrityCode.INVALID_JSON,
-                        "policy_output payload cannot be hashed",
-                        path=POLICY_OUTPUT_ARTIFACT_NAME,
-                    )
-                )
-            else:
-                stored = stored_policy_output_hash
-                file_hash = _optional_str(policy_payload.get("policy_output_hash"))
-                if stored is not None and stored != recomputed_policy_hash:
-                    issues.append(
-                        _issue(
-                            BacktestIntegritySeverity.ERROR,
-                            BacktestIntegrityCode.POLICY_OUTPUT_HASH_MISMATCH,
-                            "policy_output_hash does not match policy_output.json",
-                            path=POLICY_OUTPUT_ARTIFACT_NAME,
-                            expected=stored,
-                            actual=recomputed_policy_hash,
-                        )
-                    )
-                if file_hash is not None and file_hash != recomputed_policy_hash:
-                    issues.append(
-                        _issue(
-                            BacktestIntegritySeverity.ERROR,
-                            BacktestIntegrityCode.POLICY_OUTPUT_HASH_MISMATCH,
-                            "stored policy_output_hash does not match payload",
-                            path=POLICY_OUTPUT_ARTIFACT_NAME,
-                            expected=file_hash,
-                            actual=recomputed_policy_hash,
-                        )
-                    )
+    if not artifact_path_is_unsafe(policy_relative):
+        policy_report = verify_policy_output(
+            resolved_root,
+            expected_hash=stored_policy_output_hash,
+            relative_path=policy_relative,
+        )
+        issues.extend(_from_policy_output_issues(policy_report.issues))
     return _finish(
         root=root,
         backtest_id=backtest_id or request.expected_backtest_id,
@@ -649,6 +591,7 @@ def replace_issues(
         policy_name=report.policy_name,
         event_count=report.event_count,
         policy_output_hash=report.policy_output_hash,
+        policy_output_ok=_policy_output_ok(ranked, report.artifacts),
     )
 
 
@@ -823,6 +766,14 @@ def _status_for(
     if not unsafe:
         exists = (root / relative).is_file()
         if not exists:
+            if name == "policy_output":
+                return BacktestArtifactStatus(
+                    name=name,
+                    path=relative,
+                    exists=exists,
+                    relative=not absolute,
+                    escaped=escaped,
+                )
             code = (
                 BacktestIntegrityCode.MISSING_SUMMARY
                 if Path(relative).name == SUMMARY_ARTIFACT_NAME or name == "summary"
@@ -858,6 +809,58 @@ def _manifest_file_backtest_id(path: Path) -> str | None:
     if not isinstance(raw, str) or not raw.strip():
         return None
     return raw.strip()
+
+
+def _from_policy_output_issues(
+    items: tuple[PolicyOutputVerificationIssue, ...]
+    | list[PolicyOutputVerificationIssue],
+) -> list[BacktestArtifactVerificationIssue]:
+    mapped: list[BacktestArtifactVerificationIssue] = []
+    for item in items:
+        mapped.append(
+            BacktestArtifactVerificationIssue(
+                severity=item.severity,
+                code=item.code,
+                message=item.message,
+                path=item.path,
+                expected=item.expected,
+                actual=item.actual,
+            )
+        )
+    return mapped
+
+
+def _policy_output_ok(
+    issues: tuple[BacktestArtifactVerificationIssue, ...],
+    artifacts: tuple[BacktestArtifactStatus, ...],
+) -> bool:
+    exists = any(item.name == "policy_output" and item.exists for item in artifacts)
+    if not exists and not artifacts:
+        return not any(_is_policy_output_issue(item) for item in issues)
+    if any(
+        item.severity == BacktestIntegritySeverity.ERROR.value
+        and _is_policy_output_issue(item)
+        for item in issues
+    ):
+        return False
+    return exists or not any(_is_policy_output_issue(item) for item in issues)
+
+
+def _is_policy_output_issue(item: BacktestArtifactVerificationIssue) -> bool:
+    if item.code in {
+        BacktestIntegrityCode.MISSING_POLICY_OUTPUT.value,
+        BacktestIntegrityCode.INVALID_POLICY_OUTPUT_JSON.value,
+        BacktestIntegrityCode.POLICY_OUTPUT_HASH_MISMATCH.value,
+        BacktestIntegrityCode.FORBIDDEN_OPERATIONAL_LANGUAGE.value,
+        BacktestIntegrityCode.INVALID_OBSERVATION_KIND.value,
+        BacktestIntegrityCode.INVALID_OBSERVATION_SEVERITY.value,
+        BacktestIntegrityCode.TIMESTAMP_NOT_UTC.value,
+    }:
+        return True
+    path = item.path or ""
+    return Path(path).name == POLICY_OUTPUT_ARTIFACT_NAME or path.startswith(
+        "observations["
+    )
 
 
 def _issue(
@@ -950,4 +953,5 @@ def _finish(
         policy_name=policy_name,
         event_count=event_count,
         policy_output_hash=policy_output_hash,
+        policy_output_ok=_policy_output_ok(ranked, artifacts),
     )

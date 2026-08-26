@@ -1,4 +1,4 @@
-# Backtest engine foundation — Phase 4.0 / 4.1 / 4.2
+# Backtest engine foundation — Phase 4.0 / 4.1 / 4.2 / 4.3
 
 This phase adds an **offline dry-run backtest engine**. It consumes a
 registered replay run that already passed the readiness gate, walks the
@@ -15,6 +15,8 @@ Research policy interface:
 [RESEARCH_POLICY_INTERFACE.md](RESEARCH_POLICY_INTERFACE.md).
 Artifact integrity and result comparison:
 [BACKTEST_INTEGRITY.md](BACKTEST_INTEGRITY.md).
+Policy output reports:
+[POLICY_OUTPUT_INTEGRITY.md](POLICY_OUTPUT_INTEGRITY.md).
 
 ## What this backtest is
 
@@ -139,6 +141,10 @@ uv run python scripts/list-backtest-runs.py --replay-id <replay_id> --json
 uv run python scripts/list-backtest-runs.py --usable-only --policy-name noop
 
 uv run python scripts/verify-backtest-run.py --run-dir /tmp/fixt-backtest
+uv run python scripts/verify-policy-output.py \
+  --backtest-run-dir /tmp/fixt-backtest
+uv run python scripts/report-policy-output.py \
+  --backtest-run-dir /tmp/fixt-backtest
 uv run python scripts/compare-backtest-runs.py --left ID_A --right ID_B --json
 uv run python scripts/check-backtest-usability.py \
   --backtest-id ID_A \
