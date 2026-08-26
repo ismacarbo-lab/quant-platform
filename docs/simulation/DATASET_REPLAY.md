@@ -16,6 +16,8 @@ Package: `quant_platform.simulation`.
 Boundary rules: [REPLAY_BOUNDARIES.md](REPLAY_BOUNDARIES.md).
 Audit details: [REPLAY_AUDIT.md](REPLAY_AUDIT.md).
 Replay runs: [REPLAY_RUNS.md](REPLAY_RUNS.md).
+Backtest readiness (compare + gate, not a backtester):
+[BACKTEST_READINESS.md](BACKTEST_READINESS.md).
 
 ## What replay is
 

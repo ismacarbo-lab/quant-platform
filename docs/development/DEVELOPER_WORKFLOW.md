@@ -207,12 +207,17 @@ uv run python scripts/replay-daily-dataset.py \
 
 uv run python scripts/list-replay-runs.py --usable-only --json
 uv run python scripts/verify-replay-run.py --run-dir /tmp/fixt-replay
+uv run python scripts/compare-replay-runs.py --left ID_A --right ID_B
+uv run python scripts/check-replay-readiness.py \
+  --replay-id ID_A \
+  --base-dir /tmp/fixt-replay
 ```
 
 See [docs/simulation/DATASET_REPLAY.md](../simulation/DATASET_REPLAY.md),
 [docs/simulation/REPLAY_BOUNDARIES.md](../simulation/REPLAY_BOUNDARIES.md),
 [docs/simulation/REPLAY_AUDIT.md](../simulation/REPLAY_AUDIT.md),
-and [docs/simulation/REPLAY_RUNS.md](../simulation/REPLAY_RUNS.md).
+[docs/simulation/REPLAY_RUNS.md](../simulation/REPLAY_RUNS.md),
+and [docs/simulation/BACKTEST_READINESS.md](../simulation/BACKTEST_READINESS.md).
 
 Event JSON fixtures for tests live in `tests/fixtures/replay_events/`.
 

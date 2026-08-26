@@ -10,9 +10,9 @@ composite identity, identifiers), **manual calendars**, **stored
 corporate actions** (not applied to prices), a **research dataset API**
 (`as_of` required), **dataset quality reports**, **local dataset
 snapshots**, a **PostgreSQL snapshot catalog**, **deterministic
-dataset replay** with an auditable event stream, and **replay-run
-artifacts** with a PostgreSQL metadata catalog. It is **not** a trading
-system.
+dataset replay** with an auditable event stream, **replay-run
+artifacts** with a PostgreSQL metadata catalog, and a **backtest
+readiness gate** (no backtester). It is **not** a trading system.
 
 A pre-existing tree named `AI_VENTURE_OS_PROMPTS/` may sit next to this
 project. It is a separate product and is **not** part of `quant_platform`.
@@ -34,6 +34,8 @@ Do not mix the two.
   before any backtest exists.
 - Export a replay run as local JSON/JSONL artifacts and register metadata
   (hashes, counts, boundary status) in PostgreSQL.
+- Compare registered replay runs and gate whether a run is ready for a
+  future backtester (no strategy, PnL, or orders).
 
 ## What is not implemented
 
@@ -219,6 +221,8 @@ Replay audit (stream hash, order, PIT checks):
 [docs/simulation/REPLAY_AUDIT.md](docs/simulation/REPLAY_AUDIT.md).
 Replay runs (local artifacts + PostgreSQL metadata catalog):
 [docs/simulation/REPLAY_RUNS.md](docs/simulation/REPLAY_RUNS.md).
+Backtest readiness (compare runs; gate, not a backtester):
+[docs/simulation/BACKTEST_READINESS.md](docs/simulation/BACKTEST_READINESS.md).
 
 See [docs/development/DEVELOPER_WORKFLOW.md](docs/development/DEVELOPER_WORKFLOW.md)
 for install, Compose, Alembic, port 5434 conflicts, and CI.

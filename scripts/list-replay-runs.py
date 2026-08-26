@@ -69,13 +69,14 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"mode={settings.app_mode.value}")
     print(f"count={len(rows)}")
-    print("replay_id\tusable\tboundary\terrors\tevents\tsource\tstream_hash")
+    print("replay_id\tusable\tboundary\terrors\tevents\tsource\tstream_hash\twarnings")
     for row in rows:
         usable = "yes" if row.is_usable else "no"
         boundary = "yes" if row.boundary_ok else "no"
         print(
             f"{row.replay_id}\t{usable}\t{boundary}\t{row.error_count}\t"
-            f"{row.event_count}\t{row.source_type}\t{row.stream_hash}"
+            f"{row.event_count}\t{row.source_type}\t{row.stream_hash}\t"
+            f"{row.warning_count}"
         )
     return 0
 

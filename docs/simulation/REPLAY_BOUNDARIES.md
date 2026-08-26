@@ -107,7 +107,8 @@ replay-run artifacts. Exported runs use `events.jsonl` instead; see
 ## What does not exist
 
 - strategies, signals, indicators-as-signals
-- backtesting engine, optimizer, risk engine
+- backtesting engine, optimizer, risk engine (`boundary_ok` is a
+  readiness input; see [BACKTEST_READINESS.md](BACKTEST_READINESS.md))
 - orders, trades, fills, portfolio, positions
 - brokers, paper trading, live trading
 - HTTP routes beyond `GET /health`

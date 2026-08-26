@@ -1,11 +1,12 @@
-# Architecture — Phase 3.3
+# Architecture — Phase 3.4
 
 Status: research ingestion, an internal **dataset query API**, **dataset
 quality reports**, **local hashed snapshots**, a **PostgreSQL snapshot
 catalog**, **read-only snapshot integrity checks**, and **deterministic
 dataset replay** with an auditable event stream (bars, optional sessions
 and corporate actions, explicit replay boundaries), **local replay-run
-artifacts**, and a **PostgreSQL replay-run metadata catalog**. No LLM
+artifacts**, a **PostgreSQL replay-run metadata catalog**, and a
+**backtest readiness gate** (compare runs; no backtester). No LLM
 runtime, strategies, brokers, or execution.
 
 ## Modular monolith
@@ -19,7 +20,7 @@ src/quant_platform/
   core/         configuration, UTC clock, identifiers
   data/         local CSV ingest, PIT daily bars, repositories
   research/     PIT datasets, quality reports, snapshots, catalog, integrity
-  simulation/   dataset replay, stream audit, run artifacts + catalog (no strategies)
+  simulation/   dataset replay, run catalog, backtest readiness gate (no strategies)
   storage/      PostgreSQL engine/session, SQLAlchemy Base
   monitoring/   structured logging
   api/          internal HTTP surface (health)
@@ -34,8 +35,8 @@ Documented future areas (no empty implementation packages in Phase 0):
 | `data` | Ingest, bronze/silver/gold, PIT | bronze, silver, identity, calendars, CA store |
 | `storage` | Persistence adapters | engine/session only |
 | `research` | Dataset queries, experiment runners | PIT datasets, quality reports, snapshots, catalog, integrity; no notebooks |
-| `simulation` | Dataset replay timeline | events, boundaries, stream hash, audit, run artifacts + catalog; no strategies |
-| `backtesting` | Simulation engine | not implemented |
+| `simulation` | Dataset replay timeline | events, boundaries, stream hash, audit, run artifacts + catalog, readiness gate; no strategies |
+| `backtesting` | Simulation engine | not implemented (readiness gate only) |
 | `strategies` | Signal generation | not implemented |
 | `ml` | Model training/inference | not implemented |
 | `portfolio` | Positions, target holdings | not implemented |
@@ -120,8 +121,9 @@ research dataset API **requires** `as_of`. See
 [SNAPSHOT_INTEGRITY.md](../research/SNAPSHOT_INTEGRITY.md),
 [DATASET_REPLAY.md](../simulation/DATASET_REPLAY.md),
 [REPLAY_BOUNDARIES.md](../simulation/REPLAY_BOUNDARIES.md),
-[REPLAY_AUDIT.md](../simulation/REPLAY_AUDIT.md), and
-[REPLAY_RUNS.md](../simulation/REPLAY_RUNS.md).
+[REPLAY_AUDIT.md](../simulation/REPLAY_AUDIT.md),
+[REPLAY_RUNS.md](../simulation/REPLAY_RUNS.md), and
+[BACKTEST_READINESS.md](../simulation/BACKTEST_READINESS.md).
 
 ### Point-in-time timestamps
 
@@ -204,6 +206,8 @@ Phase 3.1 adds session/CA events, a stream hash, and a replay audit report.
 Phase 3.2 formalizes replay boundaries and deterministic event fixtures.
 Phase 3.3 adds local replay-run artifacts and `simulation_replay_runs`
 (`0006_replay_runs`; metadata only, not event rows).
+Phase 3.4 adds replay-run comparison and a backtest readiness gate
+(no schema change, no backtester).
 None of these add HTTP routes or gold/trading tables.
 
 ## AI usage boundary

@@ -14,6 +14,7 @@ from quant_platform.simulation.audit import (
     audit_replay,
 )
 from quant_platform.simulation.clock import SimulationClock
+from quant_platform.simulation.constructs import detect_trading_constructs
 from quant_platform.simulation.errors import SimulationError, SimulationErrorCode
 from quant_platform.simulation.event_fixtures import (
     ReplayEventFixture,
@@ -46,6 +47,17 @@ from quant_platform.simulation.hashing import (
     hash_replay_events,
     hash_replay_request,
 )
+from quant_platform.simulation.readiness import (
+    build_readiness_report,
+    evaluate_replay_run_readiness,
+    resolve_replay_run_directory,
+)
+from quant_platform.simulation.readiness_types import (
+    BacktestReadinessGate,
+    ReplayRunDiff,
+    ReplayRunReadinessCode,
+    ReplayRunReadinessReport,
+)
 from quant_platform.simulation.replay import (
     DailyBarReplay,
     create_daily_bar_replay,
@@ -53,6 +65,7 @@ from quant_platform.simulation.replay import (
     replay_daily_bars_snapshot,
 )
 from quant_platform.simulation.run_catalog import (
+    compare_catalog_replay_runs,
     compare_replay_runs,
     get_replay_run_by_id,
     get_replay_run_by_manifest_hash,
@@ -62,6 +75,10 @@ from quant_platform.simulation.run_catalog import (
     replay_run_is_reproducible,
     replay_run_is_usable,
     validate_replay_run_manifest,
+)
+from quant_platform.simulation.run_compare import (
+    diff_catalog_replay_runs,
+    diff_replay_runs,
 )
 from quant_platform.simulation.run_integrity import (
     ReplayRunIntegrityCode,
@@ -92,6 +109,7 @@ __all__ = [
     "REPLAY_STARTED_KIND",
     "SOURCE_DATABASE",
     "SOURCE_SNAPSHOT",
+    "BacktestReadinessGate",
     "CorporateActionEvent",
     "DailyBarReplay",
     "MarketBarEvent",
@@ -106,9 +124,12 @@ __all__ = [
     "ReplayRunArtifact",
     "ReplayRunCatalogEntry",
     "ReplayRunComparison",
+    "ReplayRunDiff",
     "ReplayRunIntegrityCode",
     "ReplayRunIntegrityReport",
     "ReplayRunManifest",
+    "ReplayRunReadinessCode",
+    "ReplayRunReadinessReport",
     "ReplayRunResult",
     "ReplayStartedEvent",
     "ReplaySummary",
@@ -117,12 +138,18 @@ __all__ = [
     "SimulationErrorCode",
     "apply_start_boundary",
     "audit_replay",
+    "build_readiness_report",
     "build_replay_run_catalog_filters",
     "compact_audit_summary",
+    "compare_catalog_replay_runs",
     "compare_replay_runs",
     "corporate_action_event_from_row",
     "create_daily_bar_replay",
     "derive_replay_id",
+    "detect_trading_constructs",
+    "diff_catalog_replay_runs",
+    "diff_replay_runs",
+    "evaluate_replay_run_readiness",
     "get_replay_run_by_id",
     "get_replay_run_by_manifest_hash",
     "hash_replay_events",
@@ -143,6 +170,7 @@ __all__ = [
     "replay_event_sort_key",
     "replay_run_is_reproducible",
     "replay_run_is_usable",
+    "resolve_replay_run_directory",
     "validate_replay_run_manifest",
     "verify_registered_replay_run",
     "verify_replay_run_artifacts",

@@ -119,3 +119,5 @@ facts are not stored in the snapshot folder.
 Not a backtester, quality report, or catalog integrity check. Those stay
 in `quant_platform.research`. Replay audit only looks at the simulation
 event stream. Persisting the run is [REPLAY_RUNS.md](REPLAY_RUNS.md).
+Whether a registered run may feed a future backtester is
+[BACKTEST_READINESS.md](BACKTEST_READINESS.md).

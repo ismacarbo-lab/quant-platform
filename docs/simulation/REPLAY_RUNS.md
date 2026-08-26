@@ -13,7 +13,8 @@ Table: `simulation_replay_runs`. Alembic revision `0006_replay_runs`.
 
 Related: [DATASET_REPLAY.md](DATASET_REPLAY.md),
 [REPLAY_AUDIT.md](REPLAY_AUDIT.md),
-[REPLAY_BOUNDARIES.md](REPLAY_BOUNDARIES.md).
+[REPLAY_BOUNDARIES.md](REPLAY_BOUNDARIES.md),
+[BACKTEST_READINESS.md](BACKTEST_READINESS.md).
 
 ## What a replay run is
 
@@ -159,6 +160,12 @@ table; `--json` prints catalog mappings.
 
 `compare_replay_runs(run_a, run_b)` reports whether stream/manifest
 hashes match and deltas for event/error/warning/pre-known counts.
+`diff_replay_runs` adds field-level items and a verdict (`identical`,
+`same_stream`, `different`). See [BACKTEST_READINESS.md](BACKTEST_READINESS.md).
+
+```bash
+uv run python scripts/compare-replay-runs.py --left ID_A --right ID_B
+```
 
 ## Verify artifacts
 
@@ -171,6 +178,19 @@ inside the folder, hashes look valid, `manifest_hash` matches the
 canonical payload, `stream_hash` can be recomputed from `events.jsonl`,
 and counts match the JSONL. It does not write files or talk to
 PostgreSQL unless you call `verify_registered_replay_run` in Python.
+
+## Backtest readiness
+
+A registered run is **not** a backtest. The readiness gate decides
+whether artifacts and catalog metadata are fit for a **future** engine:
+
+```bash
+uv run python scripts/check-replay-readiness.py \
+  --replay-id <replay_id> \
+  --base-dir /tmp/fixt-replay
+```
+
+Details: [BACKTEST_READINESS.md](BACKTEST_READINESS.md).
 
 ## Why this is not backtesting
 
@@ -188,6 +208,7 @@ Those packages still do not exist.
 
 - strategies, signals, indicators-as-signals
 - backtesting engine, optimizer, risk engine
+  ([BACKTEST_READINESS.md](BACKTEST_READINESS.md) only gates future use)
 - orders, trades, fills, portfolio, positions
 - brokers, paper trading, live trading
 - HTTP routes beyond `GET /health`
