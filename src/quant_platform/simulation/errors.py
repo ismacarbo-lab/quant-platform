@@ -11,6 +11,9 @@ class SimulationErrorCode(StrEnum):
     LOOKAHEAD = "lookahead"
     INVALID_EVENT_TIME = "invalid_event_time"
     BROKEN_SNAPSHOT = "broken_snapshot"
+    CATALOG_INVALID = "catalog_invalid"
+    CATALOG_CONFLICT = "catalog_conflict"
+    BROKEN_RUN = "broken_run"
 
 
 class SimulationError(ValueError):

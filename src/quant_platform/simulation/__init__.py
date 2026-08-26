@@ -1,5 +1,11 @@
 """Research dataset replay. Not backtesting, strategies, or trading."""
 
+from quant_platform.simulation.artifacts import (
+    compact_audit_summary,
+    hash_replay_events_jsonl,
+    load_replay_events_jsonl,
+    write_replay_run_artifacts,
+)
 from quant_platform.simulation.audit import (
     ReplayAuditCode,
     ReplayAuditIssue,
@@ -13,6 +19,7 @@ from quant_platform.simulation.event_fixtures import (
     ReplayEventFixture,
     load_replay_events_json,
     replay_event_fixtures_dir,
+    replay_event_from_mapping,
 )
 from quant_platform.simulation.events import (
     CORPORATE_ACTION_KIND,
@@ -45,6 +52,31 @@ from quant_platform.simulation.replay import (
     replay_daily_bars_dataset,
     replay_daily_bars_snapshot,
 )
+from quant_platform.simulation.run_catalog import (
+    compare_replay_runs,
+    get_replay_run_by_id,
+    get_replay_run_by_manifest_hash,
+    list_replay_runs,
+    raise_if_manifest_hash_conflict,
+    register_replay_run,
+    replay_run_is_reproducible,
+    replay_run_is_usable,
+    validate_replay_run_manifest,
+)
+from quant_platform.simulation.run_integrity import (
+    ReplayRunIntegrityCode,
+    ReplayRunIntegrityReport,
+    verify_registered_replay_run,
+    verify_replay_run_artifacts,
+)
+from quant_platform.simulation.run_types import (
+    ReplayRunArtifact,
+    ReplayRunCatalogEntry,
+    ReplayRunComparison,
+    ReplayRunManifest,
+    ReplayRunResult,
+    build_replay_run_catalog_filters,
+)
 from quant_platform.simulation.summary import (
     SOURCE_DATABASE,
     SOURCE_SNAPSHOT,
@@ -71,6 +103,13 @@ __all__ = [
     "ReplayEvent",
     "ReplayEventFixture",
     "ReplayFinishedEvent",
+    "ReplayRunArtifact",
+    "ReplayRunCatalogEntry",
+    "ReplayRunComparison",
+    "ReplayRunIntegrityCode",
+    "ReplayRunIntegrityReport",
+    "ReplayRunManifest",
+    "ReplayRunResult",
     "ReplayStartedEvent",
     "ReplaySummary",
     "SimulationClock",
@@ -78,17 +117,34 @@ __all__ = [
     "SimulationErrorCode",
     "apply_start_boundary",
     "audit_replay",
+    "build_replay_run_catalog_filters",
+    "compact_audit_summary",
+    "compare_replay_runs",
     "corporate_action_event_from_row",
     "create_daily_bar_replay",
     "derive_replay_id",
+    "get_replay_run_by_id",
+    "get_replay_run_by_manifest_hash",
     "hash_replay_events",
+    "hash_replay_events_jsonl",
     "hash_replay_request",
     "is_pre_known_event",
+    "list_replay_runs",
     "load_replay_events_json",
+    "load_replay_events_jsonl",
     "market_bar_event_from_row",
+    "raise_if_manifest_hash_conflict",
+    "register_replay_run",
     "replay_boundary_group",
     "replay_daily_bars_dataset",
     "replay_daily_bars_snapshot",
     "replay_event_fixtures_dir",
+    "replay_event_from_mapping",
     "replay_event_sort_key",
+    "replay_run_is_reproducible",
+    "replay_run_is_usable",
+    "validate_replay_run_manifest",
+    "verify_registered_replay_run",
+    "verify_replay_run_artifacts",
+    "write_replay_run_artifacts",
 ]

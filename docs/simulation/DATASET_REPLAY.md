@@ -1,4 +1,4 @@
-# Dataset replay — Phase 3.2
+# Dataset replay — Phase 3.3
 
 Replay turns a **point-in-time daily-bar dataset** into a deterministic
 sequence of simulation events. Phase 3.1 added optional session and
@@ -6,7 +6,8 @@ corporate-action events, a stream hash, and an audit report. Phase 3.2
 fixes the **replay boundary**: `ReplayStartedEvent` is always first,
 `ReplayFinishedEvent` is always last, and facts known before
 `start_time` are marked `known_before_start` instead of sorting before
-the started bookend.
+the started bookend. Phase 3.3 exports a **replay run** (local JSON/JSONL
+artifacts) and registers **metadata** in PostgreSQL.
 
 It is **not** backtesting, not a strategy, and not trading.
 
@@ -14,6 +15,7 @@ Package: `quant_platform.simulation`.
 
 Boundary rules: [REPLAY_BOUNDARIES.md](REPLAY_BOUNDARIES.md).
 Audit details: [REPLAY_AUDIT.md](REPLAY_AUDIT.md).
+Replay runs: [REPLAY_RUNS.md](REPLAY_RUNS.md).
 
 ## What replay is
 
@@ -39,7 +41,9 @@ unless `deterministic_id=True`.
 `started_at` / `finished_at` on the summary are **simulation timeline**
 bounds, not wall-clock times.
 
-There is **no** Alembic table for replay runs.
+Event rows are **not** stored in PostgreSQL. Phase 3.3 writes them to
+local `events.jsonl` and keeps hashes/counts in `simulation_replay_runs`.
+See [REPLAY_RUNS.md](REPLAY_RUNS.md).
 
 ## Event priority
 
@@ -176,6 +180,24 @@ uv run python scripts/replay-daily-dataset.py \
 `stream_hash`, boundary status, and first/last market event times. It
 does not print `DATABASE_URL`.
 
+Export a local run (and optionally register metadata):
+
+```bash
+uv run python scripts/replay-daily-dataset.py \
+  --as-of 2024-01-10T00:00:00Z \
+  --start 2024-01-01T00:00:00Z \
+  --end 2024-01-05T00:00:00Z \
+  --symbol FIXT \
+  --output-dir /tmp/fixt-replay \
+  --register \
+  --deterministic-id \
+  --json
+```
+
+`--register` requires `--output-dir`. List and verify with
+`scripts/list-replay-runs.py` and `scripts/verify-replay-run.py`.
+Details: [REPLAY_RUNS.md](REPLAY_RUNS.md).
+
 ## What does not exist
 
 - strategies, signals, indicators-as-signals
@@ -183,5 +205,5 @@ does not print `DATABASE_URL`.
 - orders, trades, fills, portfolio, positions
 - brokers, paper trading, live trading
 - HTTP routes beyond `GET /health`
-- persisted simulation runs
+- full event streams in PostgreSQL (events stay in local JSONL)
 - ML / LLM runtime, vendor downloads

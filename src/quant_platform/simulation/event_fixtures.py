@@ -100,11 +100,11 @@ def load_replay_events_json(path: Path | str) -> ReplayEventFixture:
                 "replay event fixture event must be an object",
                 code=SimulationErrorCode.INVALID_EVENT_TIME,
             )
-        events.append(_event_from_mapping(item))
+        events.append(replay_event_from_mapping(item))
     return ReplayEventFixture(description=description.strip(), events=tuple(events))
 
 
-def _event_from_mapping(payload: Mapping[str, object]) -> ReplayEvent:
+def replay_event_from_mapping(payload: Mapping[str, object]) -> ReplayEvent:
     kind = _require_str(payload, "kind")
     lowered = kind.lower()
     if any(fragment in lowered for fragment in _FORBIDDEN_KIND_FRAGMENTS):

@@ -11,7 +11,14 @@ from pathlib import Path
 from quant_platform.core.config import get_settings
 from quant_platform.core.redact import redact_secret_text
 from quant_platform.research.errors import DatasetErrorCode, DatasetValidationError
-from quant_platform.research.types import build_daily_bars_dataset_request
+from quant_platform.research.types import (
+    DailyBarsDatasetRequest,
+    build_daily_bars_dataset_request,
+)
+from quant_platform.simulation.artifacts import (
+    snapshot_id_from_snapshot_dir,
+    write_replay_run_artifacts,
+)
 from quant_platform.simulation.audit import ReplayAuditReport, audit_replay
 from quant_platform.simulation.errors import SimulationError
 from quant_platform.simulation.replay import (
@@ -19,6 +26,8 @@ from quant_platform.simulation.replay import (
     create_daily_bar_replay,
     replay_daily_bars_snapshot,
 )
+from quant_platform.simulation.run_catalog import register_replay_run
+from quant_platform.simulation.run_types import ReplayRunResult
 from quant_platform.storage.database import create_db_engine, create_session_factory
 
 
@@ -90,6 +99,18 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Derive replay_id from stream hash and request hash.",
     )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=None,
+        help="Write events.jsonl, audit.json, summary.json, and manifest.json.",
+    )
+    parser.add_argument(
+        "--register",
+        action="store_true",
+        help="Store replay-run metadata in PostgreSQL. Requires --output-dir.",
+    )
+    parser.add_argument("--notes", default=None, help="Optional replay-run note.")
     parser.add_argument("--json", action="store_true", dest="as_json")
     args = parser.parse_args(argv)
 
@@ -97,7 +118,17 @@ def main(argv: list[str] | None = None) -> int:
     if not settings.is_research_mode:
         print("error: APP_MODE must be research", file=sys.stderr)
         return 1
+    if args.register and args.output_dir is None:
+        print("error: --register requires --output-dir", file=sys.stderr)
+        return 1
 
+    request: DailyBarsDatasetRequest | None = None
+    catalog_action: str | None = None
+    run_result: ReplayRunResult | None = None
+    result: DailyBarReplay | None = None
+    audit_report: ReplayAuditReport | None = None
+    engine = None
+    session = None
     try:
         if args.snapshot_dir is not None:
             result = replay_daily_bars_snapshot(
@@ -107,6 +138,7 @@ def main(argv: list[str] | None = None) -> int:
                 deterministic_id=args.deterministic_id,
             )
             calendar_code = None
+            snapshot_id = snapshot_id_from_snapshot_dir(args.snapshot_dir)
         else:
             as_of_raw = args.as_of
             start_raw = args.start
@@ -131,44 +163,98 @@ def main(argv: list[str] | None = None) -> int:
                 allow_unfiltered=args.allow_unfiltered,
             )
             calendar_code = request.calendar_code
+            snapshot_id = None
             engine = create_db_engine(settings, connect_timeout_seconds=5)
             factory = create_session_factory(engine)
             session = factory()
-            try:
-                result = create_daily_bar_replay(
-                    session,
-                    request,
-                    include_corporate_actions=args.include_corporate_actions,
-                    include_sessions=args.include_sessions,
-                    deterministic_id=args.deterministic_id,
+            result = create_daily_bar_replay(
+                session,
+                request,
+                include_corporate_actions=args.include_corporate_actions,
+                include_sessions=args.include_sessions,
+                deterministic_id=args.deterministic_id,
+            )
+
+        need_audit = args.audit or args.output_dir is not None
+        if need_audit:
+            audit_report = audit_replay(
+                result.events,
+                as_of=result.summary.as_of,
+                sessions_requested=args.include_sessions,
+                calendar_code=calendar_code,
+            )
+        if args.output_dir is not None:
+            if audit_report is None:
+                audit_report = audit_replay(
+                    result.events,
+                    as_of=result.summary.as_of,
+                    sessions_requested=args.include_sessions,
+                    calendar_code=calendar_code,
                 )
-            finally:
-                session.close()
-                engine.dispose()
+            run_result = write_replay_run_artifacts(
+                result,
+                audit_report,
+                args.output_dir,
+                request=request,
+                notes=args.notes,
+                dataset_snapshot_id=snapshot_id,
+                include_sessions=args.include_sessions,
+                include_corporate_actions=args.include_corporate_actions,
+            )
+        if args.register:
+            if run_result is None:
+                print("error: --register requires --output-dir", file=sys.stderr)
+                return 1
+            if session is None:
+                engine = create_db_engine(settings, connect_timeout_seconds=5)
+                factory = create_session_factory(engine)
+                session = factory()
+            registration = register_replay_run(
+                session, run_result.manifest, base_path=args.output_dir
+            )
+            session.commit()
+            catalog_action = registration.action
     except (DatasetValidationError, SimulationError) as exc:
+        if session is not None:
+            session.rollback()
         print(f"error: {exc} ({exc.code})", file=sys.stderr)
         return 1
     except Exception as exc:
+        if session is not None:
+            session.rollback()
         print(f"error: {redact_secret_text(str(exc))}", file=sys.stderr)
         return 1
+    finally:
+        if session is not None:
+            session.close()
+        if engine is not None:
+            engine.dispose()
 
-    audit_report = None
-    if args.audit:
-        audit_report = audit_replay(
-            result.events,
-            as_of=result.summary.as_of,
-            sessions_requested=args.include_sessions,
-            calendar_code=calendar_code,
-        )
+    if result is None:
+        print("error: replay produced no result", file=sys.stderr)
+        return 1
 
     if args.as_json:
         payload = result.summary.as_mapping()
         if audit_report is not None:
             payload["audit"] = audit_report.as_mapping()
+        if run_result is not None:
+            payload["run"] = {
+                "stream_hash": run_result.manifest.stream_hash,
+                "manifest_hash": run_result.manifest.manifest_hash,
+                "boundary_ok": run_result.manifest.boundary_ok,
+                "pre_known_event_count": run_result.manifest.pre_known_event_count,
+                "artifacts": [
+                    item.as_mapping() for item in run_result.manifest.artifacts
+                ],
+                "catalog": catalog_action,
+            }
         print(json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=True))
         return 0
 
-    _print_text(settings.app_mode.value, result, audit_report)
+    _print_text(
+        settings.app_mode.value, result, audit_report, run_result, catalog_action
+    )
     return 0
 
 
@@ -176,6 +262,8 @@ def _print_text(
     mode: str,
     result: DailyBarReplay,
     audit_report: ReplayAuditReport | None,
+    run_result: ReplayRunResult | None,
+    catalog_action: str | None,
 ) -> None:
     summary = result.summary
     print(f"mode={mode}")
@@ -208,10 +296,21 @@ def _print_text(
     print(f"last_event_time={last}")
     print(f"first_market_event_time={first_market}")
     print(f"last_market_event_time={last_market}")
+    if run_result is not None:
+        print(f"stream_hash={run_result.manifest.stream_hash}")
+        print(f"manifest_hash={run_result.manifest.manifest_hash}")
+        print(f"boundary_ok={str(run_result.manifest.boundary_ok).lower()}")
+        print("events=events.jsonl")
+        print("audit=audit.json")
+        print("summary=summary.json")
+        print("manifest=manifest.json")
+    if catalog_action is not None:
+        print(f"catalog={catalog_action}")
     if audit_report is None:
         return
-    print(f"stream_hash={audit_report.stream_hash}")
-    print(f"boundary_ok={str(audit_report.boundary_ok).lower()}")
+    if run_result is None:
+        print(f"stream_hash={audit_report.stream_hash}")
+        print(f"boundary_ok={str(audit_report.boundary_ok).lower()}")
     print(
         "starts_with_replay_started="
         f"{str(audit_report.starts_with_replay_started).lower()}"

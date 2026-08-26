@@ -508,3 +508,91 @@ class DatasetSnapshotRecord(Base):
     registered_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utc_now
     )
+
+
+class SimulationReplayRunRecord(Base):
+    """Catalog metadata for a local replay run. Does not store event rows."""
+
+    __tablename__ = "simulation_replay_runs"
+    __table_args__ = (
+        UniqueConstraint("replay_id", name="uq_simulation_replay_runs_replay_id"),
+        UniqueConstraint(
+            "manifest_hash", name="uq_simulation_replay_runs_manifest_hash"
+        ),
+        CheckConstraint(
+            "event_count >= 0", name="ck_simulation_replay_runs_event_count"
+        ),
+        CheckConstraint(
+            "market_event_count >= 0",
+            name="ck_simulation_replay_runs_market_event_count",
+        ),
+        CheckConstraint(
+            "session_event_count >= 0",
+            name="ck_simulation_replay_runs_session_event_count",
+        ),
+        CheckConstraint(
+            "corporate_action_event_count >= 0",
+            name="ck_simulation_replay_runs_ca_event_count",
+        ),
+        CheckConstraint(
+            "pre_known_event_count >= 0",
+            name="ck_simulation_replay_runs_pre_known_event_count",
+        ),
+        CheckConstraint(
+            "warning_count >= 0", name="ck_simulation_replay_runs_warning_count"
+        ),
+        CheckConstraint(
+            "error_count >= 0", name="ck_simulation_replay_runs_error_count"
+        ),
+        CheckConstraint(
+            "source_type IN ('database', 'snapshot')",
+            name="ck_simulation_replay_runs_source_type",
+        ),
+        Index("ix_simulation_replay_runs_stream_hash", "stream_hash"),
+        Index("ix_simulation_replay_runs_source_type", "source_type"),
+        Index("ix_simulation_replay_runs_dataset_snapshot_id", "dataset_snapshot_id"),
+        Index("ix_simulation_replay_runs_created_at", "created_at"),
+        Index("ix_simulation_replay_runs_is_usable", "is_usable"),
+        Index("ix_simulation_replay_runs_boundary_ok", "boundary_ok"),
+    )
+
+    id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), primary_key=True, default=uuid4
+    )
+    replay_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    stream_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    manifest_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    source_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    dataset_snapshot_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    dataset_content_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
+    package_version: Mapped[str] = mapped_column(String(32), nullable=False)
+    git_commit: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    as_of: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    start_time: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    end_time: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    event_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    market_event_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    session_event_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    corporate_action_event_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    pre_known_event_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    warning_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    error_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    boundary_ok: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    is_reproducible: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    is_usable: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    request: Mapped[dict[str, object]] = mapped_column(JSONB, nullable=False)
+    audit_summary: Mapped[dict[str, object]] = mapped_column(JSONB, nullable=False)
+    artifacts: Mapped[list[dict[str, object]]] = mapped_column(JSONB, nullable=False)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    registered_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )

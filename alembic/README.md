@@ -13,6 +13,8 @@ Phase 1.4 revision `0004_master` introduces `exchanges` and
 `corporate_actions`, and `daily_bars.superseded_by_daily_bar_id`.
 Phase 2.3 revision `0005_catalog` adds `dataset_snapshots` (snapshot
 metadata only; not bar storage).
+Phase 3.3 revision `0006_replay_runs` adds `simulation_replay_runs`
+(replay-run metadata only; not event rows).
 None of these revisions create orders, trades, or broker tables.
 
 ```bash

@@ -9,8 +9,9 @@ timestamps, a **bronze audit layer**, an **instrument master** (exchanges,
 composite identity, identifiers), **manual calendars**, **stored
 corporate actions** (not applied to prices), a **research dataset API**
 (`as_of` required), **dataset quality reports**, **local dataset
-snapshots**, a **PostgreSQL snapshot catalog**, and **deterministic
-dataset replay** with an auditable event stream. It is **not** a trading
+snapshots**, a **PostgreSQL snapshot catalog**, **deterministic
+dataset replay** with an auditable event stream, and **replay-run
+artifacts** with a PostgreSQL metadata catalog. It is **not** a trading
 system.
 
 A pre-existing tree named `AI_VENTURE_OS_PROMPTS/` may sit next to this
@@ -31,6 +32,8 @@ Do not mix the two.
 - Replay a PIT dataset or local snapshot as an ordered market-event timeline.
 - Audit that stream (session/CA events, stream hash, replay boundaries)
   before any backtest exists.
+- Export a replay run as local JSON/JSONL artifacts and register metadata
+  (hashes, counts, boundary status) in PostgreSQL.
 
 ## What is not implemented
 
@@ -161,8 +164,9 @@ postgresql+psycopg://quant:quant_dev_only_not_for_production@127.0.0.1:5434/quan
 ```
 
 There are still **no** trading tables (orders, fills, signals, strategies).
-Alembic revisions `0001_ingestion` … `0005_catalog` create research ingestion,
-instrument-master, and snapshot-catalog tables only.
+Alembic revisions `0001_ingestion` … `0006_replay_runs` create research
+ingestion, instrument-master, snapshot-catalog, and replay-run metadata
+tables only.
 
 ## Migrations
 
@@ -213,6 +217,8 @@ Replay boundaries (`ReplayStartedEvent` first, pre-known facts):
 [docs/simulation/REPLAY_BOUNDARIES.md](docs/simulation/REPLAY_BOUNDARIES.md).
 Replay audit (stream hash, order, PIT checks):
 [docs/simulation/REPLAY_AUDIT.md](docs/simulation/REPLAY_AUDIT.md).
+Replay runs (local artifacts + PostgreSQL metadata catalog):
+[docs/simulation/REPLAY_RUNS.md](docs/simulation/REPLAY_RUNS.md).
 
 See [docs/development/DEVELOPER_WORKFLOW.md](docs/development/DEVELOPER_WORKFLOW.md)
 for install, Compose, Alembic, port 5434 conflicts, and CI.

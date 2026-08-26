@@ -1,4 +1,4 @@
-"""Immutable replay summary. Not persisted; not a backtest report."""
+"""Immutable replay summary. Not a backtest report."""
 
 from __future__ import annotations
 

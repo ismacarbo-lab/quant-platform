@@ -100,8 +100,9 @@ Small deterministic JSON streams live in
 | `calendar_sessions_replay.json` | Local session + bar |
 | `correction_replay.json` | PIT restatement bar |
 
-Load with `load_replay_events_json`. They are for tests, not persisted
-replay runs.
+Load with `load_replay_events_json`. They are for tests, not cataloged
+replay-run artifacts. Exported runs use `events.jsonl` instead; see
+[REPLAY_RUNS.md](REPLAY_RUNS.md).
 
 ## What does not exist
 
@@ -110,5 +111,5 @@ replay runs.
 - orders, trades, fills, portfolio, positions
 - brokers, paper trading, live trading
 - HTTP routes beyond `GET /health`
-- persisted simulation runs
+- full event streams in PostgreSQL
 - ML / LLM runtime, vendor downloads

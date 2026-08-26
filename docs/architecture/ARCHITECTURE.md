@@ -1,11 +1,12 @@
-# Architecture — Phase 3.2
+# Architecture — Phase 3.3
 
 Status: research ingestion, an internal **dataset query API**, **dataset
 quality reports**, **local hashed snapshots**, a **PostgreSQL snapshot
 catalog**, **read-only snapshot integrity checks**, and **deterministic
 dataset replay** with an auditable event stream (bars, optional sessions
-and corporate actions, explicit replay boundaries). No LLM runtime,
-strategies, brokers, or execution.
+and corporate actions, explicit replay boundaries), **local replay-run
+artifacts**, and a **PostgreSQL replay-run metadata catalog**. No LLM
+runtime, strategies, brokers, or execution.
 
 ## Modular monolith
 
@@ -18,7 +19,7 @@ src/quant_platform/
   core/         configuration, UTC clock, identifiers
   data/         local CSV ingest, PIT daily bars, repositories
   research/     PIT datasets, quality reports, snapshots, catalog, integrity
-  simulation/   dataset replay + stream audit (no strategies)
+  simulation/   dataset replay, stream audit, run artifacts + catalog (no strategies)
   storage/      PostgreSQL engine/session, SQLAlchemy Base
   monitoring/   structured logging
   api/          internal HTTP surface (health)
@@ -33,7 +34,7 @@ Documented future areas (no empty implementation packages in Phase 0):
 | `data` | Ingest, bronze/silver/gold, PIT | bronze, silver, identity, calendars, CA store |
 | `storage` | Persistence adapters | engine/session only |
 | `research` | Dataset queries, experiment runners | PIT datasets, quality reports, snapshots, catalog, integrity; no notebooks |
-| `simulation` | Dataset replay timeline | events, boundaries, stream hash, audit; no strategies |
+| `simulation` | Dataset replay timeline | events, boundaries, stream hash, audit, run artifacts + catalog; no strategies |
 | `backtesting` | Simulation engine | not implemented |
 | `strategies` | Signal generation | not implemented |
 | `ml` | Model training/inference | not implemented |
@@ -118,8 +119,9 @@ research dataset API **requires** `as_of`. See
 [DATASET_CATALOG.md](../research/DATASET_CATALOG.md),
 [SNAPSHOT_INTEGRITY.md](../research/SNAPSHOT_INTEGRITY.md),
 [DATASET_REPLAY.md](../simulation/DATASET_REPLAY.md),
-[REPLAY_BOUNDARIES.md](../simulation/REPLAY_BOUNDARIES.md), and
-[REPLAY_AUDIT.md](../simulation/REPLAY_AUDIT.md).
+[REPLAY_BOUNDARIES.md](../simulation/REPLAY_BOUNDARIES.md),
+[REPLAY_AUDIT.md](../simulation/REPLAY_AUDIT.md), and
+[REPLAY_RUNS.md](../simulation/REPLAY_RUNS.md).
 
 ### Point-in-time timestamps
 
@@ -178,6 +180,7 @@ wired. Phase 1.4 stores research tables only: `data_sources`, `exchanges`,
 `market_sessions`, `corporate_actions`, `ingestion_runs`,
 `raw_ingestion_records`, `ingestion_errors`, `daily_bars`.
 Phase 2.3 adds `dataset_snapshots` (catalog metadata only).
+Phase 3.3 adds `simulation_replay_runs` (replay-run metadata only).
 There are still **no** orders, fills, trades, strategies, or broker tables.
 SQLite is rejected. Instrument uniqueness uses PostgreSQL
 `UNIQUE NULLS NOT DISTINCT` (PG 15+).
@@ -199,6 +202,8 @@ read-only artifact verification (no schema change). Phase 3.0 adds
 `quant_platform.simulation` replay (no schema change, no run persistence).
 Phase 3.1 adds session/CA events, a stream hash, and a replay audit report.
 Phase 3.2 formalizes replay boundaries and deterministic event fixtures.
+Phase 3.3 adds local replay-run artifacts and `simulation_replay_runs`
+(`0006_replay_runs`; metadata only, not event rows).
 None of these add HTTP routes or gold/trading tables.
 
 ## AI usage boundary

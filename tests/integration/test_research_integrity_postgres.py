@@ -44,6 +44,7 @@ _ALLOWED = frozenset(
         "daily_bars",
         "data_sources",
         "dataset_snapshots",
+        "simulation_replay_runs",
         "exchanges",
         "ingestion_errors",
         "ingestion_runs",

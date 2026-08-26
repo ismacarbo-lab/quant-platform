@@ -191,9 +191,28 @@ uv run python scripts/replay-daily-dataset.py \
   --json
 ```
 
+Export artifacts and register catalog metadata (`--register` requires
+`--output-dir`):
+
+```bash
+uv run python scripts/replay-daily-dataset.py \
+  --as-of 2024-01-10T00:00:00Z \
+  --start 2024-01-01T00:00:00Z \
+  --end 2024-01-05T00:00:00Z \
+  --symbol FIXT \
+  --output-dir /tmp/fixt-replay \
+  --register \
+  --deterministic-id \
+  --json
+
+uv run python scripts/list-replay-runs.py --usable-only --json
+uv run python scripts/verify-replay-run.py --run-dir /tmp/fixt-replay
+```
+
 See [docs/simulation/DATASET_REPLAY.md](../simulation/DATASET_REPLAY.md),
 [docs/simulation/REPLAY_BOUNDARIES.md](../simulation/REPLAY_BOUNDARIES.md),
-and [docs/simulation/REPLAY_AUDIT.md](../simulation/REPLAY_AUDIT.md).
+[docs/simulation/REPLAY_AUDIT.md](../simulation/REPLAY_AUDIT.md),
+and [docs/simulation/REPLAY_RUNS.md](../simulation/REPLAY_RUNS.md).
 
 Event JSON fixtures for tests live in `tests/fixtures/replay_events/`.
 

@@ -1,7 +1,10 @@
 # Replay audit — Phase 3.2
 
 A **replay audit** inspects an already-built event stream. It does not
-trade, does not run a strategy, and does not persist a simulation run.
+trade, does not run a strategy, and does not store event rows. Phase 3.3
+can write the full report to local `audit.json` and a compact
+`audit_summary` into the replay-run catalog. See
+[REPLAY_RUNS.md](REPLAY_RUNS.md).
 
 Package: `quant_platform.simulation.audit` plus
 `quant_platform.simulation.hashing`.
@@ -102,6 +105,11 @@ uv run python scripts/replay-daily-dataset.py \
 market event times, warning/error counts, and issue lines. It does not
 print `DATABASE_URL`.
 
+With `--output-dir`, the same audit is written to `audit.json` even if
+`--audit` is omitted. `--register` stores only the compact summary
+(`ok`, `boundary_ok`, counts, `stream_hash`, bookend flags), not the
+issue list.
+
 Snapshot replay can still be audited (bars only). `--include-sessions` /
 `--include-corporate-actions` on a snapshot add summary warnings: those
 facts are not stored in the snapshot folder.
@@ -110,4 +118,4 @@ facts are not stored in the snapshot folder.
 
 Not a backtester, quality report, or catalog integrity check. Those stay
 in `quant_platform.research`. Replay audit only looks at the simulation
-event stream.
+event stream. Persisting the run is [REPLAY_RUNS.md](REPLAY_RUNS.md).

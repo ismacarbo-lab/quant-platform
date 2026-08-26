@@ -106,7 +106,7 @@ files. Local file checks are in
 
 ```bash
 uv run alembic upgrade head
-uv run alembic downgrade 0004_master   # drops dataset_snapshots only
+uv run alembic downgrade 0004_master   # drops catalog + later revisions
 ```
 
 See [alembic/README.md](../../alembic/README.md).
