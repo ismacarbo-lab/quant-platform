@@ -9,8 +9,8 @@ timestamps, a **bronze audit layer**, an **instrument master** (exchanges,
 composite identity, identifiers), **manual calendars**, **stored
 corporate actions** (not applied to prices), a **research dataset API**
 (`as_of` required), **dataset quality reports**, **local dataset
-snapshots**, and a **PostgreSQL snapshot catalog**. It is **not** a trading
-system.
+snapshots**, a **PostgreSQL snapshot catalog**, and **deterministic
+dataset replay** (market events only). It is **not** a trading system.
 
 A pre-existing tree named `AI_VENTURE_OS_PROMPTS/` may sit next to this
 project. It is a separate product and is **not** part of `quant_platform`.
@@ -27,6 +27,7 @@ Do not mix the two.
 - Save a local, hashed snapshot of a dataset request, CSV, and quality report.
 - Register snapshot metadata in PostgreSQL (hashes, request, relative artifacts).
 - Verify local snapshot artifacts and catalog hashes without rewriting files.
+- Replay a PIT dataset or local snapshot as an ordered market-event timeline.
 
 ## What is not implemented
 
@@ -203,6 +204,8 @@ Snapshot catalog (PostgreSQL metadata, hashes, list/compare):
 [docs/research/DATASET_CATALOG.md](docs/research/DATASET_CATALOG.md).
 Snapshot integrity (local artifact and catalog verification):
 [docs/research/SNAPSHOT_INTEGRITY.md](docs/research/SNAPSHOT_INTEGRITY.md).
+Dataset replay (ordered market events, not a backtester):
+[docs/simulation/DATASET_REPLAY.md](docs/simulation/DATASET_REPLAY.md).
 
 See [docs/development/DEVELOPER_WORKFLOW.md](docs/development/DEVELOPER_WORKFLOW.md)
 for install, Compose, Alembic, port 5434 conflicts, and CI.

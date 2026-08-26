@@ -21,6 +21,9 @@ PostgreSQL:
 
 The same request against an unchanged database returns the same rows.
 
+Replay (`quant_platform.simulation`) can walk those rows as market events.
+That is not a backtester. See [DATASET_REPLAY.md](../simulation/DATASET_REPLAY.md).
+
 ## Why `as_of` is mandatory
 
 Without `as_of`, a query could silently include corrections that would not
@@ -124,3 +127,6 @@ uv run pytest -m postgres          # PIT, calendars, corporate actions
   it is a report, not a backtester
 - local snapshots are documented in [DATASET_SNAPSHOTS.md](DATASET_SNAPSHOTS.md)
 - the snapshot catalog is documented in [DATASET_CATALOG.md](DATASET_CATALOG.md)
+- snapshot integrity is documented in [SNAPSHOT_INTEGRITY.md](SNAPSHOT_INTEGRITY.md)
+- dataset replay (not a backtester) is documented in
+  [DATASET_REPLAY.md](../simulation/DATASET_REPLAY.md)

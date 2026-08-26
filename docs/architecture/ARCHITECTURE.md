@@ -1,9 +1,10 @@
-# Architecture — Phase 2.4
+# Architecture — Phase 3.0
 
 Status: research ingestion, an internal **dataset query API**, **dataset
 quality reports**, **local hashed snapshots**, a **PostgreSQL snapshot
-catalog**, and **read-only snapshot integrity checks**. No LLM runtime,
-strategies, brokers, or execution.
+catalog**, **read-only snapshot integrity checks**, and **deterministic
+dataset replay** (market events only). No LLM runtime, strategies,
+brokers, or execution.
 
 ## Modular monolith
 
@@ -16,6 +17,7 @@ src/quant_platform/
   core/         configuration, UTC clock, identifiers
   data/         local CSV ingest, PIT daily bars, repositories
   research/     PIT datasets, quality reports, snapshots, catalog, integrity
+  simulation/   deterministic dataset replay (no strategies)
   storage/      PostgreSQL engine/session, SQLAlchemy Base
   monitoring/   structured logging
   api/          internal HTTP surface (health)
@@ -30,6 +32,7 @@ Documented future areas (no empty implementation packages in Phase 0):
 | `data` | Ingest, bronze/silver/gold, PIT | bronze, silver, identity, calendars, CA store |
 | `storage` | Persistence adapters | engine/session only |
 | `research` | Dataset queries, experiment runners | PIT datasets, quality reports, snapshots, catalog, integrity; no notebooks |
+| `simulation` | Dataset replay timeline | daily-bar events only; no strategies |
 | `backtesting` | Simulation engine | not implemented |
 | `strategies` | Signal generation | not implemented |
 | `ml` | Model training/inference | not implemented |
@@ -111,8 +114,9 @@ research dataset API **requires** `as_of`. See
 [RESEARCH_DATASETS.md](../research/RESEARCH_DATASETS.md),
 [DATASET_QUALITY.md](../research/DATASET_QUALITY.md),
 [DATASET_SNAPSHOTS.md](../research/DATASET_SNAPSHOTS.md),
-[DATASET_CATALOG.md](../research/DATASET_CATALOG.md), and
-[SNAPSHOT_INTEGRITY.md](../research/SNAPSHOT_INTEGRITY.md).
+[DATASET_CATALOG.md](../research/DATASET_CATALOG.md),
+[SNAPSHOT_INTEGRITY.md](../research/SNAPSHOT_INTEGRITY.md), and
+[DATASET_REPLAY.md](../simulation/DATASET_REPLAY.md).
 
 ### Point-in-time timestamps
 
@@ -136,7 +140,10 @@ observations where:
 available_time > simulation_time
 ```
 
-This is a critical future invariant against look-ahead / data leakage.
+Dataset replay enforces this by setting each bar’s `event_time` to
+`available_time` (not `observation_time`) and refusing to advance the
+simulation clock backwards. That `event_time` is the simulation instant,
+not the economic occurrence named in the table above.
 
 ## Time and identifiers
 
@@ -181,8 +188,9 @@ Application mode remains **research** only.
 Phase 2.0 adds `quant_platform.research` for tabular datasets. Phase 2.1
 adds quality reports. Phase 2.2 adds local hashed snapshots. Phase 2.3 adds
 the `dataset_snapshots` catalog table (`0005_catalog`). Phase 2.4 adds
-read-only artifact verification (no schema change). None of these add
-HTTP routes or gold/trading tables.
+read-only artifact verification (no schema change). Phase 3.0 adds
+`quant_platform.simulation` replay (no schema change, no run persistence).
+None of these add HTTP routes or gold/trading tables.
 
 ## AI usage boundary
 

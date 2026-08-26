@@ -127,6 +127,8 @@ folder. Uncommitted working-tree edits are **not** hashed.
 
 Catalog registration and listing: [DATASET_CATALOG.md](DATASET_CATALOG.md).
 Integrity checks: [SNAPSHOT_INTEGRITY.md](SNAPSHOT_INTEGRITY.md).
+Replay a verified snapshot without PostgreSQL:
+[DATASET_REPLAY.md](../simulation/DATASET_REPLAY.md).
 
 ## Tests
 
@@ -141,3 +143,5 @@ uv run pytest -m postgres          # real snapshot folders + PIT hash change
 - paper/live trading, ML, LLM runtime, vendor downloads
 - HTTP snapshot routes (still `GET /health` only)
 - S3/GCS/Azure, workers, queues, dashboards
+- replay from a snapshot is documented in
+  [DATASET_REPLAY.md](../simulation/DATASET_REPLAY.md); it is not a backtester

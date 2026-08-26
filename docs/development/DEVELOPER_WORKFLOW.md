@@ -164,6 +164,23 @@ uv run python scripts/verify-dataset-catalog.py \
 
 See [docs/research/SNAPSHOT_INTEGRITY.md](../research/SNAPSHOT_INTEGRITY.md).
 
+Replay a PIT dataset (or a local snapshot) as ordered market events. This
+is not a backtester:
+
+```bash
+uv run python scripts/replay-daily-dataset.py \
+  --as-of 2024-01-10T00:00:00Z \
+  --start 2024-01-01T00:00:00Z \
+  --end 2024-01-05T00:00:00Z \
+  --symbol FIXT
+
+uv run python scripts/replay-daily-dataset.py \
+  --snapshot-dir /tmp/fixt-snapshot \
+  --json
+```
+
+See [docs/simulation/DATASET_REPLAY.md](../simulation/DATASET_REPLAY.md).
+
 Stop (keeps the volume):
 
 ```bash
