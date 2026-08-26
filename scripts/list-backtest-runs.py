@@ -63,14 +63,21 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"mode={settings.app_mode.value}")
     print(f"count={len(rows)}")
-    print("backtest_id\tusable\tpolicy\tevents\treplay_id\tbacktest_hash\twarnings")
+    print("backtest_id\tusable\tpolicy\terrors\tevents\treplay_id\tbacktest_hash")
     for row in rows:
         usable = "yes" if row.is_usable else "no"
         print(
-            f"{row.backtest_id}\t{usable}\t{row.policy_name}\t{row.event_count}\t"
-            f"{row.replay_id}\t{row.backtest_hash}\t{row.warning_count}"
+            f"{row.backtest_id}\t{usable}\t{row.policy_name}\t{row.error_count}\t"
+            f"{row.event_count}\t{row.replay_id}\t{_short_hash(row.backtest_hash)}"
         )
     return 0
+
+
+def _short_hash(value: str) -> str:
+    prefix = "sha256:"
+    if value.startswith(prefix) and len(value) > len(prefix) + 12:
+        return value[: len(prefix) + 12] + "…"
+    return value
 
 
 if __name__ == "__main__":

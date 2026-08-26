@@ -40,4 +40,9 @@ trading system. Counting events proves:
 - `events.jsonl` is consumed in file order
 - `backtest_hash` is stable for the same stream and counts
 
-See [BACKTEST_ENGINE.md](BACKTEST_ENGINE.md).
+Integrity still requires `policy_name == "noop"`. A usable NoOp result
+is evidence that the dry-run folder is intact, not that a strategy
+exists.
+
+See [BACKTEST_ENGINE.md](BACKTEST_ENGINE.md) and
+[BACKTEST_INTEGRITY.md](BACKTEST_INTEGRITY.md).

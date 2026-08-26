@@ -232,10 +232,16 @@ uv run python scripts/run-backtest.py \
   --json
 
 uv run python scripts/list-backtest-runs.py --usable-only --json
+uv run python scripts/verify-backtest-run.py --run-dir /tmp/fixt-backtest
+uv run python scripts/compare-backtest-runs.py --left ID_A --right ID_B
+uv run python scripts/check-backtest-usability.py \
+  --backtest-id ID_A \
+  --base-dir /tmp/fixt-backtest
 ```
 
-See [docs/backtest/BACKTEST_ENGINE.md](../backtest/BACKTEST_ENGINE.md)
-and [docs/backtest/NOOP_POLICY.md](../backtest/NOOP_POLICY.md).
+See [docs/backtest/BACKTEST_ENGINE.md](../backtest/BACKTEST_ENGINE.md),
+[docs/backtest/NOOP_POLICY.md](../backtest/NOOP_POLICY.md), and
+[docs/backtest/BACKTEST_INTEGRITY.md](../backtest/BACKTEST_INTEGRITY.md).
 
 Event JSON fixtures for tests live in `tests/fixtures/replay_events/`.
 

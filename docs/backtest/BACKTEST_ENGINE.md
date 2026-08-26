@@ -1,4 +1,4 @@
-# Backtest engine foundation — Phase 4.0
+# Backtest engine foundation — Phase 4.0 / 4.1
 
 This phase adds an **offline dry-run backtest engine**. It consumes a
 registered replay run that already passed the readiness gate, walks the
@@ -11,6 +11,8 @@ Package: `quant_platform.backtest`.
 
 Readiness gate: [BACKTEST_READINESS.md](../simulation/BACKTEST_READINESS.md).
 NoOp policy: [NOOP_POLICY.md](NOOP_POLICY.md).
+Artifact integrity and result comparison:
+[BACKTEST_INTEGRITY.md](BACKTEST_INTEGRITY.md).
 
 ## What this backtest is
 
@@ -62,7 +64,9 @@ Allowed result fields:
 Compare **logic** with `backtest_hash`. Compare **this export** with
 `manifest_hash`. Two dry-runs of the same stream can share
 `backtest_hash` and still differ in `manifest_hash` if `created_at` or
-`backtest_id` differs.
+`backtest_id` differs (`same_result` in the Phase 4.1 diff). Recalculate
+both hashes with `verify_backtest_artifacts`; do not trust the files
+blindly.
 
 `--deterministic-id` derives `backtest_id` from `backtest_hash`. The
 default is UUID4 (not part of `backtest_hash`).
@@ -125,6 +129,12 @@ uv run python scripts/run-backtest.py \
 
 uv run python scripts/list-backtest-runs.py --replay-id <replay_id> --json
 uv run python scripts/list-backtest-runs.py --usable-only --policy-name noop
+
+uv run python scripts/verify-backtest-run.py --run-dir /tmp/fixt-backtest
+uv run python scripts/compare-backtest-runs.py --left ID_A --right ID_B --json
+uv run python scripts/check-backtest-usability.py \
+  --backtest-id ID_A \
+  --base-dir /tmp/fixt-backtest
 ```
 
 Python:

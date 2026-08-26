@@ -12,9 +12,10 @@ corporate actions** (not applied to prices), a **research dataset API**
 snapshots**, a **PostgreSQL snapshot catalog**, **deterministic
 dataset replay** with an auditable event stream, **replay-run
 artifacts** with a PostgreSQL metadata catalog, a **backtest
-readiness gate**, and a **dry-run backtest engine**
-(`NoOpBacktestPolicy` only: counts, hashes, no orders). It is **not**
-a trading system.
+readiness gate**, a **dry-run backtest engine**
+(`NoOpBacktestPolicy` only: counts, hashes, no orders), and
+**backtest artifact integrity** (verify hashes, compare runs, usability
+gate). It is **not** a trading system.
 
 A pre-existing tree named `AI_VENTURE_OS_PROMPTS/` may sit next to this
 project. It is a separate product and is **not** part of `quant_platform`.
@@ -40,6 +41,8 @@ Do not mix the two.
   dry-run backtest (no strategy, PnL, or orders).
 - Consume a ready replay run with `NoOpBacktestPolicy`, write local
   summary/manifest artifacts, and register metadata in PostgreSQL.
+- Verify local backtest artifacts, recompute hashes, compare two
+  dry-runs, and gate whether a NoOp result is usable research evidence.
 
 ## What is not implemented
 
@@ -229,6 +232,8 @@ Backtest readiness (compare runs; gate, not a strategy):
 [docs/simulation/BACKTEST_READINESS.md](docs/simulation/BACKTEST_READINESS.md).
 Dry-run backtest engine (NoOp policy, no orders or PnL):
 [docs/backtest/BACKTEST_ENGINE.md](docs/backtest/BACKTEST_ENGINE.md).
+Backtest artifact integrity (verify, compare, usable_result):
+[docs/backtest/BACKTEST_INTEGRITY.md](docs/backtest/BACKTEST_INTEGRITY.md).
 
 See [docs/development/DEVELOPER_WORKFLOW.md](docs/development/DEVELOPER_WORKFLOW.md)
 for install, Compose, Alembic, port 5434 conflicts, and CI.
