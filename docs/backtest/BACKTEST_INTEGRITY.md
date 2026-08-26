@@ -1,4 +1,4 @@
-# Backtest artifact integrity — Phase 4.1 / 4.2 / 4.3 / 4.4
+# Backtest artifact integrity — Phase 4.1 / 4.2 / 4.3 / 4.4 / 4.5
 
 Read-only checks that a local dry-run backtest folder still matches its
 manifest and, when asked, the PostgreSQL `backtest_runs` catalog.
@@ -25,6 +25,7 @@ Research policy interface: [RESEARCH_POLICY_INTERFACE.md](RESEARCH_POLICY_INTERF
 Policy output: [POLICY_OUTPUT_INTEGRITY.md](POLICY_OUTPUT_INTEGRITY.md).
 Replay readiness (different gate): [BACKTEST_READINESS.md](../simulation/BACKTEST_READINESS.md).
 Experiments: [BACKTEST_EXPERIMENTS.md](BACKTEST_EXPERIMENTS.md).
+Experiment usability: [BACKTEST_EXPERIMENT_USABILITY.md](BACKTEST_EXPERIMENT_USABILITY.md).
 
 ## What is verified
 
@@ -98,9 +99,13 @@ Scripts and this document use the field-level diff.
 `verify_backtest_experiment_artifacts` checks
 `experiment_manifest.json` / `experiment_summary.json`, relative paths,
 recomputed `experiment_hash` / `manifest_hash`, member count coherence,
-and that each member folder cites the listed `backtest_id`. It does not
-copy events or compute PnL. See
-[BACKTEST_EXPERIMENTS.md](BACKTEST_EXPERIMENTS.md).
+and that each member folder cites the listed `backtest_id`. Listed
+`experiment_research_report.json` / `experiment_usability.json` files
+are required when present in the manifest and scanned for secrets and
+operative wording. Unlisted report files do not fail older folders.
+The check does not copy events or compute PnL. See
+[BACKTEST_EXPERIMENTS.md](BACKTEST_EXPERIMENTS.md) and
+[BACKTEST_EXPERIMENT_USABILITY.md](BACKTEST_EXPERIMENT_USABILITY.md).
 
 ## `usable_result`
 
@@ -126,6 +131,10 @@ If `replay_id` is missing from `simulation_replay_runs`, the report adds a
 
 This is **not** replay `ready_for_backtest`. It does not mean the policy
 made money.
+
+`evaluate_backtest_experiment_usability` applies this member gate to
+every experiment member, plus experiment-folder integrity. See
+[BACKTEST_EXPERIMENT_USABILITY.md](BACKTEST_EXPERIMENT_USABILITY.md).
 
 ## Verify a local backtest
 
@@ -163,6 +172,14 @@ uv run python scripts/check-backtest-usability.py \
   --backtest-id <backtest_id> \
   --base-dir /tmp/fixt-backtest \
   --json
+uv run python scripts/check-backtest-experiment-usability.py \
+  --experiment-id <experiment_id> \
+  --base-dir /tmp/fixt-experiment \
+  --json
+uv run python scripts/report-backtest-experiment.py \
+  --experiment-id <experiment_id> \
+  --base-dir /tmp/fixt-experiment \
+  --output-dir /tmp/fixt-experiment
 ```
 
 List catalog rows (short `backtest_hash`, `policy_name`, `is_usable`,

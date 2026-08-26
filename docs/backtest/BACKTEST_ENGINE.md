@@ -1,4 +1,4 @@
-# Backtest engine foundation — Phase 4.0 / 4.1 / 4.2 / 4.3 / 4.4
+# Backtest engine foundation — Phase 4.0 / 4.1 / 4.2 / 4.3 / 4.4 / 4.5
 
 This phase adds an **offline dry-run backtest engine**. It consumes a
 registered replay run that already passed the readiness gate, walks the
@@ -19,6 +19,8 @@ Policy output reports:
 [POLICY_OUTPUT_INTEGRITY.md](POLICY_OUTPUT_INTEGRITY.md).
 Experiments (group dry-runs; not a strategy):
 [BACKTEST_EXPERIMENTS.md](BACKTEST_EXPERIMENTS.md).
+Experiment usability and aggregated research reports:
+[BACKTEST_EXPERIMENT_USABILITY.md](BACKTEST_EXPERIMENT_USABILITY.md).
 
 ## What this backtest is
 
@@ -99,7 +101,9 @@ Table: `backtest_runs`. Alembic revisions `0007_backtest_runs` and
 `0008_backtest_policy_metadata` (`policy_config` JSONB,
 `policy_output_hash` text). Phase 4.4 adds `backtest_experiments`
 (`0009_backtest_experiments`) to group those dry-run rows; see
-[BACKTEST_EXPERIMENTS.md](BACKTEST_EXPERIMENTS.md).
+[BACKTEST_EXPERIMENTS.md](BACKTEST_EXPERIMENTS.md). Phase 4.5 adds an
+experiment usability gate and research reports without a schema change;
+see [BACKTEST_EXPERIMENT_USABILITY.md](BACKTEST_EXPERIMENT_USABILITY.md).
 
 Metadata only (hashes, counts, request/summary JSON, relative artifact
 names). No event rows, orders, fills, or positions.
@@ -163,6 +167,13 @@ uv run python scripts/run-backtest-experiment.py \
   --register \
   --deterministic-id \
   --json
+uv run python scripts/check-backtest-experiment-usability.py \
+  --experiment-id <experiment_id> \
+  --base-dir /tmp/fixt-experiment
+uv run python scripts/report-backtest-experiment.py \
+  --experiment-id <experiment_id> \
+  --base-dir /tmp/fixt-experiment \
+  --output-dir /tmp/fixt-experiment
 ```
 
 Python:

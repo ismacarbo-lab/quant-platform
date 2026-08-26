@@ -16,8 +16,9 @@ readiness gate**, a **dry-run backtest engine**
 (`NoOpBacktestPolicy` / `ResearchPolicy`: counts, hashes, observations,
 no orders), **backtest artifact integrity**, a **research-policy
 interface** without signals, **policy-output observation reports**, and
-a **backtest experiment registry** that groups dry-runs (still no PnL
-or orders).
+a **backtest experiment registry** that groups dry-runs, an **experiment
+usability gate**, and **aggregated experiment research reports** (still
+no PnL or orders).
 It is **not** a trading system.
 
 A pre-existing tree named `AI_VENTURE_OS_PROMPTS/` may sit next to this
@@ -50,6 +51,8 @@ Do not mix the two.
   (`noop` / `event_counting`) that emits observations and counters only.
 - Group several dry-run backtests under a hashed experiment record
   (same replay with allowed configs, or several replays with one policy).
+- Gate whether a registered experiment is usable research evidence and
+  write an aggregated observation report (counts and hashes only).
 
 ## What is not implemented
 
@@ -247,6 +250,8 @@ Policy output reports and integrity:
 [docs/backtest/POLICY_OUTPUT_INTEGRITY.md](docs/backtest/POLICY_OUTPUT_INTEGRITY.md).
 Backtest experiments (group dry-runs; not a strategy):
 [docs/backtest/BACKTEST_EXPERIMENTS.md](docs/backtest/BACKTEST_EXPERIMENTS.md).
+Experiment usability and aggregated research reports:
+[docs/backtest/BACKTEST_EXPERIMENT_USABILITY.md](docs/backtest/BACKTEST_EXPERIMENT_USABILITY.md).
 
 See [docs/development/DEVELOPER_WORKFLOW.md](docs/development/DEVELOPER_WORKFLOW.md)
 for install, Compose, Alembic, port 5434 conflicts, and CI.

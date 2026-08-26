@@ -1,4 +1,4 @@
-# Backtest experiments — Phase 4.4
+# Backtest experiments — Phase 4.4 / 4.5
 
 A **backtest experiment** groups already-allowed dry-run backtest runs
 under one reproducible research record.
@@ -8,10 +8,14 @@ signals, size positions, or compute PnL.
 
 Package: `quant_platform.backtest.experiments`, `experiment_types`,
 `experiment_artifacts`, `experiment_catalog`, `experiment_integrity`.
+Phase 4.5 adds `experiment_readiness`, `experiment_reports`, and
+`experiment_report_artifacts`.
 
 Engine: [BACKTEST_ENGINE.md](BACKTEST_ENGINE.md).
 Policy: [RESEARCH_POLICY_INTERFACE.md](RESEARCH_POLICY_INTERFACE.md).
 Integrity: [BACKTEST_INTEGRITY.md](BACKTEST_INTEGRITY.md).
+Experiment usability and research reports:
+[BACKTEST_EXPERIMENT_USABILITY.md](BACKTEST_EXPERIMENT_USABILITY.md).
 
 ## What an experiment is
 
@@ -74,6 +78,12 @@ Not written: copies of `events.jsonl`, replay artifacts, datasets, or
 absolute paths. Manifest artifact paths are relative
 (`experiment_summary.json`, `runs/0001/manifest.json`).
 
+Phase 4.5 may also write `experiment_research_report.json` and
+`experiment_usability.json`. Those files are **not** in the default
+manifest list, so older experiment folders stay valid. If they **are**
+listed, a missing file is an integrity error. Writing them does not
+rewrite `experiment_manifest.json`.
+
 PostgreSQL does **not** store those files. It stores metadata only.
 
 ## PostgreSQL catalog
@@ -91,7 +101,9 @@ warning counts, and JSONB `request` / `summary` / `artifacts`.
 - no event rows, datasets, orders, fills, positions, or PnL
 
 `--usable-only` keeps rows where `usable_count == member_count` and
-`error_count == 0`. That is an integrity summary, not an edge.
+`error_count == 0`. That is a catalog summary, not an edge, and not the
+Phase 4.5 local usability gate (see
+[BACKTEST_EXPERIMENT_USABILITY.md](BACKTEST_EXPERIMENT_USABILITY.md)).
 
 ## Run, register, compare
 
@@ -128,6 +140,16 @@ uv run python scripts/run-backtest-experiment.py \
 uv run python scripts/list-backtest-experiments.py --usable-only --json
 uv run python scripts/list-backtest-experiments.py \
   --experiment-name noop-grid --policy-name noop
+
+uv run python scripts/check-backtest-experiment-usability.py \
+  --experiment-id <experiment_id> \
+  --base-dir /tmp/fixt-experiment \
+  --json
+uv run python scripts/report-backtest-experiment.py \
+  --experiment-id <experiment_id> \
+  --base-dir /tmp/fixt-experiment \
+  --output-dir /tmp/fixt-experiment \
+  --json
 
 uv run python scripts/verify-backtest-experiment.py \
   --experiment-dir /tmp/fixt-experiment
@@ -174,7 +196,14 @@ Scripts do not print `DATABASE_URL`. They do not trade.
 manifest and summary exist, paths are relative, hashes recompute,
 counts match members, member folders cite the listed `backtest_id`
 values, and metadata has no secret markers or investment-decision
-wording. It does not copy events or invent PnL.
+wording. Listed report files, when present, are scanned the same way.
+Unlisted report files are ignored so Phase 4.4 folders still pass.
+The check does not copy events or invent PnL.
+
+`evaluate_backtest_experiment_usability` is a separate gate: every
+member must be a usable backtest result, artifacts must verify, and
+there must be no trading constructs. See
+[BACKTEST_EXPERIMENT_USABILITY.md](BACKTEST_EXPERIMENT_USABILITY.md).
 
 ## What still does not exist
 

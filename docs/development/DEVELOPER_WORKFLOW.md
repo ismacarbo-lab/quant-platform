@@ -256,6 +256,13 @@ uv run python scripts/list-backtest-experiments.py --usable-only --json
 uv run python scripts/verify-backtest-experiment.py \
   --experiment-dir /tmp/fixt-experiment
 uv run python scripts/compare-backtest-experiments.py --left ID_A --right ID_B
+uv run python scripts/check-backtest-experiment-usability.py \
+  --experiment-id ID_A \
+  --base-dir /tmp/fixt-experiment
+uv run python scripts/report-backtest-experiment.py \
+  --experiment-id ID_A \
+  --base-dir /tmp/fixt-experiment \
+  --output-dir /tmp/fixt-experiment
 ```
 
 See [docs/backtest/BACKTEST_ENGINE.md](../backtest/BACKTEST_ENGINE.md),
@@ -263,7 +270,8 @@ See [docs/backtest/BACKTEST_ENGINE.md](../backtest/BACKTEST_ENGINE.md),
 [docs/backtest/BACKTEST_INTEGRITY.md](../backtest/BACKTEST_INTEGRITY.md),
 [docs/backtest/RESEARCH_POLICY_INTERFACE.md](../backtest/RESEARCH_POLICY_INTERFACE.md),
 [docs/backtest/POLICY_OUTPUT_INTEGRITY.md](../backtest/POLICY_OUTPUT_INTEGRITY.md),
-and [docs/backtest/BACKTEST_EXPERIMENTS.md](../backtest/BACKTEST_EXPERIMENTS.md).
+[docs/backtest/BACKTEST_EXPERIMENTS.md](../backtest/BACKTEST_EXPERIMENTS.md),
+and [docs/backtest/BACKTEST_EXPERIMENT_USABILITY.md](../backtest/BACKTEST_EXPERIMENT_USABILITY.md).
 
 Event JSON fixtures for tests live in `tests/fixtures/replay_events/`.
 

@@ -63,12 +63,14 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"mode={settings.app_mode.value}")
     print(f"count={len(rows)}")
-    print("experiment_id\tname\tpolicy\tmembers\tusable\terrors\texperiment_hash")
+    print(
+        "experiment_id\tname\tpolicy\tmembers\tusable\terrors\twarnings\texperiment_hash"
+    )
     for row in rows:
         print(
             f"{row.experiment_id}\t{row.experiment_name}\t{row.policy_name}\t"
             f"{row.member_count}\t{row.usable_count}\t{row.error_count}\t"
-            f"{_short_hash(row.experiment_hash)}"
+            f"{row.warning_count}\t{_short_hash(row.experiment_hash)}"
         )
     return 0
 

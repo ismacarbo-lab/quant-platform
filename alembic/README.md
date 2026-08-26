@@ -22,6 +22,7 @@ Phase 4.2 revision `0008_backtest_policy_metadata` adds
 Phase 4.4 revision `0009_backtest_experiments` adds
 `backtest_experiments` (experiment metadata only; not event rows,
 orders, or PnL).
+Phase 4.5 does not add a revision.
 None of these revisions create orders, trades, or broker tables.
 
 ```bash

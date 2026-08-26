@@ -1,4 +1,4 @@
-# Policy output integrity — Phase 4.3
+# Policy output integrity — Phase 4.3 / 4.5
 
 Read-only checks and summaries for `policy_output.json` produced by a
 research policy. This layer does **not** write files, mutate catalog
@@ -13,6 +13,7 @@ Packages:
 Engine: [BACKTEST_ENGINE.md](BACKTEST_ENGINE.md).
 Research policy: [RESEARCH_POLICY_INTERFACE.md](RESEARCH_POLICY_INTERFACE.md).
 Backtest folder integrity: [BACKTEST_INTEGRITY.md](BACKTEST_INTEGRITY.md).
+Experiment aggregation: [BACKTEST_EXPERIMENT_USABILITY.md](BACKTEST_EXPERIMENT_USABILITY.md).
 
 **No Alembic revision for this phase.** Catalog columns already exist
 from `0008_backtest_policy_metadata`.
@@ -91,6 +92,10 @@ Forbidden operative language or other policy-output integrity **errors**
 set `usable_result` to false. That still does **not** mean the policy
 was a strategy; it means the research artifact is not intact.
 
+Experiment research reports sum these observation counts across members.
+They still do not compute PnL or emit signals. See
+[BACKTEST_EXPERIMENT_USABILITY.md](BACKTEST_EXPERIMENT_USABILITY.md).
+
 ## Why this is not a strategy or a signal
 
 Reports count what the replay showed. They do not decide to open,
@@ -107,6 +112,9 @@ uv run python scripts/verify-policy-output.py \
   --json
 uv run python scripts/verify-backtest-run.py \
   --run-dir /tmp/fixt-backtest
+uv run python scripts/report-backtest-experiment.py \
+  --experiment-id <experiment_id> \
+  --base-dir /tmp/fixt-experiment
 ```
 
 Scripts do not print `DATABASE_URL`. There is no `--repair` flag.

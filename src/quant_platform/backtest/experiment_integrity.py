@@ -10,7 +10,9 @@ from pathlib import Path
 
 from quant_platform.backtest.experiment_types import (
     EXPERIMENT_MANIFEST_ARTIFACT_NAME,
+    EXPERIMENT_RESEARCH_REPORT_ARTIFACT_NAME,
     EXPERIMENT_SUMMARY_ARTIFACT_NAME,
+    EXPERIMENT_USABILITY_ARTIFACT_NAME,
     member_relative_path,
 )
 from quant_platform.backtest.integrity_types import (
@@ -50,6 +52,13 @@ class ExperimentIntegrityCode(StrEnum):
 
 EXPERIMENT_INTEGRITY_KIND = "backtest_experiment_verification"
 EXPERIMENT_INTEGRITY_FORMAT_VERSION = 1
+
+_OPTIONAL_REPORT_ARTIFACTS = frozenset(
+    {
+        EXPERIMENT_RESEARCH_REPORT_ARTIFACT_NAME,
+        EXPERIMENT_USABILITY_ARTIFACT_NAME,
+    }
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -277,6 +286,15 @@ def verify_backtest_experiment_artifacts(
         status = _artifact_status(resolved, item)
         artifacts.append(status)
         _check_artifact_status(issues, status)
+        listed_path = status.path
+        if (
+            status.exists
+            and not status.escaped
+            and listed_path in _OPTIONAL_REPORT_ARTIFACTS
+        ):
+            report_text = (resolved / listed_path).read_text(encoding="utf-8")
+            _reject_secrets(issues, report_text, listed_path)
+            _reject_operative(issues, report_text, listed_path)
 
     for index, member in enumerate(members, start=1):
         relative = member.relative_path or member_relative_path(index)
@@ -370,6 +388,53 @@ def verify_backtest_experiment_artifacts(
         policy_name=policy_name,
         member_count=member_count if member_count is not None else len(members),
     )
+
+
+def resolve_experiment_directory(
+    base_dir: Path | str, experiment_id: str
+) -> Path | None:
+    """Find an experiment folder for ``experiment_id`` under ``base_dir``."""
+    cleaned = experiment_id.strip()
+    if not cleaned:
+        return None
+    base = Path(base_dir).expanduser()
+    if not base.exists() or base.is_file():
+        return None
+    direct = base / EXPERIMENT_MANIFEST_ARTIFACT_NAME
+    if direct.is_file() and _manifest_file_experiment_id(direct) == cleaned:
+        return base
+    named = base / cleaned
+    named_manifest = named / EXPERIMENT_MANIFEST_ARTIFACT_NAME
+    if (
+        named_manifest.is_file()
+        and _manifest_file_experiment_id(named_manifest) == cleaned
+    ):
+        return named
+    if not base.is_dir():
+        return None
+    matches: list[Path] = []
+    for child in sorted(base.iterdir()):
+        if not child.is_dir():
+            continue
+        manifest = child / EXPERIMENT_MANIFEST_ARTIFACT_NAME
+        if manifest.is_file() and _manifest_file_experiment_id(manifest) == cleaned:
+            matches.append(child)
+    if len(matches) == 1:
+        return matches[0]
+    return None
+
+
+def _manifest_file_experiment_id(path: Path) -> str | None:
+    try:
+        loaded = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if not isinstance(loaded, dict):
+        return None
+    value = loaded.get("experiment_id")
+    if not isinstance(value, str) or not value.strip():
+        return None
+    return value.strip()
 
 
 def _reject_secrets(

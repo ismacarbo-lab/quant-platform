@@ -37,7 +37,22 @@ from quant_platform.backtest.experiment_catalog import (
     validate_backtest_experiment_manifest,
 )
 from quant_platform.backtest.experiment_integrity import (
+    resolve_experiment_directory,
     verify_backtest_experiment_artifacts,
+)
+from quant_platform.backtest.experiment_readiness import (
+    evaluate_backtest_experiment_usability,
+)
+from quant_platform.backtest.experiment_readiness_types import (
+    BacktestExperimentResearchReport,
+    BacktestExperimentUsabilityReport,
+)
+from quant_platform.backtest.experiment_report_artifacts import (
+    write_backtest_experiment_report_artifacts,
+)
+from quant_platform.backtest.experiment_reports import (
+    build_backtest_experiment_research_report,
+    hash_backtest_experiment_report,
 )
 from quant_platform.backtest.experiment_types import (
     BacktestExperimentComparison,
@@ -130,8 +145,10 @@ __all__ = [
     "BacktestExperimentManifest",
     "BacktestExperimentMember",
     "BacktestExperimentRequest",
+    "BacktestExperimentResearchReport",
     "BacktestExperimentResult",
     "BacktestExperimentSummary",
+    "BacktestExperimentUsabilityReport",
     "BacktestIntegrityCode",
     "BacktestManifest",
     "BacktestRequest",
@@ -153,6 +170,7 @@ __all__ = [
     "backtest_run_is_reproducible",
     "backtest_run_is_usable",
     "build_backtest_experiment_catalog_filters",
+    "build_backtest_experiment_research_report",
     "build_backtest_run_catalog_filters",
     "build_backtest_usability_report",
     "build_experiment_result",
@@ -165,6 +183,7 @@ __all__ = [
     "derive_backtest_id",
     "diff_backtest_runs",
     "diff_catalog_backtest_runs",
+    "evaluate_backtest_experiment_usability",
     "evaluate_backtest_result_usability",
     "execute_backtest",
     "get_backtest_experiment_by_id",
@@ -174,6 +193,7 @@ __all__ = [
     "get_research_policy",
     "hash_backtest_counts",
     "hash_backtest_experiment",
+    "hash_backtest_experiment_report",
     "hash_backtest_mapping",
     "hash_backtest_result",
     "hash_backtest_summary",
@@ -186,6 +206,7 @@ __all__ = [
     "registered_policy_names",
     "require_backtest_readiness",
     "resolve_backtest_run_directory",
+    "resolve_experiment_directory",
     "run_backtest_experiment",
     "run_backtest_from_replay_run",
     "validate_backtest_experiment_manifest",
@@ -197,4 +218,5 @@ __all__ = [
     "verify_registered_backtest_run",
     "write_backtest_artifacts",
     "write_backtest_experiment_artifacts",
+    "write_backtest_experiment_report_artifacts",
 ]
