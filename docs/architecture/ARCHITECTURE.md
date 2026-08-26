@@ -1,10 +1,11 @@
-# Architecture — Phase 3.1
+# Architecture — Phase 3.2
 
 Status: research ingestion, an internal **dataset query API**, **dataset
 quality reports**, **local hashed snapshots**, a **PostgreSQL snapshot
 catalog**, **read-only snapshot integrity checks**, and **deterministic
 dataset replay** with an auditable event stream (bars, optional sessions
-and corporate actions). No LLM runtime, strategies, brokers, or execution.
+and corporate actions, explicit replay boundaries). No LLM runtime,
+strategies, brokers, or execution.
 
 ## Modular monolith
 
@@ -32,7 +33,7 @@ Documented future areas (no empty implementation packages in Phase 0):
 | `data` | Ingest, bronze/silver/gold, PIT | bronze, silver, identity, calendars, CA store |
 | `storage` | Persistence adapters | engine/session only |
 | `research` | Dataset queries, experiment runners | PIT datasets, quality reports, snapshots, catalog, integrity; no notebooks |
-| `simulation` | Dataset replay timeline | events, stream hash, audit; no strategies |
+| `simulation` | Dataset replay timeline | events, boundaries, stream hash, audit; no strategies |
 | `backtesting` | Simulation engine | not implemented |
 | `strategies` | Signal generation | not implemented |
 | `ml` | Model training/inference | not implemented |
@@ -116,7 +117,8 @@ research dataset API **requires** `as_of`. See
 [DATASET_SNAPSHOTS.md](../research/DATASET_SNAPSHOTS.md),
 [DATASET_CATALOG.md](../research/DATASET_CATALOG.md),
 [SNAPSHOT_INTEGRITY.md](../research/SNAPSHOT_INTEGRITY.md),
-[DATASET_REPLAY.md](../simulation/DATASET_REPLAY.md), and
+[DATASET_REPLAY.md](../simulation/DATASET_REPLAY.md),
+[REPLAY_BOUNDARIES.md](../simulation/REPLAY_BOUNDARIES.md), and
 [REPLAY_AUDIT.md](../simulation/REPLAY_AUDIT.md).
 
 ### Point-in-time timestamps
@@ -141,10 +143,14 @@ observations where:
 available_time > simulation_time
 ```
 
-Dataset replay enforces this by setting each bar’s `event_time` to
-`available_time` (not `observation_time`) and refusing to advance the
-simulation clock backwards. That `event_time` is the simulation instant,
-not the economic occurrence named in the table above.
+Dataset replay enforces this by setting each in-window bar’s
+`event_time` to `available_time` (not `observation_time`) and refusing
+to advance the simulation clock backwards. Facts with
+`available_time < start_time` are still visible only if
+`available_time <= as_of`; they are marked `known_before_start` and
+clamped so `ReplayStartedEvent` stays first. That `event_time` is the
+simulation instant, not the economic occurrence named in the table
+above.
 
 ## Time and identifiers
 
@@ -192,6 +198,7 @@ the `dataset_snapshots` catalog table (`0005_catalog`). Phase 2.4 adds
 read-only artifact verification (no schema change). Phase 3.0 adds
 `quant_platform.simulation` replay (no schema change, no run persistence).
 Phase 3.1 adds session/CA events, a stream hash, and a replay audit report.
+Phase 3.2 formalizes replay boundaries and deterministic event fixtures.
 None of these add HTTP routes or gold/trading tables.
 
 ## AI usage boundary

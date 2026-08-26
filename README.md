@@ -29,7 +29,8 @@ Do not mix the two.
 - Register snapshot metadata in PostgreSQL (hashes, request, relative artifacts).
 - Verify local snapshot artifacts and catalog hashes without rewriting files.
 - Replay a PIT dataset or local snapshot as an ordered market-event timeline.
-- Audit that stream (session/CA events, stream hash) before any backtest exists.
+- Audit that stream (session/CA events, stream hash, replay boundaries)
+  before any backtest exists.
 
 ## What is not implemented
 
@@ -208,6 +209,8 @@ Snapshot integrity (local artifact and catalog verification):
 [docs/research/SNAPSHOT_INTEGRITY.md](docs/research/SNAPSHOT_INTEGRITY.md).
 Dataset replay (ordered market events, not a backtester):
 [docs/simulation/DATASET_REPLAY.md](docs/simulation/DATASET_REPLAY.md).
+Replay boundaries (`ReplayStartedEvent` first, pre-known facts):
+[docs/simulation/REPLAY_BOUNDARIES.md](docs/simulation/REPLAY_BOUNDARIES.md).
 Replay audit (stream hash, order, PIT checks):
 [docs/simulation/REPLAY_AUDIT.md](docs/simulation/REPLAY_AUDIT.md).
 

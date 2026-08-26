@@ -187,11 +187,15 @@ uv run python scripts/replay-daily-dataset.py \
   --include-sessions \
   --calendar XNYS \
   --audit \
-  --deterministic-id
+  --deterministic-id \
+  --json
 ```
 
-See [docs/simulation/DATASET_REPLAY.md](../simulation/DATASET_REPLAY.md)
+See [docs/simulation/DATASET_REPLAY.md](../simulation/DATASET_REPLAY.md),
+[docs/simulation/REPLAY_BOUNDARIES.md](../simulation/REPLAY_BOUNDARIES.md),
 and [docs/simulation/REPLAY_AUDIT.md](../simulation/REPLAY_AUDIT.md).
+
+Event JSON fixtures for tests live in `tests/fixtures/replay_events/`.
 
 Stop (keeps the volume):
 

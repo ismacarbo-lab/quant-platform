@@ -9,6 +9,11 @@ from quant_platform.simulation.audit import (
 )
 from quant_platform.simulation.clock import SimulationClock
 from quant_platform.simulation.errors import SimulationError, SimulationErrorCode
+from quant_platform.simulation.event_fixtures import (
+    ReplayEventFixture,
+    load_replay_events_json,
+    replay_event_fixtures_dir,
+)
 from quant_platform.simulation.events import (
     CORPORATE_ACTION_KIND,
     EVENT_PRIORITY,
@@ -22,8 +27,11 @@ from quant_platform.simulation.events import (
     ReplayEvent,
     ReplayFinishedEvent,
     ReplayStartedEvent,
+    apply_start_boundary,
     corporate_action_event_from_row,
+    is_pre_known_event,
     market_bar_event_from_row,
+    replay_boundary_group,
     replay_event_sort_key,
 )
 from quant_platform.simulation.hashing import (
@@ -61,20 +69,26 @@ __all__ = [
     "ReplayAuditReport",
     "ReplayAuditSeverity",
     "ReplayEvent",
+    "ReplayEventFixture",
     "ReplayFinishedEvent",
     "ReplayStartedEvent",
     "ReplaySummary",
     "SimulationClock",
     "SimulationError",
     "SimulationErrorCode",
+    "apply_start_boundary",
     "audit_replay",
     "corporate_action_event_from_row",
     "create_daily_bar_replay",
     "derive_replay_id",
     "hash_replay_events",
     "hash_replay_request",
+    "is_pre_known_event",
+    "load_replay_events_json",
     "market_bar_event_from_row",
+    "replay_boundary_group",
     "replay_daily_bars_dataset",
     "replay_daily_bars_snapshot",
+    "replay_event_fixtures_dir",
     "replay_event_sort_key",
 ]

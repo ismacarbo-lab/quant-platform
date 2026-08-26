@@ -1,28 +1,36 @@
-# Dataset replay — Phase 3.1
+# Dataset replay — Phase 3.2
 
 Replay turns a **point-in-time daily-bar dataset** into a deterministic
-sequence of simulation events. Phase 3.1 adds optional session and
-corporate-action events, a stream hash, and an audit report. It is
-**not** backtesting, not a strategy, and not trading.
+sequence of simulation events. Phase 3.1 added optional session and
+corporate-action events, a stream hash, and an audit report. Phase 3.2
+fixes the **replay boundary**: `ReplayStartedEvent` is always first,
+`ReplayFinishedEvent` is always last, and facts known before
+`start_time` are marked `known_before_start` instead of sorting before
+the started bookend.
+
+It is **not** backtesting, not a strategy, and not trading.
 
 Package: `quant_platform.simulation`.
 
+Boundary rules: [REPLAY_BOUNDARIES.md](REPLAY_BOUNDARIES.md).
 Audit details: [REPLAY_AUDIT.md](REPLAY_AUDIT.md).
 
 ## What replay is
 
 Given a dataset (from PostgreSQL or a local snapshot):
 
-1. emit `ReplayStartedEvent`
-2. emit optional `MarketSessionEvent` rows (local calendar)
-3. emit optional `CorporateActionEvent` rows (stored facts, not applied)
-4. emit one `MarketBarEvent` per visible bar
-5. emit `ReplayFinishedEvent`
-6. return an immutable `DailyBarReplay` plus a `ReplaySummary`
+1. emit `ReplayStartedEvent` (always first)
+2. emit pre-known payload events (`known_before_start=True`)
+3. emit in-window `MarketSessionEvent` rows (local calendar, optional)
+4. emit in-window `CorporateActionEvent` rows (stored facts, not applied)
+5. emit in-window `MarketBarEvent` rows
+6. emit `ReplayFinishedEvent` (always last)
+7. return an immutable `DailyBarReplay` plus a `ReplaySummary`
 
-The full list is sorted by the canonical key below. `ReplayStartedEvent`
-and `ReplayFinishedEvent` participate in that sort (they are not forced
-to the ends if a payload event has an earlier `available_time`).
+The full list is sorted by the canonical key in
+[REPLAY_BOUNDARIES.md](REPLAY_BOUNDARIES.md). Boundary groups force the
+bookends to the ends even when a corporate action has
+`available_time < start_time`.
 
 Same dataset + same request + same extras + same code version produces
 the same event order and the same `stream_hash`. `replay_id` is UUID4
@@ -35,7 +43,7 @@ There is **no** Alembic table for replay runs.
 
 ## Event priority
 
-When `event_time` ties, kinds sort as:
+When `event_time` ties **inside the same boundary group**, kinds sort as:
 
 1. `replay_started`
 2. `market_session`
@@ -46,18 +54,23 @@ When `event_time` ties, kinds sort as:
 Then: instrument (or calendar code), observation / effective /
 `session_date`, source / `action_type` / `session_kind`, stable id.
 
-## Why `event_time = available_time`
+## Why `event_time` is usually `available_time`
 
 Bars and corporate actions use **`available_time`**, never
-`observation_time` / `effective_time`, as `event_time`. The clock cannot
-see a close or a split before it was knowable. Both timestamps stay on
-the event.
+`observation_time` / `effective_time`, as `event_time` **while they are
+in-window**. The clock cannot see a close or a split before it was
+knowable. Both timestamps stay on the event.
+
+If `available_time < start_time`, replay clamps `event_time` to
+`start_time` and sets `known_before_start=True`. `available_time` does
+not change.
 
 Session events are **not** PIT market data. Calendars in this platform
 are local static fixtures with no separate published-at timestamp.
 `event_time` is `session_date` at `open_time` in the calendar timezone,
 or midnight local if `open_time` is null, converted to UTC. A session
-with `event_time > as_of` is omitted.
+with `event_time > as_of` is omitted. A session whose native instant is
+before `start_time` is pre-known (same clamp + flag).
 
 ## Corporate actions
 
@@ -84,28 +97,42 @@ on `--snapshot-dir` become summary warnings and stay bar-only.
 ## How lookahead is avoided
 
 - Dataset query: `available_time <= as_of`.
-- Replay: reject bars/CA/sessions with `event_time > as_of`.
+- Replay: reject bars/CA/sessions with `available_time` / native
+  `event_time > as_of`.
+- Pre-known clamp: `event_time = start_time` and
+  `event_time >= available_time`.
 - Clock: monotonic UTC.
-- Sort primary key: `event_time`.
+- Sort: boundary group, then `event_time`.
 
 ```text
+available_time <= as_of
 event_time <= as_of
 ```
-
-For bars and corporate actions that is the same as
-`available_time <= as_of`.
 
 ## Events
 
 | Kind | Role |
 |------|------|
-| `replay_started` | Window `start_time` / `end_time` / `as_of` |
-| `market_session` | Local calendar day (informational) |
+| `replay_started` | Window `start_time` / `end_time` / `as_of`; always first |
+| `market_session` | Local calendar day (informational; not vendor PIT) |
 | `corporate_action` | Stored CA; prices unchanged |
 | `market_bar` | One PIT-visible daily bar |
-| `replay_finished` | Counts and timeline bounds |
+| `replay_finished` | Counts and timeline bounds; always last |
 
-There are no order, signal, or portfolio events.
+Payload kinds may set `known_before_start`. There are no order, signal,
+or portfolio events.
+
+## Summary fields
+
+`ReplaySummary` includes `pre_known_event_count`,
+`market_event_count`, `session_event_count`,
+`corporate_action_event_count`, `first_market_event_time`, and
+`last_market_event_time`. `replay_id` is not part of `stream_hash`.
+
+## Fixtures
+
+Reusable JSON streams: `tests/fixtures/replay_events/` (see
+[REPLAY_BOUNDARIES.md](REPLAY_BOUNDARIES.md)).
 
 ## Sources
 
@@ -141,8 +168,13 @@ uv run python scripts/replay-daily-dataset.py \
   --include-sessions \
   --include-corporate-actions \
   --audit \
-  --deterministic-id
+  --deterministic-id \
+  --json
 ```
+
+`--audit --json` includes event counts by type, `pre_known_event_count`,
+`stream_hash`, boundary status, and first/last market event times. It
+does not print `DATABASE_URL`.
 
 ## What does not exist
 

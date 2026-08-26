@@ -183,6 +183,10 @@ def _print_text(
     print(f"source_type={summary.source_type}")
     print(f"event_count={summary.event_count}")
     print(f"bar_count={summary.bar_count}")
+    print(f"pre_known_event_count={summary.pre_known_event_count}")
+    print(f"market_event_count={summary.market_event_count}")
+    print(f"session_event_count={summary.session_event_count}")
+    print(f"corporate_action_event_count={summary.corporate_action_event_count}")
     print(f"instrument_count={summary.instrument_count}")
     first = (
         "" if summary.first_event_time is None else summary.first_event_time.isoformat()
@@ -190,11 +194,32 @@ def _print_text(
     last = (
         "" if summary.last_event_time is None else summary.last_event_time.isoformat()
     )
+    first_market = (
+        ""
+        if summary.first_market_event_time is None
+        else summary.first_market_event_time.isoformat()
+    )
+    last_market = (
+        ""
+        if summary.last_market_event_time is None
+        else summary.last_market_event_time.isoformat()
+    )
     print(f"first_event_time={first}")
     print(f"last_event_time={last}")
+    print(f"first_market_event_time={first_market}")
+    print(f"last_market_event_time={last_market}")
     if audit_report is None:
         return
     print(f"stream_hash={audit_report.stream_hash}")
+    print(f"boundary_ok={str(audit_report.boundary_ok).lower()}")
+    print(
+        "starts_with_replay_started="
+        f"{str(audit_report.starts_with_replay_started).lower()}"
+    )
+    print(
+        "ends_with_replay_finished="
+        f"{str(audit_report.ends_with_replay_finished).lower()}"
+    )
     for kind in sorted(audit_report.counts_by_kind):
         print(f"event_count_{kind}={audit_report.counts_by_kind[kind]}")
     print(f"warnings={audit_report.warning_count}")

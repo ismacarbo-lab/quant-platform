@@ -29,9 +29,15 @@ class ReplaySummary:
     bar_count: int
     session_count: int
     corporate_action_count: int
+    pre_known_event_count: int
+    market_event_count: int
+    session_event_count: int
+    corporate_action_event_count: int
     instrument_count: int
     first_event_time: datetime | None
     last_event_time: datetime | None
+    first_market_event_time: datetime | None
+    last_market_event_time: datetime | None
     content_hash: str | None
     stream_hash: str | None
     source_type: str
@@ -49,9 +55,15 @@ class ReplaySummary:
             "bar_count": self.bar_count,
             "session_count": self.session_count,
             "corporate_action_count": self.corporate_action_count,
+            "pre_known_event_count": self.pre_known_event_count,
+            "market_event_count": self.market_event_count,
+            "session_event_count": self.session_event_count,
+            "corporate_action_event_count": self.corporate_action_event_count,
             "instrument_count": self.instrument_count,
             "first_event_time": _iso(self.first_event_time),
             "last_event_time": _iso(self.last_event_time),
+            "first_market_event_time": _iso(self.first_market_event_time),
+            "last_market_event_time": _iso(self.last_market_event_time),
             "content_hash": self.content_hash,
             "stream_hash": self.stream_hash,
             "source_type": self.source_type,

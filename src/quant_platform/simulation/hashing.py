@@ -27,14 +27,16 @@ from quant_platform.simulation.events import (
 
 STREAM_HASH_KIND = "replay_event_stream"
 REQUEST_HASH_KIND = "daily_bars_dataset_request"
-HASH_FORMAT_VERSION = 1
+STREAM_HASH_FORMAT_VERSION = 2
+REQUEST_HASH_FORMAT_VERSION = 1
+HASH_FORMAT_VERSION = STREAM_HASH_FORMAT_VERSION
 
 
 def hash_replay_events(events: Sequence[ReplayEvent]) -> str:
     """SHA-256 of the canonical event stream. Caller order is hashed as-is."""
     payload = {
         "kind": STREAM_HASH_KIND,
-        "version": HASH_FORMAT_VERSION,
+        "version": STREAM_HASH_FORMAT_VERSION,
         "events": [_canonical_event(event) for event in events],
     }
     return sha256_canonical(payload)
@@ -44,7 +46,7 @@ def hash_replay_request(request: DailyBarsDatasetRequest) -> str:
     """SHA-256 of the dataset request. Used with ``derive_replay_id``."""
     payload = {
         "kind": REQUEST_HASH_KIND,
-        "version": HASH_FORMAT_VERSION,
+        "version": REQUEST_HASH_FORMAT_VERSION,
         "request": dataset_request_mapping(request),
     }
     return sha256_canonical(payload)
@@ -88,6 +90,7 @@ def _canonical_event(event: ReplayEvent) -> dict[str, object]:
             "open_time": _canonical_clock(event.open_time),
             "close_time": _canonical_clock(event.close_time),
             "note": event.note or "",
+            "known_before_start": event.known_before_start,
         }
     if isinstance(event, CorporateActionEvent):
         return {
@@ -102,6 +105,7 @@ def _canonical_event(event: ReplayEvent) -> dict[str, object]:
             "value": event.value or "",
             "currency": event.currency or "",
             "description": event.description or "",
+            "known_before_start": event.known_before_start,
         }
     if isinstance(event, MarketBarEvent):
         return {
@@ -122,6 +126,7 @@ def _canonical_event(event: ReplayEvent) -> dict[str, object]:
             "source_name": event.source_name,
             "is_correction": event.is_correction,
             "correction_reason": event.correction_reason or "",
+            "known_before_start": event.known_before_start,
         }
     if isinstance(event, ReplayFinishedEvent):
         return {

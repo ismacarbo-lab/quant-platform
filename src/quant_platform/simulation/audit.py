@@ -20,6 +20,7 @@ from quant_platform.simulation.events import (
     ReplayEvent,
     ReplayFinishedEvent,
     ReplayStartedEvent,
+    is_pre_known_event,
     replay_event_sort_key,
 )
 from quant_platform.simulation.hashing import hash_replay_events
@@ -37,6 +38,11 @@ class ReplayAuditCode(StrEnum):
     LOOKAHEAD = "lookahead"
     BAR_EVENT_TIME_MISMATCH = "bar_event_time_mismatch"
     CORPORATE_ACTION_EVENT_TIME_MISMATCH = "corporate_action_event_time_mismatch"
+    MISSING_STARTED = "missing_started"
+    MISSING_FINISHED = "missing_finished"
+    PREKNOWN_MISPLACED = "preknown_misplaced"
+    PREKNOWN_UNMARKED = "preknown_unmarked"
+    EVENT_BEFORE_START = "event_before_start"
     MISSING_SESSIONS = "missing_sessions"
     SESSIONS_WITHOUT_CALENDAR = "sessions_without_calendar"
     SESSION_DATE_GAP = "session_date_gap"
@@ -50,6 +56,16 @@ SEVERITY_RANK: dict[str, int] = {
 }
 
 _UNHASHABLE_STREAM = "sha256:" + ("0" * 64)
+
+_BOUNDARY_ERROR_CODES = frozenset(
+    {
+        ReplayAuditCode.MISSING_STARTED,
+        ReplayAuditCode.MISSING_FINISHED,
+        ReplayAuditCode.PREKNOWN_MISPLACED,
+        ReplayAuditCode.PREKNOWN_UNMARKED,
+        ReplayAuditCode.EVENT_BEFORE_START,
+    }
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -79,6 +95,10 @@ class ReplayAuditReport:
     counts_by_kind: Mapping[str, int]
     first_event_time: datetime | None
     last_event_time: datetime | None
+    starts_with_replay_started: bool
+    ends_with_replay_finished: bool
+    boundary_ok: bool
+    pre_known_event_count: int
     error_count: int
     warning_count: int
     info_count: int
@@ -90,6 +110,12 @@ class ReplayAuditReport:
 
     def as_mapping(self) -> dict[str, object]:
         counts = {key: self.counts_by_kind[key] for key in sorted(self.counts_by_kind)}
+        boundary = {
+            "starts_with_replay_started": self.starts_with_replay_started,
+            "ends_with_replay_finished": self.ends_with_replay_finished,
+            "ok": self.boundary_ok,
+            "pre_known_event_count": self.pre_known_event_count,
+        }
         return {
             "ok": self.ok,
             "stream_hash": self.stream_hash,
@@ -97,6 +123,11 @@ class ReplayAuditReport:
             "counts_by_kind": counts,
             "first_event_time": _iso(self.first_event_time),
             "last_event_time": _iso(self.last_event_time),
+            "starts_with_replay_started": self.starts_with_replay_started,
+            "ends_with_replay_finished": self.ends_with_replay_finished,
+            "boundary_ok": self.boundary_ok,
+            "pre_known_event_count": self.pre_known_event_count,
+            "boundary": boundary,
             "error_count": self.error_count,
             "warning_count": self.warning_count,
             "info_count": self.info_count,
@@ -116,6 +147,7 @@ def audit_replay(
     as_of: datetime,
     sessions_requested: bool = False,
     calendar_code: str | None = None,
+    start_time: datetime | None = None,
 ) -> ReplayAuditReport:
     """Diagnose stream order, PIT, and calendar coverage. Does not mutate events."""
     issues: list[ReplayAuditIssue] = []
@@ -127,9 +159,19 @@ def audit_replay(
                 message="as_of must be timezone-aware UTC",
             )
         )
+    if start_time is not None and start_time.tzinfo is None:
+        issues.append(
+            ReplayAuditIssue(
+                severity=ReplayAuditSeverity.ERROR,
+                code=ReplayAuditCode.NAIVE_TIMESTAMP,
+                message="start_time must be timezone-aware UTC",
+            )
+        )
+    resolved_start = _resolved_start_time(events, start_time)
     for index, event in enumerate(events):
         issues.extend(_event_issues(event, index=index, as_of=as_of))
     issues.extend(_order_issues(events))
+    issues.extend(_boundary_issues(events, start_time=resolved_start))
     issues.extend(
         _session_coverage_issues(
             events,
@@ -153,12 +195,23 @@ def audit_replay(
         stream_hash = hash_replay_events(events)
     except (DatasetValidationError, SimulationError, ValueError):
         stream_hash = _UNHASHABLE_STREAM
+    starts = bool(events) and isinstance(events[0], ReplayStartedEvent)
+    ends = bool(events) and isinstance(events[-1], ReplayFinishedEvent)
+    boundary_errors = any(
+        item.code in _BOUNDARY_ERROR_CODES
+        and item.severity == ReplayAuditSeverity.ERROR
+        for item in ranked
+    )
     return ReplayAuditReport(
         stream_hash=stream_hash,
         event_count=len(events),
         counts_by_kind=dict(counts),
         first_event_time=events[0].event_time if events else None,
         last_event_time=events[-1].event_time if events else None,
+        starts_with_replay_started=starts,
+        ends_with_replay_finished=ends,
+        boundary_ok=starts and ends and not boundary_errors,
+        pre_known_event_count=sum(1 for event in events if is_pre_known_event(event)),
         error_count=sum(
             1 for item in ranked if item.severity == ReplayAuditSeverity.ERROR
         ),
@@ -170,6 +223,15 @@ def audit_replay(
         ),
         issues=ranked,
     )
+
+
+def _resolved_start_time(
+    events: Sequence[ReplayEvent], explicit: datetime | None
+) -> datetime | None:
+    for event in events:
+        if isinstance(event, ReplayStartedEvent):
+            return event.start_time
+    return explicit
 
 
 def _event_issues(
@@ -200,7 +262,25 @@ def _event_issues(
                     event_kind=event.kind,
                 )
             )
-    if isinstance(event, MarketBarEvent) and event.event_time != event.available_time:
+        elif (
+            as_of.tzinfo is not None
+            and instant > as_of
+            and field_name == "available_time"
+        ):
+            found.append(
+                ReplayAuditIssue(
+                    severity=ReplayAuditSeverity.ERROR,
+                    code=ReplayAuditCode.LOOKAHEAD,
+                    message="available_time must be <= as_of",
+                    event_index=index,
+                    event_kind=event.kind,
+                )
+            )
+    if (
+        isinstance(event, MarketBarEvent)
+        and not event.known_before_start
+        and event.event_time != event.available_time
+    ):
         found.append(
             ReplayAuditIssue(
                 severity=ReplayAuditSeverity.ERROR,
@@ -212,6 +292,7 @@ def _event_issues(
         )
     if (
         isinstance(event, CorporateActionEvent)
+        and not event.known_before_start
         and event.event_time != event.available_time
     ):
         found.append(
@@ -246,6 +327,83 @@ def _order_issues(events: Sequence[ReplayEvent]) -> list[ReplayAuditIssue]:
             )
         previous = event
         previous_index = index
+    return found
+
+
+def _boundary_issues(
+    events: Sequence[ReplayEvent], *, start_time: datetime | None
+) -> list[ReplayAuditIssue]:
+    found: list[ReplayAuditIssue] = []
+    if not events or not isinstance(events[0], ReplayStartedEvent):
+        found.append(
+            ReplayAuditIssue(
+                severity=ReplayAuditSeverity.ERROR,
+                code=ReplayAuditCode.MISSING_STARTED,
+                message="stream must start with ReplayStartedEvent",
+                event_index=0 if events else None,
+                event_kind=events[0].kind if events else None,
+            )
+        )
+    if not events or not isinstance(events[-1], ReplayFinishedEvent):
+        found.append(
+            ReplayAuditIssue(
+                severity=ReplayAuditSeverity.ERROR,
+                code=ReplayAuditCode.MISSING_FINISHED,
+                message="stream must end with ReplayFinishedEvent",
+                event_index=len(events) - 1 if events else None,
+                event_kind=events[-1].kind if events else None,
+            )
+        )
+    seen_window = False
+    for index, event in enumerate(events):
+        if isinstance(event, ReplayStartedEvent | ReplayFinishedEvent):
+            continue
+        if is_pre_known_event(event):
+            if seen_window:
+                found.append(
+                    ReplayAuditIssue(
+                        severity=ReplayAuditSeverity.ERROR,
+                        code=ReplayAuditCode.PREKNOWN_MISPLACED,
+                        message=(
+                            "pre-known fact must appear immediately after "
+                            "ReplayStartedEvent"
+                        ),
+                        event_index=index,
+                        event_kind=event.kind,
+                    )
+                )
+        else:
+            seen_window = True
+        if start_time is None or start_time.tzinfo is None:
+            continue
+        if event.event_time < start_time:
+            found.append(
+                ReplayAuditIssue(
+                    severity=ReplayAuditSeverity.ERROR,
+                    code=ReplayAuditCode.EVENT_BEFORE_START,
+                    message="payload event_time must be >= start_time",
+                    event_index=index,
+                    event_kind=event.kind,
+                )
+            )
+        available = getattr(event, "available_time", None)
+        if (
+            isinstance(available, datetime)
+            and available < start_time
+            and not is_pre_known_event(event)
+        ):
+            found.append(
+                ReplayAuditIssue(
+                    severity=ReplayAuditSeverity.ERROR,
+                    code=ReplayAuditCode.PREKNOWN_UNMARKED,
+                    message=(
+                        "fact with available_time before start_time must set "
+                        "known_before_start"
+                    ),
+                    event_index=index,
+                    event_kind=event.kind,
+                )
+            )
     return found
 
 

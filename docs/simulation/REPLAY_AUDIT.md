@@ -1,4 +1,4 @@
-# Replay audit — Phase 3.1
+# Replay audit — Phase 3.2
 
 A **replay audit** inspects an already-built event stream. It does not
 trade, does not run a strategy, and does not persist a simulation run.
@@ -6,20 +6,23 @@ trade, does not run a strategy, and does not persist a simulation run.
 Package: `quant_platform.simulation.audit` plus
 `quant_platform.simulation.hashing`.
 
+Boundary semantics: [REPLAY_BOUNDARIES.md](REPLAY_BOUNDARIES.md).
+
 ## Stream hash
 
 `hash_replay_events(events)` returns `sha256:<64 hex>`.
 
 The payload is canonical JSON (sorted keys, UTC `Z` timestamps, 8-decimal
-prices). It includes event kinds and the fields that define the stream.
-It does **not** include:
+prices), **format version 2**. It includes event kinds, PIT timestamps,
+and `known_before_start`. It does **not** include:
 
 - `replay_id` (UUID4 or derived)
 - wall-clock `utc_now`
+- absolute filesystem paths
 - `DATABASE_URL` or other secrets
 
-Same ordered stream ⇒ same hash. Changing a close, a session kind, or
-event order changes the hash.
+Same ordered stream ⇒ same hash. Changing a close, a session kind, a
+pre-known flag, or event order changes the hash.
 
 Replay hashes events **in the order given**. The producer
 (`replay_daily_bars_dataset`) always emits canonical order. `audit_replay`
@@ -37,8 +40,12 @@ from the stream hash and, optionally, `hash_replay_request(request)`.
 
 ## Audit report
 
-`audit_replay(events, as_of=..., sessions_requested=..., calendar_code=...)`
-returns `ReplayAuditReport`:
+`audit_replay(events, as_of=..., sessions_requested=..., calendar_code=...,
+start_time=...)` returns `ReplayAuditReport`.
+
+`start_time` is taken from `ReplayStartedEvent` when present, otherwise
+from the optional argument. It is used for pre-known and
+`event_time < start_time` checks.
 
 | Field | Meaning |
 |-------|---------|
@@ -46,14 +53,27 @@ returns `ReplayAuditReport`:
 | `stream_hash` | hash of the given sequence |
 | `counts_by_kind` | how many events of each kind |
 | `first_event_time` / `last_event_time` | ends of the given sequence |
+| `starts_with_replay_started` | first event is `ReplayStartedEvent` |
+| `ends_with_replay_finished` | last event is `ReplayFinishedEvent` |
+| `boundary_ok` | bookends present and no boundary errors |
+| `pre_known_event_count` | events with `known_before_start` |
 | `issues` | `info` / `warning` / `error` |
+
+`as_mapping()` also includes a `boundary` object with the bookend flags.
 
 Checks:
 
+- stream does not start with `ReplayStartedEvent` (`missing_started`)
+- stream does not end with `ReplayFinishedEvent` (`missing_finished`)
+- payload `event_time < start_time` (`event_before_start`)
+- `available_time < start_time` without `known_before_start`
+  (`preknown_unmarked`)
+- pre-known fact after an in-window payload event (`preknown_misplaced`)
 - naive timestamps
-- `event_time > as_of` (lookahead)
-- bar or corporate-action `event_time != available_time`
-- canonical sort order (time, then type priority, then instrument, …)
+- `event_time > as_of` or `available_time > as_of` (lookahead)
+- in-window bar or corporate-action `event_time != available_time`
+  (pre-known events may differ; `event_time` is `start_time`)
+- canonical sort order (boundary group, time, type priority, instrument, …)
 - `include_sessions` without `calendar_code` (info)
 - calendar expected but zero session events (warning)
 - holes between emitted session dates (warning)
@@ -77,8 +97,10 @@ uv run python scripts/replay-daily-dataset.py \
   --json
 ```
 
-`--audit` prints `stream_hash`, counts by kind, warning/error counts, and
-issue lines. It does not print `DATABASE_URL`.
+`--audit --json` prints `stream_hash`, counts by kind (including
+`pre_known_event_count` on the summary), boundary status, first/last
+market event times, warning/error counts, and issue lines. It does not
+print `DATABASE_URL`.
 
 Snapshot replay can still be audited (bars only). `--include-sessions` /
 `--include-corporate-actions` on a snapshot add summary warnings: those

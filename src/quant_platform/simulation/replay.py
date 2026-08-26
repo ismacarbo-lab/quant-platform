@@ -49,7 +49,9 @@ from quant_platform.simulation.events import (
     ReplayEvent,
     ReplayFinishedEvent,
     ReplayStartedEvent,
+    apply_start_boundary,
     corporate_action_event_from_row,
+    is_pre_known_event,
     market_bar_event_from_row,
     replay_event_sort_key,
 )
@@ -105,6 +107,10 @@ class DailyBarReplay:
             event for event in self.events if isinstance(event, CorporateActionEvent)
         )
 
+    @property
+    def pre_known(self) -> tuple[ReplayEvent, ...]:
+        return tuple(event for event in self.events if is_pre_known_event(event))
+
 
 def replay_daily_bars_dataset(
     dataset: DailyBarsDataset,
@@ -121,9 +127,11 @@ def replay_daily_bars_dataset(
 ) -> DailyBarReplay:
     """Emit a deterministic event stream from an in-memory PIT dataset.
 
-    ``event_time`` for each bar and corporate action is ``available_time`` so a
-    consumer never sees a fact before it was knowable. Dataset sort
-    (observation time) is not the replay order.
+    ``event_time`` for in-window bars and corporate actions is
+    ``available_time``. Facts with ``available_time < start_time`` stay in
+    the stream as pre-known: ``known_before_start=True`` and simulation
+    ``event_time`` is clamped to ``start_time`` so ``ReplayStartedEvent``
+    is always first.
 
     ``include_corporate_actions`` and ``include_sessions`` default to False so
     a bar-only stream stays compatible with Phase 3.0. Pass True for an
@@ -142,7 +150,8 @@ def replay_daily_bars_dataset(
     sessions: tuple[MarketSessionEvent, ...] = ()
     if include_sessions:
         sessions = tuple(_session_event(event, as_of=as_of) for event in session_events)
-    payload: tuple[ReplayEvent, ...] = (*sessions, *actions, *bars)
+    combined: tuple[ReplayEvent, ...] = (*sessions, *actions, *bars)
+    payload = tuple(apply_start_boundary(event, start_time) for event in combined)
     instrument_ids = {event.instrument_id for event in bars}
     if include_corporate_actions:
         instrument_ids.update(event.instrument_id for event in actions)
@@ -192,6 +201,10 @@ def replay_daily_bars_dataset(
     if ordered_payload:
         first_payload = ordered_payload[0].event_time
         last_payload = ordered_payload[-1].event_time
+    ordered_bars = tuple(event for event in events if isinstance(event, MarketBarEvent))
+    first_market = ordered_bars[0].event_time if ordered_bars else None
+    last_market = ordered_bars[-1].event_time if ordered_bars else None
+    pre_known_count = sum(1 for event in payload if is_pre_known_event(event))
     summary = ReplaySummary(
         replay_id=resolved_id,
         started_at=start_time,
@@ -203,9 +216,15 @@ def replay_daily_bars_dataset(
         bar_count=len(bars),
         session_count=len(sessions),
         corporate_action_count=len(actions),
+        pre_known_event_count=pre_known_count,
+        market_event_count=len(bars),
+        session_event_count=len(sessions),
+        corporate_action_event_count=len(actions),
         instrument_count=instrument_count,
         first_event_time=first_payload,
         last_event_time=last_payload,
+        first_market_event_time=first_market,
+        last_market_event_time=last_market,
         content_hash=digest,
         stream_hash=stream_hash,
         source_type=source_type,

@@ -30,6 +30,7 @@ from quant_platform.simulation.events import (
     MARKET_SESSION_KIND,
     CorporateActionEvent,
     MarketSessionEvent,
+    ReplayStartedEvent,
 )
 from quant_platform.simulation.replay import create_daily_bar_replay
 from quant_platform.storage.database import list_public_tables
@@ -135,10 +136,14 @@ def test_replay_emits_visible_corporate_actions(db_session: Session) -> None:
         include_corporate_actions=True,
     )
     assert replay.summary.corporate_action_count == 1
+    assert isinstance(replay.events[0], ReplayStartedEvent)
     action = replay.corporate_actions[0]
     assert isinstance(action, CorporateActionEvent)
     assert action.action_type == "split"
-    assert action.event_time == datetime(2023, 12, 15, tzinfo=UTC)
+    assert action.available_time == datetime(2023, 12, 15, tzinfo=UTC)
+    assert action.event_time == datetime(2024, 1, 1, tzinfo=UTC)
+    assert action.known_before_start is True
+    assert replay.events[1] is action
     assert replay.bars[0].close == Decimal("40")
 
 
