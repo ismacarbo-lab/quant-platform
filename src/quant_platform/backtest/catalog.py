@@ -23,6 +23,7 @@ from quant_platform.backtest.types import (
 )
 from quant_platform.data.models import BacktestRunRecord
 from quant_platform.research.snapshots import (
+    canonical_json,
     is_sha256_digest,
     manifest_contains_secrets,
 )
@@ -46,7 +47,7 @@ def validate_backtest_run_manifest(manifest: BacktestManifest) -> None:
     """Reject manifests that cannot be stored as catalog metadata."""
     if manifest.policy_name not in ALLOWED_POLICY_NAMES:
         raise BacktestError(
-            "policy_name must be 'noop'",
+            "policy_name must be a registered research policy",
             code=BacktestErrorCode.INVALID_POLICY,
         )
     for label, value in (
@@ -75,6 +76,11 @@ def validate_backtest_run_manifest(manifest: BacktestManifest) -> None:
             "backtest_hash must be a sha256:<hex> digest",
             code=BacktestErrorCode.CATALOG_INVALID,
         )
+    if not is_sha256_digest(manifest.policy_output_hash):
+        raise BacktestError(
+            "policy_output_hash must be a sha256:<hex> digest",
+            code=BacktestErrorCode.CATALOG_INVALID,
+        )
     if not is_sha256_digest(manifest.manifest_hash):
         raise BacktestError(
             "manifest_hash must be a sha256:<hex> digest",
@@ -95,6 +101,7 @@ def validate_backtest_run_manifest(manifest: BacktestManifest) -> None:
         "artifacts": [dict(item) for item in mappings],
         "request": manifest.request,
         "summary": manifest.summary,
+        "policy_config": manifest.policy_config,
         "notes": manifest.notes or "",
     }
     if manifest_contains_secrets(blob):
@@ -207,6 +214,10 @@ def compare_backtest_runs(
         differences.append("replay_id")
     if left.policy_name != right.policy_name:
         differences.append("policy_name")
+    if left.policy_config != right.policy_config:
+        differences.append("policy_config")
+    if left.policy_output_hash != right.policy_output_hash:
+        differences.append("policy_output_hash")
     if left.manifest_hash != right.manifest_hash:
         differences.append("manifest_hash")
     if left.event_count != right.event_count:
@@ -222,6 +233,7 @@ def compare_backtest_runs(
         same_stream_hash=left.stream_hash == right.stream_hash,
         same_replay_id=left.replay_id == right.replay_id,
         same_policy_name=left.policy_name == right.policy_name,
+        same_policy_output_hash=left.policy_output_hash == right.policy_output_hash,
         same_manifest_hash=left.manifest_hash == right.manifest_hash,
         event_count_delta=right.event_count - left.event_count,
         warning_count_delta=right.warning_count - left.warning_count,
@@ -251,6 +263,8 @@ def _record_payload(manifest: BacktestManifest) -> dict[str, object]:
         "backtest_hash": manifest.backtest_hash,
         "manifest_hash": manifest.manifest_hash,
         "policy_name": manifest.policy_name,
+        "policy_config": dict(manifest.policy_config),
+        "policy_output_hash": manifest.policy_output_hash,
         "package_version": manifest.package_version,
         "git_commit": manifest.git_commit,
         "created_at": manifest.created_at,
@@ -277,6 +291,15 @@ def _apply_payload(row: BacktestRunRecord, payload: Mapping[str, object]) -> Non
     row.backtest_hash = str(payload["backtest_hash"])
     row.manifest_hash = str(payload["manifest_hash"])
     row.policy_name = str(payload["policy_name"])
+    config = payload["policy_config"]
+    if not isinstance(config, dict):
+        raise BacktestError(
+            "policy_config must be an object",
+            code=BacktestErrorCode.CATALOG_INVALID,
+        )
+    row.policy_config = dict(config)
+    output_hash = payload["policy_output_hash"]
+    row.policy_output_hash = str(output_hash) if output_hash is not None else None
     row.package_version = str(payload["package_version"])
     git_commit = payload["git_commit"]
     row.git_commit = str(git_commit) if git_commit is not None else None
@@ -362,6 +385,8 @@ def _entry_from_record(row: BacktestRunRecord) -> BacktestRunCatalogEntry:
         backtest_hash=row.backtest_hash,
         manifest_hash=row.manifest_hash,
         policy_name=row.policy_name,
+        policy_config=dict(row.policy_config),
+        policy_output_hash=row.policy_output_hash,
         package_version=row.package_version,
         git_commit=row.git_commit,
         created_at=row.created_at,
@@ -389,6 +414,8 @@ class _CompareView:
     backtest_hash: str
     manifest_hash: str
     policy_name: str
+    policy_config: str
+    policy_output_hash: str | None
     event_count: int
     error_count: int
     warning_count: int
@@ -405,6 +432,8 @@ def _compare_view(
             backtest_hash=item.backtest_hash,
             manifest_hash=item.manifest_hash,
             policy_name=item.policy_name,
+            policy_config=canonical_json(dict(item.policy_config)),
+            policy_output_hash=item.policy_output_hash,
             event_count=_summary_int(item.summary, "event_count"),
             error_count=_summary_int(item.summary, "error_count"),
             warning_count=_summary_int(item.summary, "warning_count"),
@@ -416,6 +445,8 @@ def _compare_view(
         backtest_hash=item.backtest_hash,
         manifest_hash=item.manifest_hash,
         policy_name=item.policy_name,
+        policy_config=canonical_json(dict(item.policy_config)),
+        policy_output_hash=item.policy_output_hash,
         event_count=item.event_count,
         error_count=item.error_count,
         warning_count=item.warning_count,

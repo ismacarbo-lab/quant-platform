@@ -1,4 +1,4 @@
-# Architecture — Phase 4.1
+# Architecture — Phase 4.2
 
 Status: research ingestion, an internal **dataset query API**, **dataset
 quality reports**, **local hashed snapshots**, a **PostgreSQL snapshot
@@ -8,8 +8,9 @@ and corporate actions, explicit replay boundaries), **local replay-run
 artifacts**, a **PostgreSQL replay-run metadata catalog**, a
 **backtest readiness gate**, a **dry-run backtest engine**
 (NoOp policy; no orders, fills, portfolio, or PnL), and **read-only
-backtest artifact integrity** plus result comparison / usability.
-No LLM runtime, strategies, brokers, or execution.
+**backtest artifact integrity** plus result comparison / usability, and a
+**research-policy interface** (observations and counters; no signals or
+orders). No LLM runtime, strategies, brokers, or execution.
 
 ## Modular monolith
 
@@ -23,7 +24,7 @@ src/quant_platform/
   data/         local CSV ingest, PIT daily bars, repositories
   research/     PIT datasets, quality reports, snapshots, catalog, integrity
   simulation/   dataset replay, run catalog, backtest readiness gate (no strategies)
-  backtest/     dry-run engine, NoOp policy, catalog, integrity, usability (no orders)
+  backtest/     dry-run engine, research policies, catalog, integrity (no orders)
   storage/      PostgreSQL engine/session, SQLAlchemy Base
   monitoring/   structured logging
   api/          internal HTTP surface (health)
@@ -39,7 +40,7 @@ Documented future areas (no empty implementation packages in Phase 0):
 | `storage` | Persistence adapters | engine/session only |
 | `research` | Dataset queries, experiment runners | PIT datasets, quality reports, snapshots, catalog, integrity; no notebooks |
 | `simulation` | Dataset replay timeline | events, boundaries, stream hash, audit, run artifacts + catalog, readiness gate; no strategies |
-| `backtesting` | Simulation engine | Phase 4.1 package `backtest/`: dry-run, NoOp, integrity; no orders/PnL |
+| `backtesting` | Simulation engine | Phase 4.2 package `backtest/`: dry-run, research policy, integrity; no orders/PnL |
 | `strategies` | Signal generation | not implemented |
 | `ml` | Model training/inference | not implemented |
 | `portfolio` | Positions, target holdings | not implemented |
@@ -130,8 +131,9 @@ research dataset API **requires** `as_of`. See
 [REPLAY_AUDIT.md](../simulation/REPLAY_AUDIT.md),
 [REPLAY_RUNS.md](../simulation/REPLAY_RUNS.md),
 [BACKTEST_READINESS.md](../simulation/BACKTEST_READINESS.md),
-[BACKTEST_ENGINE.md](../backtest/BACKTEST_ENGINE.md), and
-[BACKTEST_INTEGRITY.md](../backtest/BACKTEST_INTEGRITY.md).
+[BACKTEST_ENGINE.md](../backtest/BACKTEST_ENGINE.md),
+[BACKTEST_INTEGRITY.md](../backtest/BACKTEST_INTEGRITY.md), and
+[RESEARCH_POLICY_INTERFACE.md](../backtest/RESEARCH_POLICY_INTERFACE.md).
 
 ### Point-in-time timestamps
 
@@ -221,6 +223,9 @@ Phase 4.0 adds `quant_platform.backtest` and `backtest_runs`
 (`0007_backtest_runs`; NoOp dry-run, metadata only, not orders).
 Phase 4.1 adds read-only backtest artifact verification, run diffs, and
 a result-usability gate (no schema change).
+Phase 4.2 adds a research-policy interface and
+`0008_backtest_policy_metadata` (`policy_config`, `policy_output_hash`;
+still no orders).
 None of these add HTTP routes or gold/trading tables.
 
 ## AI usage boundary

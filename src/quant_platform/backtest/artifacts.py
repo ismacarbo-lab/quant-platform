@@ -12,6 +12,7 @@ from quant_platform import __version__
 from quant_platform.backtest.errors import BacktestError, BacktestErrorCode
 from quant_platform.backtest.types import (
     MANIFEST_ARTIFACT_NAME,
+    POLICY_OUTPUT_ARTIFACT_NAME,
     SUMMARY_ARTIFACT_NAME,
     BacktestManifest,
     BacktestResult,
@@ -34,7 +35,7 @@ def write_backtest_artifacts(
     git_commit: str | None = None,
     resolve_git: bool = True,
 ) -> BacktestResult:
-    """Write summary.json and manifest.json. Does not copy replay events."""
+    """Write summary.json, manifest.json, and policy_output.json."""
     stamp = created_at if created_at is not None else utc_now()
     if stamp.tzinfo is None:
         raise BacktestError(
@@ -46,6 +47,12 @@ def write_backtest_artifacts(
     target.mkdir(parents=True, exist_ok=True)
     summary_path = target / SUMMARY_ARTIFACT_NAME
     manifest_path = target / MANIFEST_ARTIFACT_NAME
+    policy_path = target / POLICY_OUTPUT_ARTIFACT_NAME
+    if result.policy_output is None:
+        raise BacktestError(
+            "policy_output is required to write backtest artifacts",
+            code=BacktestErrorCode.CATALOG_INVALID,
+        )
 
     resolved_commit = git_commit
     if resolve_git and resolved_commit is None:
@@ -60,6 +67,8 @@ def write_backtest_artifacts(
         stream_hash=result.summary.stream_hash,
         backtest_hash=result.summary.backtest_hash,
         policy_name=result.summary.policy_name,
+        policy_config=dict(result.summary.policy_config),
+        policy_output_hash=result.summary.policy_output_hash,
         request=result.request.as_mapping(),
         summary=result.summary.as_mapping(),
         artifacts=artifacts,
@@ -71,6 +80,7 @@ def write_backtest_artifacts(
     manifest_hash = hash_manifest_mapping(blob)
     manifest = replace(draft, manifest_hash=manifest_hash)
     _write_json(result.summary.as_mapping(), summary_path)
+    _write_json(result.policy_output.as_mapping(), policy_path)
     _write_json(manifest.as_mapping(), manifest_path)
     return replace(result, manifest=manifest, output_dir=target)
 

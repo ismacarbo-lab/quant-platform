@@ -17,6 +17,8 @@ Phase 3.3 revision `0006_replay_runs` adds `simulation_replay_runs`
 (replay-run metadata only; not event rows).
 Phase 4.0 revision `0007_backtest_runs` adds `backtest_runs`
 (dry-run backtest metadata only; not orders or event rows).
+Phase 4.2 revision `0008_backtest_policy_metadata` adds
+`policy_config` and `policy_output_hash` on `backtest_runs`.
 None of these revisions create orders, trades, or broker tables.
 
 ```bash

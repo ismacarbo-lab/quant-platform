@@ -11,11 +11,12 @@ from sqlalchemy.orm import Session
 
 from quant_platform.backtest.artifacts import write_backtest_artifacts
 from quant_platform.backtest.errors import BacktestError, BacktestErrorCode
-from quant_platform.backtest.policy import NoOpBacktestPolicy
+from quant_platform.backtest.policy import EventCountingResearchPolicy
+from quant_platform.backtest.policy_interface import apply_research_event
+from quant_platform.backtest.policy_registry import get_research_policy
 from quant_platform.backtest.results import derive_backtest_id, hash_backtest_counts
 from quant_platform.backtest.types import (
     ALLOWED_POLICY_NAMES,
-    NOOP_POLICY_NAME,
     BacktestRequest,
     BacktestResult,
     BacktestSummary,
@@ -52,13 +53,13 @@ def execute_backtest(
     *,
     stream_hash: str,
 ) -> BacktestResult:
-    """Run NoOpBacktestPolicy over an in-memory event sequence.
+    """Run a registered research policy over an in-memory event sequence.
 
     Does not place orders, simulate fills, or compute PnL.
     """
     if request.policy_name not in ALLOWED_POLICY_NAMES:
         raise BacktestError(
-            "policy_name must be 'noop'",
+            "policy_name must be a registered research policy",
             code=BacktestErrorCode.INVALID_POLICY,
         )
     if not is_sha256_digest(stream_hash):
@@ -66,13 +67,21 @@ def execute_backtest(
             "stream_hash must be a sha256:<hex> digest",
             code=BacktestErrorCode.CATALOG_INVALID,
         )
-    policy = NoOpBacktestPolicy()
+    policy = get_research_policy(request.policy_name, request.policy_config)
+    if not isinstance(policy, EventCountingResearchPolicy):
+        raise BacktestError(
+            "registered research policy must count events without trading",
+            code=BacktestErrorCode.INVALID_POLICY,
+        )
     for event in events:
-        policy.observe(event)
+        apply_research_event(policy, event)
+    output = policy.finalize()
     backtest_hash = hash_backtest_counts(
         replay_id=request.replay_id,
         stream_hash=stream_hash,
         policy_name=request.policy_name,
+        policy_config=dict(request.policy_config or {}),
+        policy_output_hash=output.policy_output_hash,
         event_count=policy.event_count,
         market_event_count=policy.market_event_count,
         session_event_count=policy.session_event_count,
@@ -93,6 +102,8 @@ def execute_backtest(
         stream_hash=stream_hash,
         backtest_hash=backtest_hash,
         policy_name=request.policy_name,
+        policy_config=dict(request.policy_config or {}),
+        policy_output_hash=output.policy_output_hash,
         event_count=policy.event_count,
         market_event_count=policy.market_event_count,
         session_event_count=policy.session_event_count,
@@ -107,6 +118,7 @@ def execute_backtest(
     return BacktestResult(
         request=request,
         summary=summary,
+        policy_output=output,
         orders=policy.emitted_orders(),
         fills=policy.emitted_fills(),
         signals=policy.emitted_signals(),
@@ -124,7 +136,7 @@ def run_backtest_from_replay_run(
     resolve_git: bool = True,
     research_mode: bool | None = None,
 ) -> BacktestResult:
-    """Load a registered replay run, require readiness, and dry-run NoOp.
+    """Load a registered replay run, require readiness, and dry-run a policy.
 
     Does not write orders, call the internet, or compute PnL.
     """
@@ -133,11 +145,6 @@ def run_backtest_from_replay_run(
         raise BacktestError(
             "APP_MODE must be research",
             code=BacktestErrorCode.APP_MODE_NOT_RESEARCH,
-        )
-    if request.policy_name != NOOP_POLICY_NAME:
-        raise BacktestError(
-            "only NoOpBacktestPolicy ('noop') is implemented",
-            code=BacktestErrorCode.INVALID_POLICY,
         )
     report = evaluate_replay_run_readiness(
         session, request.replay_id, replay_base_dir, research_mode=mode

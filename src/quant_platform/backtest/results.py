@@ -7,6 +7,7 @@ from collections.abc import Mapping
 from uuid import UUID
 
 from quant_platform.backtest.errors import BacktestError, BacktestErrorCode
+from quant_platform.backtest.observations import normalize_policy_config
 from quant_platform.backtest.types import (
     BACKTEST_HASH_FORMAT_VERSION,
     BACKTEST_HASH_KIND,
@@ -26,6 +27,8 @@ def hash_backtest_summary(summary: BacktestSummary) -> str:
         replay_id=summary.replay_id,
         stream_hash=summary.stream_hash,
         policy_name=summary.policy_name,
+        policy_config=dict(summary.policy_config),
+        policy_output_hash=summary.policy_output_hash,
         event_count=summary.event_count,
         market_event_count=summary.market_event_count,
         session_event_count=summary.session_event_count,
@@ -44,6 +47,8 @@ def hash_backtest_counts(
     replay_id: str,
     stream_hash: str,
     policy_name: str,
+    policy_config: Mapping[str, object],
+    policy_output_hash: str,
     event_count: int,
     market_event_count: int,
     session_event_count: int,
@@ -59,6 +64,8 @@ def hash_backtest_counts(
         replay_id=replay_id,
         stream_hash=stream_hash,
         policy_name=policy_name,
+        policy_config=policy_config,
+        policy_output_hash=policy_output_hash,
         event_count=event_count,
         market_event_count=market_event_count,
         session_event_count=session_event_count,
@@ -80,6 +87,10 @@ def hash_backtest_mapping(summary: Mapping[str, object]) -> str:
         replay_id=_require_str(summary.get("replay_id"), field="replay_id"),
         stream_hash=_require_str(summary.get("stream_hash"), field="stream_hash"),
         policy_name=_require_str(summary.get("policy_name"), field="policy_name"),
+        policy_config=_require_config(summary.get("policy_config")),
+        policy_output_hash=_require_str(
+            summary.get("policy_output_hash"), field="policy_output_hash"
+        ),
         event_count=_require_int(summary.get("event_count"), field="event_count"),
         market_event_count=_require_int(
             summary.get("market_event_count"), field="market_event_count"
@@ -120,6 +131,8 @@ def _hash_backtest_payload(
     replay_id: str,
     stream_hash: str,
     policy_name: str,
+    policy_config: Mapping[str, object],
+    policy_output_hash: str,
     event_count: int,
     market_event_count: int,
     session_event_count: int,
@@ -137,6 +150,8 @@ def _hash_backtest_payload(
         "replay_id": replay_id,
         "stream_hash": stream_hash,
         "policy_name": policy_name,
+        "policy_config": dict(policy_config),
+        "policy_output_hash": policy_output_hash,
         "event_count": event_count,
         "market_event_count": market_event_count,
         "session_event_count": session_event_count,
@@ -149,6 +164,17 @@ def _hash_backtest_payload(
         "errors": list(errors),
     }
     return sha256_canonical(payload)
+
+
+def _require_config(value: object) -> dict[str, object]:
+    if value is None:
+        return {}
+    if not isinstance(value, Mapping):
+        raise BacktestError(
+            "summary.policy_config must be an object",
+            code=BacktestErrorCode.CATALOG_INVALID,
+        )
+    return normalize_policy_config(value)
 
 
 def _require_str(value: object, *, field: str) -> str:

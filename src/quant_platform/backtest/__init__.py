@@ -36,9 +36,20 @@ from quant_platform.backtest.integrity_types import (
     BacktestArtifactVerificationReport,
     BacktestIntegrityCode,
 )
+from quant_platform.backtest.observations import (
+    PolicyRunOutput,
+    ResearchObservation,
+    hash_policy_output,
+)
 from quant_platform.backtest.policy import (
     EventCountingBacktestPolicy,
+    EventCountingResearchPolicy,
     NoOpBacktestPolicy,
+)
+from quant_platform.backtest.policy_interface import ResearchPolicy
+from quant_platform.backtest.policy_registry import (
+    get_research_policy,
+    registered_policy_names,
 )
 from quant_platform.backtest.readiness import (
     BacktestUsabilityReport,
@@ -53,6 +64,7 @@ from quant_platform.backtest.results import (
     hash_backtest_summary,
 )
 from quant_platform.backtest.types import (
+    EVENT_COUNTING_POLICY_NAME,
     NOOP_POLICY_NAME,
     BacktestArtifact,
     BacktestManifest,
@@ -65,6 +77,7 @@ from quant_platform.backtest.types import (
 )
 
 __all__ = [
+    "EVENT_COUNTING_POLICY_NAME",
     "NOOP_POLICY_NAME",
     "BacktestArtifact",
     "BacktestArtifactStatus",
@@ -82,7 +95,11 @@ __all__ = [
     "BacktestSummary",
     "BacktestUsabilityReport",
     "EventCountingBacktestPolicy",
+    "EventCountingResearchPolicy",
     "NoOpBacktestPolicy",
+    "PolicyRunOutput",
+    "ResearchObservation",
+    "ResearchPolicy",
     "backtest_run_is_reproducible",
     "backtest_run_is_usable",
     "build_backtest_run_catalog_filters",
@@ -96,13 +113,16 @@ __all__ = [
     "execute_backtest",
     "get_backtest_run_by_id",
     "get_backtest_run_by_manifest_hash",
+    "get_research_policy",
     "hash_backtest_counts",
     "hash_backtest_mapping",
     "hash_backtest_result",
     "hash_backtest_summary",
+    "hash_policy_output",
     "list_backtest_runs",
     "raise_if_manifest_hash_conflict",
     "register_backtest_run",
+    "registered_policy_names",
     "require_backtest_readiness",
     "resolve_backtest_run_directory",
     "run_backtest_from_replay_run",

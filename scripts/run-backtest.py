@@ -20,7 +20,7 @@ from quant_platform.storage.database import create_db_engine, create_session_fac
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description=(
-            "Dry-run NoOpBacktestPolicy over a registered replay run. "
+            "Dry-run a registered research policy over a replay run. "
             "Not a strategy and not trading."
         )
     )
@@ -48,6 +48,16 @@ def main(argv: list[str] | None = None) -> int:
         help="Derive backtest_id from backtest_hash.",
     )
     parser.add_argument("--notes", default=None, help="Optional backtest note.")
+    parser.add_argument(
+        "--policy-name",
+        default="noop",
+        help="Registered research policy (default: noop).",
+    )
+    parser.add_argument(
+        "--policy-config-json",
+        default=None,
+        help="JSON object of policy config. Not a strategy payload.",
+    )
     parser.add_argument("--json", action="store_true", dest="as_json")
     args = parser.parse_args(argv)
 
@@ -59,11 +69,32 @@ def main(argv: list[str] | None = None) -> int:
         print("error: --register requires --output-dir", file=sys.stderr)
         return 1
 
-    request = BacktestRequest(
-        replay_id=args.replay_id,
-        deterministic_id=args.deterministic_id,
-        notes=args.notes,
-    )
+    policy_config: dict[str, object] | None = None
+    if args.policy_config_json is not None:
+        try:
+            loaded = json.loads(args.policy_config_json)
+        except json.JSONDecodeError as exc:
+            print(
+                f"error: policy-config-json is not valid JSON ({exc})",
+                file=sys.stderr,
+            )
+            return 1
+        if not isinstance(loaded, dict):
+            print("error: policy-config-json must be a JSON object", file=sys.stderr)
+            return 1
+        policy_config = loaded
+
+    try:
+        request = BacktestRequest(
+            replay_id=args.replay_id,
+            deterministic_id=args.deterministic_id,
+            policy_name=args.policy_name,
+            policy_config=policy_config,
+            notes=args.notes,
+        )
+    except BacktestError as exc:
+        print(f"error: {exc} ({exc.code})", file=sys.stderr)
+        return 1
     engine = create_db_engine(settings, connect_timeout_seconds=5)
     factory = create_session_factory(engine)
     session = factory()
@@ -109,6 +140,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"backtest_id={result.summary.backtest_id}")
     print(f"replay_id={result.summary.replay_id}")
     print(f"policy={result.summary.policy_name}")
+    print(f"policy_output_hash={result.summary.policy_output_hash}")
     print(f"backtest_hash={result.summary.backtest_hash}")
     print(f"stream_hash={result.summary.stream_hash}")
     print(f"event_count={result.summary.event_count}")

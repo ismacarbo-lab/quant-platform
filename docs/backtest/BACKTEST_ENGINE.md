@@ -1,4 +1,4 @@
-# Backtest engine foundation — Phase 4.0 / 4.1
+# Backtest engine foundation — Phase 4.0 / 4.1 / 4.2
 
 This phase adds an **offline dry-run backtest engine**. It consumes a
 registered replay run that already passed the readiness gate, walks the
@@ -11,6 +11,8 @@ Package: `quant_platform.backtest`.
 
 Readiness gate: [BACKTEST_READINESS.md](../simulation/BACKTEST_READINESS.md).
 NoOp policy: [NOOP_POLICY.md](NOOP_POLICY.md).
+Research policy interface:
+[RESEARCH_POLICY_INTERFACE.md](RESEARCH_POLICY_INTERFACE.md).
 Artifact integrity and result comparison:
 [BACKTEST_INTEGRITY.md](BACKTEST_INTEGRITY.md).
 
@@ -23,8 +25,9 @@ A controlled loop:
    false.
 3. Read `events.jsonl` from the local replay-run folder.
 4. Recompute `stream_hash` and require a match.
-5. Apply `NoOpBacktestPolicy` (event counting only).
-6. Write `summary.json` and `manifest.json` (optional).
+5. Apply a registered `ResearchPolicy` (`noop` by default).
+6. Write `summary.json`, `manifest.json`, and `policy_output.json`
+   (optional).
 7. Optionally register metadata in `backtest_runs`.
 
 The engine references the replay run. It does **not** duplicate the
@@ -58,7 +61,8 @@ Allowed result fields:
 | Hash | Meaning |
 |------|---------|
 | `stream_hash` | Canonical replay event stream (`sha256:<64 hex>`). |
-| `backtest_hash` | Replay id + stream hash + policy name + counts + warning/error codes. No wall-clock, no absolute paths, no random UUID. |
+| `policy_output_hash` | Canonical policy observations + config (no wall-clock). |
+| `backtest_hash` | Replay id + stream hash + policy name + policy config + policy output hash + counts + warning/error codes. No wall-clock, no absolute paths, no random UUID. |
 | `manifest_hash` | Canonical export of this backtest folder, **including** `created_at` and `backtest_id`. |
 
 Compare **logic** with `backtest_hash`. Compare **this export** with
@@ -77,6 +81,7 @@ Written under `--output-dir`:
 
 - `summary.json`
 - `manifest.json`
+- `policy_output.json`
 
 Not written: a second copy of `events.jsonl`. Point at `replay_id` +
 `stream_hash` instead.
@@ -86,7 +91,9 @@ No `DATABASE_URL`, passwords, or absolute directories.
 
 ## PostgreSQL catalog
 
-Table: `backtest_runs`. Alembic revision `0007_backtest_runs`.
+Table: `backtest_runs`. Alembic revisions `0007_backtest_runs` and
+`0008_backtest_policy_metadata` (`policy_config` JSONB,
+`policy_output_hash` text).
 
 Metadata only (hashes, counts, request/summary JSON, relative artifact
 names). No event rows, orders, fills, or positions.
@@ -111,6 +118,7 @@ uv run python scripts/run-backtest.py \
   --replay-id <replay_id> \
   --replay-base-dir /tmp/fixt-replay \
   --output-dir /tmp/fixt-backtest \
+  --policy-name noop \
   --deterministic-id \
   --json
 ```

@@ -624,6 +624,7 @@ class BacktestRunRecord(Base):
         Index("ix_backtest_runs_stream_hash", "stream_hash"),
         Index("ix_backtest_runs_backtest_hash", "backtest_hash"),
         Index("ix_backtest_runs_policy_name", "policy_name"),
+        Index("ix_backtest_runs_policy_output_hash", "policy_output_hash"),
         Index("ix_backtest_runs_created_at", "created_at"),
         Index("ix_backtest_runs_is_usable", "is_usable"),
     )
@@ -637,6 +638,8 @@ class BacktestRunRecord(Base):
     backtest_hash: Mapped[str] = mapped_column(Text, nullable=False)
     manifest_hash: Mapped[str] = mapped_column(Text, nullable=False)
     policy_name: Mapped[str] = mapped_column(String(64), nullable=False)
+    policy_config: Mapped[dict[str, object]] = mapped_column(JSONB, nullable=False)
+    policy_output_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
     package_version: Mapped[str] = mapped_column(String(32), nullable=False)
     git_commit: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime] = mapped_column(

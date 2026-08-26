@@ -1,4 +1,4 @@
-# Backtest artifact integrity — Phase 4.1
+# Backtest artifact integrity — Phase 4.1 / 4.2
 
 Read-only checks that a local dry-run backtest folder still matches its
 manifest and, when asked, the PostgreSQL `backtest_runs` catalog.
@@ -10,32 +10,40 @@ Package: `quant_platform.backtest.integrity` (types in
 `quant_platform.backtest.readiness` (result usability, not replay
 readiness).
 
-**No Alembic revision.** Integrity is a report, not a table.
+**No Alembic revision for integrity itself.** Phase 4.2 adds
+`0008_backtest_policy_metadata` for catalog columns, not for the
+verifier.
 
-This phase still uses only `NoOpBacktestPolicy`. Passing integrity or
-`usable_result` does **not** mean a strategy exists, that PnL was
-computed, or that the result is economically interesting.
+Registered research policies (`noop`, `event_counting`) may appear in
+manifests. Passing integrity or `usable_result` does **not** mean a
+strategy exists, that PnL was computed, or that the result is
+economically interesting.
 
 Engine: [BACKTEST_ENGINE.md](BACKTEST_ENGINE.md).
 Policy: [NOOP_POLICY.md](NOOP_POLICY.md).
+Research policy interface: [RESEARCH_POLICY_INTERFACE.md](RESEARCH_POLICY_INTERFACE.md).
 Replay readiness (different gate): [BACKTEST_READINESS.md](../simulation/BACKTEST_READINESS.md).
 
 ## What is verified
 
 For a backtest directory:
 
-- `manifest.json` and `summary.json` exist
+- `manifest.json`, `summary.json`, and `policy_output.json` exist
 - listed artifact paths are relative, not absolute, and do not contain `..`
 - hashes look like `sha256:<64 hex>` (`stream_hash`, `backtest_hash`,
-  `manifest_hash`)
+  `manifest_hash`, `policy_output_hash`)
 - `replay_id` is present
-- `policy_name` is `noop`
+- `policy_name` is a registered research policy (`noop` or
+  `event_counting`)
 - `manifest_hash` matches a recomputation of the manifest (`manifest_hash`
   field excluded)
-- `backtest_hash` matches a recomputation from `summary.json` counts,
-  policy, replay id, stream hash, and warning/error codes
+- `backtest_hash` matches a recomputation from `summary.json` (counts,
+  policy name, policy config, policy output hash, replay id, stream hash,
+  warning/error codes)
+- `policy_output_hash` matches `policy_output.json`
 - summary counts match the nested `manifest.summary` object and the
   warnings/errors lists
+- observations do not contain investment-decision wording
 - no `DATABASE_URL`, passwords, or connection-string markers
 
 Against the catalog (optional):
@@ -57,7 +65,8 @@ Against the catalog (optional):
 
 | Hash | Meaning |
 |------|---------|
-| `backtest_hash` | Replay id + stream hash + policy + counts + warning/error codes. No wall-clock, no paths, no random UUID. |
+| `backtest_hash` | Replay id + stream hash + policy name + policy config + policy output hash + counts + warning/error codes. No wall-clock, no paths, no random UUID. |
+| `policy_output_hash` | Canonical observations + policy config (no wall-clock). |
 | `manifest_hash` | Canonical export of this folder, **including** `created_at` and `backtest_id`. |
 
 Compare **logic** with `backtest_hash`. Compare **this export** with

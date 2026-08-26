@@ -23,11 +23,15 @@ from quant_platform.backtest.integrity_types import (
     BacktestIntegrityCode,
     BacktestIntegritySeverity,
 )
+from quant_platform.backtest.observations import (
+    contains_operative_language,
+    hash_policy_output_mapping,
+)
 from quant_platform.backtest.results import hash_backtest_mapping
 from quant_platform.backtest.types import (
     ALLOWED_POLICY_NAMES,
     MANIFEST_ARTIFACT_NAME,
-    NOOP_POLICY_NAME,
+    POLICY_OUTPUT_ARTIFACT_NAME,
     SUMMARY_ARTIFACT_NAME,
     BacktestRunCatalogFilters,
     build_backtest_run_catalog_filters,
@@ -53,6 +57,7 @@ _ID_FIELDS = (
     "stream_hash",
     "backtest_hash",
     "policy_name",
+    "policy_output_hash",
 )
 
 
@@ -143,6 +148,7 @@ def verify_backtest_artifacts(
     stored_manifest_hash = _optional_str(manifest.get("manifest_hash"))
     stored_stream_hash = _optional_str(manifest.get("stream_hash"))
     stored_backtest_hash = _optional_str(manifest.get("backtest_hash"))
+    stored_policy_output_hash = _optional_str(manifest.get("policy_output_hash"))
     if request.expected_backtest_id is not None and backtest_id != (
         request.expected_backtest_id
     ):
@@ -195,14 +201,25 @@ def verify_backtest_artifacts(
                 actual=stored_manifest_hash,
             )
         )
+    if stored_policy_output_hash is None or not is_sha256_digest(
+        stored_policy_output_hash
+    ):
+        issues.append(
+            _issue(
+                BacktestIntegritySeverity.ERROR,
+                BacktestIntegrityCode.INVALID_HASH,
+                "policy_output_hash must be sha256:<64 hex>",
+                path=MANIFEST_ARTIFACT_NAME,
+                actual=stored_policy_output_hash,
+            )
+        )
     if policy_name is None or policy_name not in ALLOWED_POLICY_NAMES:
         issues.append(
             _issue(
                 BacktestIntegritySeverity.ERROR,
                 BacktestIntegrityCode.UNSUPPORTED_POLICY,
-                "policy_name must be 'noop'",
+                "policy_name must be a registered research policy",
                 path=MANIFEST_ARTIFACT_NAME,
-                expected=NOOP_POLICY_NAME,
                 actual=policy_name,
             )
         )
@@ -240,6 +257,7 @@ def verify_backtest_artifacts(
     for name, default_path in (
         ("summary", SUMMARY_ARTIFACT_NAME),
         ("manifest", MANIFEST_ARTIFACT_NAME),
+        ("policy_output", POLICY_OUTPUT_ARTIFACT_NAME),
     ):
         path = listed.get(name, default_path)
         seen_paths.add(path)
@@ -337,6 +355,70 @@ def verify_backtest_artifacts(
                             actual=recomputed_backtest_hash,
                         )
                     )
+    policy_relative = listed.get("policy_output", POLICY_OUTPUT_ARTIFACT_NAME)
+    policy_path = (
+        None
+        if artifact_path_is_unsafe(policy_relative)
+        else resolved_root / policy_relative
+    )
+    if policy_path is not None and policy_path.is_file():
+        policy_text = policy_path.read_text(encoding="utf-8")
+        if manifest_contains_secrets(policy_text):
+            issues.append(
+                _issue(
+                    BacktestIntegritySeverity.ERROR,
+                    BacktestIntegrityCode.SECRET_LIKE_VALUE,
+                    "policy_output contains a secret-like marker",
+                    path=POLICY_OUTPUT_ARTIFACT_NAME,
+                )
+            )
+        if contains_operative_language(policy_text):
+            issues.append(
+                _issue(
+                    BacktestIntegritySeverity.ERROR,
+                    BacktestIntegrityCode.UNSUPPORTED_POLICY,
+                    "policy_output contains investment-decision wording",
+                    path=POLICY_OUTPUT_ARTIFACT_NAME,
+                )
+            )
+        policy_payload = _load_object(policy_text, POLICY_OUTPUT_ARTIFACT_NAME, issues)
+        if policy_payload is not None:
+            try:
+                recomputed_policy_hash = hash_policy_output_mapping(policy_payload)
+            except BacktestError:
+                issues.append(
+                    _issue(
+                        BacktestIntegritySeverity.ERROR,
+                        BacktestIntegrityCode.INVALID_JSON,
+                        "policy_output payload cannot be hashed",
+                        path=POLICY_OUTPUT_ARTIFACT_NAME,
+                    )
+                )
+            else:
+                stored = stored_policy_output_hash
+                file_hash = _optional_str(policy_payload.get("policy_output_hash"))
+                if stored is not None and stored != recomputed_policy_hash:
+                    issues.append(
+                        _issue(
+                            BacktestIntegritySeverity.ERROR,
+                            BacktestIntegrityCode.POLICY_OUTPUT_HASH_MISMATCH,
+                            "policy_output_hash does not match policy_output.json",
+                            path=POLICY_OUTPUT_ARTIFACT_NAME,
+                            expected=stored,
+                            actual=recomputed_policy_hash,
+                        )
+                    )
+                if file_hash is not None and file_hash != recomputed_policy_hash:
+                    issues.append(
+                        _issue(
+                            BacktestIntegritySeverity.ERROR,
+                            BacktestIntegrityCode.POLICY_OUTPUT_HASH_MISMATCH,
+                            "stored policy_output_hash does not match payload",
+                            path=POLICY_OUTPUT_ARTIFACT_NAME,
+                            expected=file_hash,
+                            actual=recomputed_policy_hash,
+                        )
+                    )
     return _finish(
         root=root,
         backtest_id=backtest_id or request.expected_backtest_id,
@@ -350,6 +432,7 @@ def verify_backtest_artifacts(
         recomputed_manifest_hash=recomputed_manifest_hash,
         policy_name=policy_name,
         event_count=event_count,
+        policy_output_hash=stored_policy_output_hash,
     )
 
 
@@ -446,6 +529,20 @@ def verify_registered_backtest_run(
                 "catalog policy_name does not match local manifest",
                 expected=entry.policy_name,
                 actual=report.policy_name,
+            )
+        )
+    if (
+        report.policy_output_hash is not None
+        and entry.policy_output_hash is not None
+        and entry.policy_output_hash != report.policy_output_hash
+    ):
+        issues.append(
+            _issue(
+                BacktestIntegritySeverity.ERROR,
+                BacktestIntegrityCode.CATALOG_MANIFEST_MISMATCH,
+                "catalog policy_output_hash does not match local manifest",
+                expected=entry.policy_output_hash,
+                actual=report.policy_output_hash,
             )
         )
     return replace_issues(report, issues)
@@ -551,6 +648,7 @@ def replace_issues(
         recomputed_manifest_hash=report.recomputed_manifest_hash,
         policy_name=report.policy_name,
         event_count=report.event_count,
+        policy_output_hash=report.policy_output_hash,
     )
 
 
@@ -822,6 +920,7 @@ def _finish(
     recomputed_manifest_hash: str | None = None,
     policy_name: str | None = None,
     event_count: int | None = None,
+    policy_output_hash: str | None = None,
 ) -> BacktestArtifactVerificationReport:
     ranked = _rank(issues)
     error_count = sum(
@@ -850,4 +949,5 @@ def _finish(
         recomputed_manifest_hash=recomputed_manifest_hash,
         policy_name=policy_name,
         event_count=event_count,
+        policy_output_hash=policy_output_hash,
     )

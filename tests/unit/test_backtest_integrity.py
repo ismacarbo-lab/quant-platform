@@ -115,6 +115,8 @@ def _entry(**overrides: object) -> BacktestRunCatalogEntry:
         "backtest_hash": _OTHER,
         "manifest_hash": _DIGEST,
         "policy_name": "noop",
+        "policy_config": {},
+        "policy_output_hash": _OTHER,
         "package_version": "0.1.0",
         "git_commit": "deadbeef",
         "created_at": datetime(2024, 1, 10, tzinfo=UTC),
@@ -297,6 +299,7 @@ def test_usability_ok_and_failures() -> None:
         recomputed_manifest_hash=entry.manifest_hash,
         policy_name="noop",
         event_count=5,
+        policy_output_hash=entry.policy_output_hash,
     )
     ok = build_backtest_usability_report(
         backtest_id=entry.backtest_id,
@@ -342,6 +345,7 @@ def test_usability_ok_and_failures() -> None:
         recomputed_manifest_hash=entry.manifest_hash,
         policy_name="noop",
         event_count=None,
+        policy_output_hash=entry.policy_output_hash,
     )
     artifact_fail = build_backtest_usability_report(
         backtest_id=entry.backtest_id,

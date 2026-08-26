@@ -49,6 +49,7 @@ _HASH_MISMATCH_CODES = frozenset(
         BacktestIntegrityCode.BACKTEST_HASH_MISMATCH.value,
         BacktestIntegrityCode.CATALOG_MANIFEST_MISMATCH.value,
         BacktestIntegrityCode.COUNT_MISMATCH.value,
+        BacktestIntegrityCode.POLICY_OUTPUT_HASH_MISMATCH.value,
     }
 )
 
@@ -334,7 +335,7 @@ def _catalog_issues(entry: BacktestRunCatalogEntry) -> list[BacktestUsabilityIss
             _issue(
                 BacktestUsabilitySeverity.ERROR,
                 BacktestUsabilityCode.UNSUPPORTED_POLICY,
-                "policy_name must be 'noop'",
+                "policy_name must be a registered research policy",
                 expected=NOOP_POLICY_NAME,
                 actual=entry.policy_name,
             )

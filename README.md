@@ -13,9 +13,9 @@ snapshots**, a **PostgreSQL snapshot catalog**, **deterministic
 dataset replay** with an auditable event stream, **replay-run
 artifacts** with a PostgreSQL metadata catalog, a **backtest
 readiness gate**, a **dry-run backtest engine**
-(`NoOpBacktestPolicy` only: counts, hashes, no orders), and
-**backtest artifact integrity** (verify hashes, compare runs, usability
-gate). It is **not** a trading system.
+(`NoOpBacktestPolicy` / `ResearchPolicy`: counts, hashes, observations,
+no orders), **backtest artifact integrity**, and a **research-policy
+interface** without signals. It is **not** a trading system.
 
 A pre-existing tree named `AI_VENTURE_OS_PROMPTS/` may sit next to this
 project. It is a separate product and is **not** part of `quant_platform`.
@@ -43,6 +43,8 @@ Do not mix the two.
   summary/manifest artifacts, and register metadata in PostgreSQL.
 - Verify local backtest artifacts, recompute hashes, compare two
   dry-runs, and gate whether a NoOp result is usable research evidence.
+- Observe a replay stream through a registered `ResearchPolicy`
+  (`noop` / `event_counting`) that emits observations and counters only.
 
 ## What is not implemented
 
@@ -173,9 +175,9 @@ postgresql+psycopg://quant:quant_dev_only_not_for_production@127.0.0.1:5434/quan
 ```
 
 There are still **no** trading tables (orders, fills, signals, strategies).
-Alembic revisions `0001_ingestion` … `0007_backtest_runs` create research
-ingestion, instrument-master, snapshot-catalog, replay-run, and dry-run
-backtest metadata tables only.
+Alembic revisions `0001_ingestion` … `0008_backtest_policy_metadata` create
+research ingestion, instrument-master, snapshot-catalog, replay-run, and
+dry-run backtest metadata tables only.
 
 ## Migrations
 
@@ -234,6 +236,8 @@ Dry-run backtest engine (NoOp policy, no orders or PnL):
 [docs/backtest/BACKTEST_ENGINE.md](docs/backtest/BACKTEST_ENGINE.md).
 Backtest artifact integrity (verify, compare, usable_result):
 [docs/backtest/BACKTEST_INTEGRITY.md](docs/backtest/BACKTEST_INTEGRITY.md).
+Research policy interface (observations, not strategies):
+[docs/backtest/RESEARCH_POLICY_INTERFACE.md](docs/backtest/RESEARCH_POLICY_INTERFACE.md).
 
 See [docs/development/DEVELOPER_WORKFLOW.md](docs/development/DEVELOPER_WORKFLOW.md)
 for install, Compose, Alembic, port 5434 conflicts, and CI.

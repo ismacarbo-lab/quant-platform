@@ -47,6 +47,7 @@ class BacktestRunDiff:
     same_replay_id: bool
     same_stream_hash: bool
     same_policy_name: bool
+    same_policy_output_hash: bool
     identical: bool
     verdict: str
     items: tuple[BacktestRunDiffItem, ...]
@@ -62,6 +63,7 @@ class BacktestRunDiff:
             "same_replay_id": self.same_replay_id,
             "same_stream_hash": self.same_stream_hash,
             "same_policy_name": self.same_policy_name,
+            "same_policy_output_hash": self.same_policy_output_hash,
             "identical": self.identical,
             "verdict": self.verdict,
             "items": [item.as_mapping() for item in self.items],
@@ -93,6 +95,20 @@ def diff_backtest_runs(
     _add(items, "replay_id", left.replay_id, right.replay_id, "replay_id_diff")
     _add(items, "stream_hash", left.stream_hash, right.stream_hash, "stream_hash_diff")
     _add(items, "policy_name", left.policy_name, right.policy_name, "policy_name_diff")
+    _add(
+        items,
+        "policy_config",
+        left.policy_config,
+        right.policy_config,
+        "policy_config_diff",
+    )
+    _add(
+        items,
+        "policy_output_hash",
+        left.policy_output_hash,
+        right.policy_output_hash,
+        "policy_output_hash_diff",
+    )
     _add(items, "event_count", left.event_count, right.event_count, "event_count_diff")
     _add(
         items,
@@ -150,6 +166,7 @@ def diff_backtest_runs(
         same_replay_id=left.replay_id == right.replay_id,
         same_stream_hash=left.stream_hash == right.stream_hash,
         same_policy_name=left.policy_name == right.policy_name,
+        same_policy_output_hash=left.policy_output_hash == right.policy_output_hash,
         identical=same_manifest,
         verdict=verdict,
         items=ranked,
@@ -181,6 +198,8 @@ class _DiffView:
     backtest_hash: str
     manifest_hash: str
     policy_name: str
+    policy_config: str
+    policy_output_hash: str | None
     event_count: str
     market_event_count: str
     session_event_count: str
@@ -208,6 +227,8 @@ def _view_manifest(item: BacktestManifest) -> _DiffView:
         backtest_hash=item.backtest_hash,
         manifest_hash=item.manifest_hash,
         policy_name=item.policy_name,
+        policy_config=canonical_json(dict(item.policy_config)),
+        policy_output_hash=item.policy_output_hash,
         event_count=str(_summary_int(item.summary, "event_count")),
         market_event_count=str(_summary_int(item.summary, "market_event_count")),
         session_event_count=str(_summary_int(item.summary, "session_event_count")),
@@ -236,6 +257,8 @@ def _view_entry(item: BacktestRunCatalogEntry) -> _DiffView:
         backtest_hash=item.backtest_hash,
         manifest_hash=item.manifest_hash,
         policy_name=item.policy_name,
+        policy_config=canonical_json(dict(item.policy_config)),
+        policy_output_hash=item.policy_output_hash,
         event_count=str(item.event_count),
         market_event_count=str(item.market_event_count),
         session_event_count=str(item.session_event_count),

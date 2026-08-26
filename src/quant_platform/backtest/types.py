@@ -6,22 +6,29 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from quant_platform.backtest.errors import BacktestError, BacktestErrorCode
+from quant_platform.backtest.observations import normalize_policy_config
 from quant_platform.research.snapshots import canonical_datetime
 from quant_platform.simulation.run_types import artifact_path_is_unsafe
 
+if TYPE_CHECKING:
+    from quant_platform.backtest.observations import PolicyRunOutput
+
 BACKTEST_KIND = "backtest_run"
-BACKTEST_FORMAT_VERSION = 1
+BACKTEST_FORMAT_VERSION = 2
 BACKTEST_HASH_KIND = "backtest_result"
-BACKTEST_HASH_FORMAT_VERSION = 1
+BACKTEST_HASH_FORMAT_VERSION = 2
 
 NOOP_POLICY_NAME = "noop"
-ALLOWED_POLICY_NAMES = frozenset({NOOP_POLICY_NAME})
+EVENT_COUNTING_POLICY_NAME = "event_counting"
+ALLOWED_POLICY_NAMES = frozenset({NOOP_POLICY_NAME, EVENT_COUNTING_POLICY_NAME})
 
 SUMMARY_ARTIFACT_NAME = "summary.json"
 MANIFEST_ARTIFACT_NAME = "manifest.json"
+POLICY_OUTPUT_ARTIFACT_NAME = "policy_output.json"
 
 
 def optional_backtest_notes(value: str | None) -> str | None:
@@ -47,6 +54,7 @@ class BacktestRequest:
     replay_id: str
     deterministic_id: bool = False
     policy_name: str = NOOP_POLICY_NAME
+    policy_config: dict[str, object] | None = None
     notes: str | None = None
 
     def __post_init__(self) -> None:
@@ -60,10 +68,13 @@ class BacktestRequest:
         policy = self.policy_name.strip()
         if policy not in ALLOWED_POLICY_NAMES:
             raise BacktestError(
-                "policy_name must be 'noop' (NoOpBacktestPolicy is not a strategy)",
+                "policy_name must be a registered research policy",
                 code=BacktestErrorCode.INVALID_POLICY,
             )
         object.__setattr__(self, "policy_name", policy)
+        object.__setattr__(
+            self, "policy_config", normalize_policy_config(self.policy_config)
+        )
         object.__setattr__(self, "notes", optional_backtest_notes(self.notes))
 
     def as_mapping(self) -> dict[str, object]:
@@ -71,6 +82,7 @@ class BacktestRequest:
             "replay_id": self.replay_id,
             "deterministic_id": self.deterministic_id,
             "policy_name": self.policy_name,
+            "policy_config": dict(self.policy_config or {}),
             "notes": self.notes,
         }
 
@@ -94,6 +106,9 @@ def default_backtest_artifacts() -> tuple[BacktestArtifact, ...]:
     return (
         BacktestArtifact(name="summary", path=SUMMARY_ARTIFACT_NAME, kind="json"),
         BacktestArtifact(name="manifest", path=MANIFEST_ARTIFACT_NAME, kind="json"),
+        BacktestArtifact(
+            name="policy_output", path=POLICY_OUTPUT_ARTIFACT_NAME, kind="json"
+        ),
     )
 
 
@@ -104,6 +119,8 @@ class BacktestSummary:
     stream_hash: str
     backtest_hash: str
     policy_name: str
+    policy_config: dict[str, object]
+    policy_output_hash: str
     event_count: int
     market_event_count: int
     session_event_count: int
@@ -122,6 +139,8 @@ class BacktestSummary:
             "stream_hash": self.stream_hash,
             "backtest_hash": self.backtest_hash,
             "policy_name": self.policy_name,
+            "policy_config": dict(self.policy_config),
+            "policy_output_hash": self.policy_output_hash,
             "event_count": self.event_count,
             "market_event_count": self.market_event_count,
             "session_event_count": self.session_event_count,
@@ -145,6 +164,8 @@ class BacktestManifest:
     stream_hash: str
     backtest_hash: str
     policy_name: str
+    policy_config: dict[str, object]
+    policy_output_hash: str
     request: dict[str, object]
     summary: dict[str, object]
     artifacts: tuple[BacktestArtifact, ...]
@@ -163,6 +184,8 @@ class BacktestManifest:
             "stream_hash": self.stream_hash,
             "backtest_hash": self.backtest_hash,
             "policy_name": self.policy_name,
+            "policy_config": dict(self.policy_config),
+            "policy_output_hash": self.policy_output_hash,
             "request": dict(self.request),
             "summary": dict(self.summary),
             "artifacts": [item.as_mapping() for item in self.artifacts],
@@ -177,6 +200,7 @@ class BacktestManifest:
 class BacktestResult:
     request: BacktestRequest
     summary: BacktestSummary
+    policy_output: PolicyRunOutput | None = None
     manifest: BacktestManifest | None = None
     output_dir: Path | None = None
     orders: tuple[object, ...] = ()
@@ -192,6 +216,8 @@ class BacktestRunCatalogEntry:
     backtest_hash: str
     manifest_hash: str
     policy_name: str
+    policy_config: dict[str, object]
+    policy_output_hash: str | None
     package_version: str
     git_commit: str | None
     created_at: datetime
@@ -217,6 +243,8 @@ class BacktestRunCatalogEntry:
             "backtest_hash": self.backtest_hash,
             "manifest_hash": self.manifest_hash,
             "policy_name": self.policy_name,
+            "policy_config": dict(self.policy_config),
+            "policy_output_hash": self.policy_output_hash,
             "package_version": self.package_version,
             "git_commit": self.git_commit,
             "created_at": self.created_at.isoformat(),
@@ -244,6 +272,7 @@ class BacktestRunComparison:
     same_stream_hash: bool
     same_replay_id: bool
     same_policy_name: bool
+    same_policy_output_hash: bool
     same_manifest_hash: bool
     event_count_delta: int
     warning_count_delta: int
@@ -258,6 +287,7 @@ class BacktestRunComparison:
             "same_stream_hash": self.same_stream_hash,
             "same_replay_id": self.same_replay_id,
             "same_policy_name": self.same_policy_name,
+            "same_policy_output_hash": self.same_policy_output_hash,
             "same_manifest_hash": self.same_manifest_hash,
             "event_count_delta": self.event_count_delta,
             "warning_count_delta": self.warning_count_delta,
@@ -290,7 +320,7 @@ def build_backtest_run_catalog_filters(
     cleaned_policy = _optional_token(policy_name, field="policy_name")
     if cleaned_policy is not None and cleaned_policy not in ALLOWED_POLICY_NAMES:
         raise BacktestError(
-            "policy_name must be 'noop'",
+            "policy_name must be a registered research policy",
             code=BacktestErrorCode.INVALID_POLICY,
         )
     return BacktestRunCatalogFilters(

@@ -63,12 +63,17 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"mode={settings.app_mode.value}")
     print(f"count={len(rows)}")
-    print("backtest_id\tusable\tpolicy\terrors\tevents\treplay_id\tbacktest_hash")
+    print(
+        "backtest_id\tusable\tpolicy\terrors\tevents\t"
+        "replay_id\tbacktest_hash\tpolicy_out"
+    )
     for row in rows:
         usable = "yes" if row.is_usable else "no"
+        policy_out = _short_hash(row.policy_output_hash or "")
         print(
             f"{row.backtest_id}\t{usable}\t{row.policy_name}\t{row.error_count}\t"
-            f"{row.event_count}\t{row.replay_id}\t{_short_hash(row.backtest_hash)}"
+            f"{row.event_count}\t{row.replay_id}\t{_short_hash(row.backtest_hash)}\t"
+            f"{policy_out}"
         )
     return 0
 

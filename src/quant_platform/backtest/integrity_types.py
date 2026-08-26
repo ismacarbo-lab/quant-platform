@@ -22,6 +22,7 @@ class BacktestIntegrityCode(StrEnum):
     INVALID_HASH = "invalid_hash"
     MANIFEST_HASH_MISMATCH = "manifest_hash_mismatch"
     BACKTEST_HASH_MISMATCH = "backtest_hash_mismatch"
+    POLICY_OUTPUT_HASH_MISMATCH = "policy_output_hash_mismatch"
     SECRET_LIKE_VALUE = "secret_like_value"  # noqa: S105
     COUNT_MISMATCH = "count_mismatch"
     UNSUPPORTED_POLICY = "unsupported_policy"
@@ -106,6 +107,7 @@ class BacktestArtifactVerificationReport:
     recomputed_manifest_hash: str | None
     policy_name: str | None
     event_count: int | None
+    policy_output_hash: str | None
 
     def as_mapping(self) -> dict[str, object]:
         return {
@@ -127,6 +129,7 @@ class BacktestArtifactVerificationReport:
             "recomputed_manifest_hash": self.recomputed_manifest_hash,
             "policy_name": self.policy_name,
             "event_count": self.event_count,
+            "policy_output_hash": self.policy_output_hash,
         }
 
 

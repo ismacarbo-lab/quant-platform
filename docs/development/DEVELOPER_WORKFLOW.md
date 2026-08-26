@@ -227,6 +227,7 @@ uv run python scripts/run-backtest.py \
   --replay-id ID_A \
   --replay-base-dir /tmp/fixt-replay \
   --output-dir /tmp/fixt-backtest \
+  --policy-name noop \
   --register \
   --deterministic-id \
   --json
@@ -240,8 +241,9 @@ uv run python scripts/check-backtest-usability.py \
 ```
 
 See [docs/backtest/BACKTEST_ENGINE.md](../backtest/BACKTEST_ENGINE.md),
-[docs/backtest/NOOP_POLICY.md](../backtest/NOOP_POLICY.md), and
-[docs/backtest/BACKTEST_INTEGRITY.md](../backtest/BACKTEST_INTEGRITY.md).
+[docs/backtest/NOOP_POLICY.md](../backtest/NOOP_POLICY.md),
+[docs/backtest/BACKTEST_INTEGRITY.md](../backtest/BACKTEST_INTEGRITY.md),
+and [docs/backtest/RESEARCH_POLICY_INTERFACE.md](../backtest/RESEARCH_POLICY_INTERFACE.md).
 
 Event JSON fixtures for tests live in `tests/fixtures/replay_events/`.
 
