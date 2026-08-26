@@ -24,7 +24,7 @@ _IDENTITY_TABLES = frozenset(
 _MASTER_TABLES = frozenset({"exchanges", "corporate_actions"})
 _CATALOG_TABLES = frozenset({"dataset_snapshots"})
 _REPLAY_RUN_TABLES = frozenset({"simulation_replay_runs"})
-_BACKTEST_TABLES = frozenset({"backtest_runs"})
+_BACKTEST_TABLES = frozenset({"backtest_runs", "backtest_experiments"})
 _SILVER_TABLES = frozenset(
     {"data_sources", "instruments", "ingestion_runs", "daily_bars"}
 )

@@ -1,4 +1,4 @@
-# Architecture — Phase 4.3
+# Architecture — Phase 4.4
 
 Status: research ingestion, an internal **dataset query API**, **dataset
 quality reports**, **local hashed snapshots**, a **PostgreSQL snapshot
@@ -10,8 +10,9 @@ artifacts**, a **PostgreSQL replay-run metadata catalog**, a
 (NoOp policy; no orders, fills, portfolio, or PnL), **read-only
 backtest artifact integrity** plus result comparison / usability, a
 **research-policy interface** (observations and counters; no signals or
-orders), and **policy-output observation reports** with dedicated
-integrity checks. No LLM runtime, strategies, brokers, or execution.
+orders), **policy-output observation reports** with dedicated
+integrity checks, and a **backtest experiment registry** that groups
+those dry-runs. No LLM runtime, strategies, brokers, or execution.
 
 ## Modular monolith
 
@@ -41,7 +42,7 @@ Documented future areas (no empty implementation packages in Phase 0):
 | `storage` | Persistence adapters | engine/session only |
 | `research` | Dataset queries, experiment runners | PIT datasets, quality reports, snapshots, catalog, integrity; no notebooks |
 | `simulation` | Dataset replay timeline | events, boundaries, stream hash, audit, run artifacts + catalog, readiness gate; no strategies |
-| `backtesting` | Simulation engine | Phase 4.3 package `backtest/`: dry-run, research policy, observation reports, integrity; no orders/PnL |
+| `backtesting` | Simulation engine | Phase 4.4 package `backtest/`: dry-run, research policy, experiments, integrity; no orders/PnL |
 | `strategies` | Signal generation | not implemented |
 | `ml` | Model training/inference | not implemented |
 | `portfolio` | Positions, target holdings | not implemented |
@@ -109,7 +110,8 @@ rows that are not applied**. Gold feature tables are still future work.
    strategy backtest artifacts, all versioned (not implemented). Phase 4.0
    writes dry-run `summary.json` / `manifest.json` only (counts and hashes).
    Phase 4.1 verifies those artifacts and compares runs without adding
-   strategy or PnL tables.
+   strategy or PnL tables. Phase 4.4 adds experiment folders that point
+   at those dry-runs; still no PnL.
 
 Instruments are keyed by `(symbol, asset_class, exchange_id, currency)` using
 PostgreSQL `UNIQUE NULLS NOT DISTINCT`. Calendars are local fixtures only.
@@ -195,6 +197,7 @@ wired. Phase 1.4 stores research tables only: `data_sources`, `exchanges`,
 Phase 2.3 adds `dataset_snapshots` (catalog metadata only).
 Phase 3.3 adds `simulation_replay_runs` (replay-run metadata only).
 Phase 4.0 adds `backtest_runs` (dry-run backtest metadata only).
+Phase 4.4 adds `backtest_experiments` (experiment metadata only).
 There are still **no** orders, fills, trades, strategies, or broker tables.
 SQLite is rejected. Instrument uniqueness uses PostgreSQL
 `UNIQUE NULLS NOT DISTINCT` (PG 15+).
@@ -229,6 +232,8 @@ Phase 4.2 adds a research-policy interface and
 still no orders).
 Phase 4.3 adds observation reports and policy-output integrity
 (no schema change).
+Phase 4.4 adds `backtest_experiments` (`0009_backtest_experiments`;
+groups dry-run metadata; still no orders or PnL).
 None of these add HTTP routes or gold/trading tables.
 
 ## AI usage boundary

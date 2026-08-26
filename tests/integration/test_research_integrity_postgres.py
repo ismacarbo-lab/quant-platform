@@ -46,6 +46,7 @@ _ALLOWED = frozenset(
         "dataset_snapshots",
         "simulation_replay_runs",
         "backtest_runs",
+        "backtest_experiments",
         "exchanges",
         "ingestion_errors",
         "ingestion_runs",

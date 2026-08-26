@@ -242,13 +242,28 @@ uv run python scripts/compare-backtest-runs.py --left ID_A --right ID_B
 uv run python scripts/check-backtest-usability.py \
   --backtest-id ID_A \
   --base-dir /tmp/fixt-backtest
+
+uv run python scripts/run-backtest-experiment.py \
+  --experiment-name noop-grid \
+  --replay-id ID_A \
+  --replay-base-dir /tmp/fixt-replay \
+  --output-dir /tmp/fixt-experiment \
+  --policy-name noop \
+  --register \
+  --deterministic-id \
+  --json
+uv run python scripts/list-backtest-experiments.py --usable-only --json
+uv run python scripts/verify-backtest-experiment.py \
+  --experiment-dir /tmp/fixt-experiment
+uv run python scripts/compare-backtest-experiments.py --left ID_A --right ID_B
 ```
 
 See [docs/backtest/BACKTEST_ENGINE.md](../backtest/BACKTEST_ENGINE.md),
 [docs/backtest/NOOP_POLICY.md](../backtest/NOOP_POLICY.md),
 [docs/backtest/BACKTEST_INTEGRITY.md](../backtest/BACKTEST_INTEGRITY.md),
 [docs/backtest/RESEARCH_POLICY_INTERFACE.md](../backtest/RESEARCH_POLICY_INTERFACE.md),
-and [docs/backtest/POLICY_OUTPUT_INTEGRITY.md](../backtest/POLICY_OUTPUT_INTEGRITY.md).
+[docs/backtest/POLICY_OUTPUT_INTEGRITY.md](../backtest/POLICY_OUTPUT_INTEGRITY.md),
+and [docs/backtest/BACKTEST_EXPERIMENTS.md](../backtest/BACKTEST_EXPERIMENTS.md).
 
 Event JSON fixtures for tests live in `tests/fixtures/replay_events/`.
 

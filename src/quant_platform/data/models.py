@@ -660,3 +660,53 @@ class BacktestRunRecord(Base):
     registered_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utc_now
     )
+
+
+class BacktestExperimentRecord(Base):
+    """Catalog metadata for a dry-run backtest experiment. Not a strategy."""
+
+    __tablename__ = "backtest_experiments"
+    __table_args__ = (
+        UniqueConstraint("experiment_id", name="uq_backtest_experiments_experiment_id"),
+        UniqueConstraint("manifest_hash", name="uq_backtest_experiments_manifest_hash"),
+        CheckConstraint(
+            "member_count >= 0", name="ck_backtest_experiments_member_count"
+        ),
+        CheckConstraint(
+            "usable_count >= 0", name="ck_backtest_experiments_usable_count"
+        ),
+        CheckConstraint("error_count >= 0", name="ck_backtest_experiments_error_count"),
+        CheckConstraint(
+            "warning_count >= 0", name="ck_backtest_experiments_warning_count"
+        ),
+        Index("ix_backtest_experiments_experiment_hash", "experiment_hash"),
+        Index("ix_backtest_experiments_experiment_name", "experiment_name"),
+        Index("ix_backtest_experiments_policy_name", "policy_name"),
+        Index("ix_backtest_experiments_created_at", "created_at"),
+        Index("ix_backtest_experiments_error_count", "error_count"),
+    )
+
+    id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), primary_key=True, default=uuid4
+    )
+    experiment_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    experiment_name: Mapped[str] = mapped_column(String(256), nullable=False)
+    experiment_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    manifest_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    policy_name: Mapped[str] = mapped_column(String(64), nullable=False)
+    package_version: Mapped[str] = mapped_column(String(32), nullable=False)
+    git_commit: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    member_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    usable_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    error_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    warning_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    request: Mapped[dict[str, object]] = mapped_column(JSONB, nullable=False)
+    summary: Mapped[dict[str, object]] = mapped_column(JSONB, nullable=False)
+    artifacts: Mapped[list[dict[str, object]]] = mapped_column(JSONB, nullable=False)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    registered_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )

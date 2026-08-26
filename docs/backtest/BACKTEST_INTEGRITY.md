@@ -1,4 +1,4 @@
-# Backtest artifact integrity — Phase 4.1 / 4.2 / 4.3
+# Backtest artifact integrity — Phase 4.1 / 4.2 / 4.3 / 4.4
 
 Read-only checks that a local dry-run backtest folder still matches its
 manifest and, when asked, the PostgreSQL `backtest_runs` catalog.
@@ -24,6 +24,7 @@ Policy: [NOOP_POLICY.md](NOOP_POLICY.md).
 Research policy interface: [RESEARCH_POLICY_INTERFACE.md](RESEARCH_POLICY_INTERFACE.md).
 Policy output: [POLICY_OUTPUT_INTEGRITY.md](POLICY_OUTPUT_INTEGRITY.md).
 Replay readiness (different gate): [BACKTEST_READINESS.md](../simulation/BACKTEST_READINESS.md).
+Experiments: [BACKTEST_EXPERIMENTS.md](BACKTEST_EXPERIMENTS.md).
 
 ## What is verified
 
@@ -91,6 +92,15 @@ Verdict:
 
 Shallow helper `compare_backtest_runs` from Phase 4.0 still exists.
 Scripts and this document use the field-level diff.
+
+## Experiment folders
+
+`verify_backtest_experiment_artifacts` checks
+`experiment_manifest.json` / `experiment_summary.json`, relative paths,
+recomputed `experiment_hash` / `manifest_hash`, member count coherence,
+and that each member folder cites the listed `backtest_id`. It does not
+copy events or compute PnL. See
+[BACKTEST_EXPERIMENTS.md](BACKTEST_EXPERIMENTS.md).
 
 ## `usable_result`
 
@@ -160,6 +170,12 @@ List catalog rows (short `backtest_hash`, `policy_name`, `is_usable`,
 
 ```bash
 uv run python scripts/list-backtest-runs.py --usable-only --json
+uv run python scripts/verify-backtest-experiment.py \
+  --experiment-dir /tmp/fixt-experiment
+uv run python scripts/compare-backtest-experiments.py \
+  --left <experiment_id_a> \
+  --right <experiment_id_b> \
+  --json
 ```
 
 Scripts do not print `DATABASE_URL`. There is no `--repair` flag.

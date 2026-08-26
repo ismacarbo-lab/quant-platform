@@ -1,4 +1,4 @@
-# Backtest engine foundation — Phase 4.0 / 4.1 / 4.2 / 4.3
+# Backtest engine foundation — Phase 4.0 / 4.1 / 4.2 / 4.3 / 4.4
 
 This phase adds an **offline dry-run backtest engine**. It consumes a
 registered replay run that already passed the readiness gate, walks the
@@ -17,6 +17,8 @@ Artifact integrity and result comparison:
 [BACKTEST_INTEGRITY.md](BACKTEST_INTEGRITY.md).
 Policy output reports:
 [POLICY_OUTPUT_INTEGRITY.md](POLICY_OUTPUT_INTEGRITY.md).
+Experiments (group dry-runs; not a strategy):
+[BACKTEST_EXPERIMENTS.md](BACKTEST_EXPERIMENTS.md).
 
 ## What this backtest is
 
@@ -95,7 +97,9 @@ No `DATABASE_URL`, passwords, or absolute directories.
 
 Table: `backtest_runs`. Alembic revisions `0007_backtest_runs` and
 `0008_backtest_policy_metadata` (`policy_config` JSONB,
-`policy_output_hash` text).
+`policy_output_hash` text). Phase 4.4 adds `backtest_experiments`
+(`0009_backtest_experiments`) to group those dry-run rows; see
+[BACKTEST_EXPERIMENTS.md](BACKTEST_EXPERIMENTS.md).
 
 Metadata only (hashes, counts, request/summary JSON, relative artifact
 names). No event rows, orders, fills, or positions.
@@ -149,6 +153,16 @@ uv run python scripts/compare-backtest-runs.py --left ID_A --right ID_B --json
 uv run python scripts/check-backtest-usability.py \
   --backtest-id ID_A \
   --base-dir /tmp/fixt-backtest
+
+uv run python scripts/run-backtest-experiment.py \
+  --experiment-name noop-grid \
+  --replay-id <replay_id> \
+  --replay-base-dir /tmp/fixt-replay \
+  --output-dir /tmp/fixt-experiment \
+  --policy-name noop \
+  --register \
+  --deterministic-id \
+  --json
 ```
 
 Python:

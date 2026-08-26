@@ -45,7 +45,7 @@ pytestmark = pytest.mark.postgres
 
 ROOT = Path(__file__).resolve().parents[2]
 _REPLAY_RUN_TABLES = frozenset({"simulation_replay_runs"})
-_BACKTEST_TABLES = frozenset({"backtest_runs"})
+_BACKTEST_TABLES = frozenset({"backtest_runs", "backtest_experiments"})
 _TRADING_TABLES = frozenset(
     {"trades", "orders", "fills", "signals", "strategies", "positions"}
 )

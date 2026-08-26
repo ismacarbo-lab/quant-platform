@@ -26,6 +26,7 @@ _ALLOWED_TABLES = frozenset(
         "dataset_snapshots",
         "simulation_replay_runs",
         "backtest_runs",
+        "backtest_experiments",
     }
 )
 _TRADING_TABLES = frozenset(

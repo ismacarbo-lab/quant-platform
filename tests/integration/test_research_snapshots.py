@@ -52,6 +52,7 @@ _RESEARCH_TABLES = frozenset(
         "dataset_snapshots",
         "simulation_replay_runs",
         "backtest_runs",
+        "backtest_experiments",
     }
 )
 

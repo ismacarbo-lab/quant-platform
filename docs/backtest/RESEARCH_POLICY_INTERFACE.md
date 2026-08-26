@@ -11,6 +11,7 @@ Engine: [BACKTEST_ENGINE.md](BACKTEST_ENGINE.md).
 NoOp: [NOOP_POLICY.md](NOOP_POLICY.md).
 Integrity: [BACKTEST_INTEGRITY.md](BACKTEST_INTEGRITY.md).
 Policy output reports: [POLICY_OUTPUT_INTEGRITY.md](POLICY_OUTPUT_INTEGRITY.md).
+Experiments: [BACKTEST_EXPERIMENTS.md](BACKTEST_EXPERIMENTS.md).
 
 ## What ResearchPolicy is
 
@@ -68,6 +69,9 @@ entry points, no imports from arbitrary paths.
 
 Unknown names raise `invalid_policy`. `momentum` and similar names are
 rejected.
+
+A Phase 4.4 experiment binds **one** of these names and groups the
+resulting dry-runs. It does not add a third policy or a strategy.
 
 `NoOpBacktestPolicy` and `EventCountingBacktestPolicy` remain aliases of
 `EventCountingResearchPolicy` for Phase 4.0 compatibility.

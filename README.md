@@ -15,7 +15,9 @@ artifacts** with a PostgreSQL metadata catalog, a **backtest
 readiness gate**, a **dry-run backtest engine**
 (`NoOpBacktestPolicy` / `ResearchPolicy`: counts, hashes, observations,
 no orders), **backtest artifact integrity**, a **research-policy
-interface** without signals, and **policy-output observation reports**.
+interface** without signals, **policy-output observation reports**, and
+a **backtest experiment registry** that groups dry-runs (still no PnL
+or orders).
 It is **not** a trading system.
 
 A pre-existing tree named `AI_VENTURE_OS_PROMPTS/` may sit next to this
@@ -46,6 +48,8 @@ Do not mix the two.
   dry-runs, and gate whether a NoOp result is usable research evidence.
 - Observe a replay stream through a registered `ResearchPolicy`
   (`noop` / `event_counting`) that emits observations and counters only.
+- Group several dry-run backtests under a hashed experiment record
+  (same replay with allowed configs, or several replays with one policy).
 
 ## What is not implemented
 
@@ -176,9 +180,9 @@ postgresql+psycopg://quant:quant_dev_only_not_for_production@127.0.0.1:5434/quan
 ```
 
 There are still **no** trading tables (orders, fills, signals, strategies).
-Alembic revisions `0001_ingestion` … `0008_backtest_policy_metadata` create
-research ingestion, instrument-master, snapshot-catalog, replay-run, and
-dry-run backtest metadata tables only.
+Alembic revisions `0001_ingestion` … `0009_backtest_experiments` create
+research ingestion, instrument-master, snapshot-catalog, replay-run,
+dry-run backtest, and backtest-experiment metadata tables only.
 
 ## Migrations
 
@@ -241,6 +245,8 @@ Research policy interface (observations, not strategies):
 [docs/backtest/RESEARCH_POLICY_INTERFACE.md](docs/backtest/RESEARCH_POLICY_INTERFACE.md).
 Policy output reports and integrity:
 [docs/backtest/POLICY_OUTPUT_INTEGRITY.md](docs/backtest/POLICY_OUTPUT_INTEGRITY.md).
+Backtest experiments (group dry-runs; not a strategy):
+[docs/backtest/BACKTEST_EXPERIMENTS.md](docs/backtest/BACKTEST_EXPERIMENTS.md).
 
 See [docs/development/DEVELOPER_WORKFLOW.md](docs/development/DEVELOPER_WORKFLOW.md)
 for install, Compose, Alembic, port 5434 conflicts, and CI.

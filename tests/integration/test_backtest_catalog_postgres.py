@@ -47,7 +47,7 @@ from quant_platform.storage.database import list_public_tables
 pytestmark = pytest.mark.postgres
 
 ROOT = Path(__file__).resolve().parents[2]
-_BACKTEST_TABLES = frozenset({"backtest_runs"})
+_BACKTEST_TABLES = frozenset({"backtest_runs", "backtest_experiments"})
 _TRADING_TABLES = frozenset(
     {"trades", "orders", "fills", "signals", "strategies", "positions"}
 )
