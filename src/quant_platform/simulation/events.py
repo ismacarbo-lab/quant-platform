@@ -3,17 +3,28 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime, time
 from decimal import Decimal
 from uuid import UUID
 
 from quant_platform.data.validation import DataValidationError, ensure_utc
-from quant_platform.research.types import DailyBarDatasetRow
+from quant_platform.research.types import CorporateActionDatasetRow, DailyBarDatasetRow
 from quant_platform.simulation.errors import SimulationError, SimulationErrorCode
 
 REPLAY_STARTED_KIND = "replay_started"
+MARKET_SESSION_KIND = "market_session"
+CORPORATE_ACTION_KIND = "corporate_action"
 MARKET_BAR_KIND = "market_bar"
 REPLAY_FINISHED_KIND = "replay_finished"
+
+# Lower sorts first when event_time ties. Documented in DATASET_REPLAY.md.
+EVENT_PRIORITY: dict[str, int] = {
+    REPLAY_STARTED_KIND: 0,
+    MARKET_SESSION_KIND: 1,
+    CORPORATE_ACTION_KIND: 2,
+    MARKET_BAR_KIND: 3,
+    REPLAY_FINISHED_KIND: 4,
+}
 
 
 def _utc(value: datetime, *, field: str) -> datetime:
@@ -29,6 +40,22 @@ def _fmt_decimal(value: Decimal | None) -> str:
     if value is None:
         return ""
     return format(value, "f")
+
+
+def _fmt_time(value: time | None) -> str | None:
+    if value is None:
+        return None
+    return value.isoformat()
+
+
+def _corporate_action_value(row: CorporateActionDatasetRow) -> str | None:
+    if row.cash_amount is not None:
+        return format(row.cash_amount, "f")
+    if row.new_value:
+        return row.new_value
+    if row.quantity_before is not None and row.quantity_after is not None:
+        return f"{format(row.quantity_before, 'f')}:{format(row.quantity_after, 'f')}"
+    return None
 
 
 @dataclass(frozen=True, slots=True)
@@ -51,6 +78,81 @@ class ReplayStartedEvent:
             "end_time": self.end_time.isoformat(),
             "as_of": self.as_of.isoformat(),
             "instrument_count": self.instrument_count,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class MarketSessionEvent:
+    """Local calendar row. Not a PIT market-data observation."""
+
+    event_time: datetime
+    session_date: date
+    calendar_code: str
+    exchange_code: str | None
+    session_kind: str
+    is_open: bool
+    open_time: time | None
+    close_time: time | None
+    note: str | None
+
+    @property
+    def kind(self) -> str:
+        return MARKET_SESSION_KIND
+
+    def as_mapping(self) -> dict[str, object]:
+        return {
+            "kind": self.kind,
+            "event_time": self.event_time.isoformat(),
+            "session_date": self.session_date.isoformat(),
+            "calendar_code": self.calendar_code,
+            "exchange_code": self.exchange_code,
+            "session_kind": self.session_kind,
+            "is_open": self.is_open,
+            "open_time": _fmt_time(self.open_time),
+            "close_time": _fmt_time(self.close_time),
+            "note": self.note,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class CorporateActionEvent:
+    """Stored corporate action. OHLCV is never adjusted."""
+
+    event_time: datetime
+    effective_time: datetime
+    available_time: datetime
+    instrument_id: UUID
+    symbol: str
+    exchange_code: str | None
+    action_type: str
+    value: str | None
+    currency: str | None
+    description: str | None
+
+    def __post_init__(self) -> None:
+        if self.event_time != self.available_time:
+            raise SimulationError(
+                "corporate action event_time must equal available_time",
+                code=SimulationErrorCode.INVALID_EVENT_TIME,
+            )
+
+    @property
+    def kind(self) -> str:
+        return CORPORATE_ACTION_KIND
+
+    def as_mapping(self) -> dict[str, object]:
+        return {
+            "kind": self.kind,
+            "event_time": self.event_time.isoformat(),
+            "effective_time": self.effective_time.isoformat(),
+            "available_time": self.available_time.isoformat(),
+            "instrument_id": str(self.instrument_id),
+            "symbol": self.symbol,
+            "exchange_code": self.exchange_code,
+            "action_type": self.action_type,
+            "value": self.value,
+            "currency": self.currency,
+            "description": self.description,
         }
 
 
@@ -133,7 +235,62 @@ class ReplayFinishedEvent:
         }
 
 
-ReplayEvent = ReplayStartedEvent | MarketBarEvent | ReplayFinishedEvent
+ReplayEvent = (
+    ReplayStartedEvent
+    | MarketSessionEvent
+    | CorporateActionEvent
+    | MarketBarEvent
+    | ReplayFinishedEvent
+)
+
+
+def replay_event_sort_key(event: ReplayEvent) -> tuple[object, ...]:
+    """Stable stream order: time, type priority, instrument, observation, source, id."""
+    priority = EVENT_PRIORITY[event.kind]
+    if isinstance(event, MarketBarEvent):
+        return (
+            event.event_time,
+            priority,
+            event.symbol,
+            event.observation_time,
+            event.source_name,
+            str(event.instrument_id),
+        )
+    if isinstance(event, CorporateActionEvent):
+        return (
+            event.event_time,
+            priority,
+            event.symbol,
+            event.effective_time,
+            event.action_type,
+            str(event.instrument_id),
+        )
+    if isinstance(event, MarketSessionEvent):
+        return (
+            event.event_time,
+            priority,
+            event.calendar_code,
+            event.session_date.isoformat(),
+            event.session_kind,
+            event.exchange_code or "",
+        )
+    if isinstance(event, ReplayStartedEvent):
+        return (
+            event.event_time,
+            priority,
+            "",
+            event.start_time,
+            REPLAY_STARTED_KIND,
+            "",
+        )
+    return (
+        event.event_time,
+        priority,
+        "",
+        event.finished_at,
+        REPLAY_FINISHED_KIND,
+        "",
+    )
 
 
 def market_bar_event_from_row(row: DailyBarDatasetRow) -> MarketBarEvent:
@@ -157,4 +314,24 @@ def market_bar_event_from_row(row: DailyBarDatasetRow) -> MarketBarEvent:
         source_name=row.source_name,
         is_correction=row.is_correction,
         correction_reason=row.correction_reason,
+    )
+
+
+def corporate_action_event_from_row(
+    row: CorporateActionDatasetRow,
+) -> CorporateActionEvent:
+    """Build a CA event. ``event_time`` is always ``available_time``."""
+    effective = _utc(row.effective_time, field="effective_time")
+    available = _utc(row.available_time, field="available_time")
+    return CorporateActionEvent(
+        event_time=available,
+        effective_time=effective,
+        available_time=available,
+        instrument_id=row.instrument_id,
+        symbol=row.symbol,
+        exchange_code=row.exchange_code,
+        action_type=row.action_type,
+        value=_corporate_action_value(row),
+        currency=row.currency,
+        description=row.note,
     )

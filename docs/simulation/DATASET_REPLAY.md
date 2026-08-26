@@ -1,93 +1,107 @@
-# Dataset replay — Phase 3.0
+# Dataset replay — Phase 3.1
 
 Replay turns a **point-in-time daily-bar dataset** into a deterministic
-sequence of market events. It is the foundation for a future backtester.
-It is **not** backtesting, not a strategy, and not trading.
+sequence of simulation events. Phase 3.1 adds optional session and
+corporate-action events, a stream hash, and an audit report. It is
+**not** backtesting, not a strategy, and not trading.
 
 Package: `quant_platform.simulation`.
+
+Audit details: [REPLAY_AUDIT.md](REPLAY_AUDIT.md).
 
 ## What replay is
 
 Given a dataset (from PostgreSQL or a local snapshot):
 
 1. emit `ReplayStartedEvent`
-2. emit one `MarketBarEvent` per visible bar, in stable order
-3. emit `ReplayFinishedEvent`
-4. return an immutable `DailyBarReplay` plus a `ReplaySummary`
+2. emit optional `MarketSessionEvent` rows (local calendar)
+3. emit optional `CorporateActionEvent` rows (stored facts, not applied)
+4. emit one `MarketBarEvent` per visible bar
+5. emit `ReplayFinishedEvent`
+6. return an immutable `DailyBarReplay` plus a `ReplaySummary`
 
-Same dataset + same request + same code version produces the same event
-order and the same summary fields (except a random `replay_id` unless the
-caller supplies one).
+The full list is sorted by the canonical key below. `ReplayStartedEvent`
+and `ReplayFinishedEvent` participate in that sort (they are not forced
+to the ends if a payload event has an earlier `available_time`).
+
+Same dataset + same request + same extras + same code version produces
+the same event order and the same `stream_hash`. `replay_id` is UUID4
+unless `deterministic_id=True`.
 
 `started_at` / `finished_at` on the summary are **simulation timeline**
-bounds (request `start_time` and last bar `available_time`, or `end_time`
-if there are no bars). They are not wall-clock times.
+bounds, not wall-clock times.
 
 There is **no** Alembic table for replay runs.
 
-## Why this is not backtesting yet
+## Event priority
 
-Replay only walks market data. It does not:
+When `event_time` ties, kinds sort as:
 
-- generate signals or run a strategy
-- keep a portfolio or positions
-- create orders, fills, or trades
-- model slippage, commissions, or brokers
-- persist a simulation run
+1. `replay_started`
+2. `market_session`
+3. `corporate_action`
+4. `market_bar`
+5. `replay_finished`
 
-A future backtester should consume these events. It does not exist yet.
+Then: instrument (or calendar code), observation / effective /
+`session_date`, source / `action_type` / `session_kind`, stable id.
 
 ## Why `event_time = available_time`
 
-A daily bar has two times:
+Bars and corporate actions use **`available_time`**, never
+`observation_time` / `effective_time`, as `event_time`. The clock cannot
+see a close or a split before it was knowable. Both timestamps stay on
+the event.
 
-| Field | Meaning |
-|-------|---------|
-| `observation_time` | The session/day the OHLCV describes |
-| `available_time` | The earliest time that bar could have been known |
+Session events are **not** PIT market data. Calendars in this platform
+are local static fixtures with no separate published-at timestamp.
+`event_time` is `session_date` at `open_time` in the calendar timezone,
+or midnight local if `open_time` is null, converted to UTC. A session
+with `event_time > as_of` is omitted.
 
-Replay sets `MarketBarEvent.event_time` to **`available_time`**, never to
-`observation_time`. The simulation clock therefore cannot “see” a close
-on the session date if the bar only became knowable later (including PIT
-corrections).
+## Corporate actions
 
-If those two timestamps differ, the event still carries both fields.
+`include_corporate_actions=False` by default (Phase 3.0 bar-only stream).
 
-This is a different use of the name `event_time` than the architecture
-table that pairs `event_time` with economic occurrence. On a replay
-event, `event_time` is the **simulation instant** at which the bar may
-be consumed.
+When `True`, `create_daily_bar_replay` loads
+`get_corporate_actions_for_dataset` (`available_time <= as_of`, effective
+time in `[start, end]`). Replay **does not** apply splits, adjust OHLCV,
+or rename symbols. `value` is a display string (cash amount, new value,
+or `quantity_before:quantity_after`).
+
+## Sessions
+
+`include_sessions=False` by default.
+
+When `True` **and** the request has `calendar_code`, replay emits every
+stored session in the observation window: `open`, `half_session`,
+`holiday`, and `exceptional_close`. Missing dates are not invented.
+Without `calendar_code` the flag is a no-op (audit records an info).
+
+Snapshot folders do not store sessions or corporate actions. Those flags
+on `--snapshot-dir` become summary warnings and stay bar-only.
 
 ## How lookahead is avoided
 
-- Dataset query: `available_time <= as_of` (Research Dataset API).
-- Replay: reject any bar with `available_time > as_of`.
-- Clock: `SimulationClock.advance_to` is monotonic UTC; it cannot move
-  backwards.
-- Bar sort: primary key is `available_time`, then symbol, exchange,
-  instrument id, observation time, source. Dataset table order
-  (observation time) is **not** the replay order.
-
-Invariant while the clock sits at `simulation_time`:
+- Dataset query: `available_time <= as_of`.
+- Replay: reject bars/CA/sessions with `event_time > as_of`.
+- Clock: monotonic UTC.
+- Sort primary key: `event_time`.
 
 ```text
-available_time <= simulation_time
+event_time <= as_of
 ```
 
-Naive (timezone-less) timestamps are rejected.
-
-## Calendars and sessions
-
-Replay does not re-implement calendars. If the dataset request includes
-`calendar_code` / `require_open_session`, `get_daily_bars_dataset` already
-drops holiday (and optionally closed) sessions. Snapshot CSV is whatever
-that query wrote. Replay emits only those rows.
+For bars and corporate actions that is the same as
+`available_time <= as_of`.
 
 ## Events
 
 | Kind | Role |
 |------|------|
-| `replay_started` | Window `start_time` / `end_time` / `as_of`, instrument count |
+| `replay_started` | Window `start_time` / `end_time` / `as_of` |
+| `market_session` | Local calendar day (informational) |
+| `corporate_action` | Stored CA; prices unchanged |
 | `market_bar` | One PIT-visible daily bar |
 | `replay_finished` | Counts and timeline bounds |
 
@@ -98,50 +112,37 @@ There are no order, signal, or portfolio events.
 ### Database
 
 ```python
-from quant_platform.simulation import create_daily_bar_replay
-from quant_platform.research.types import build_daily_bars_dataset_request
-
-replay = create_daily_bar_replay(session, request)
+replay = create_daily_bar_replay(
+    session,
+    request,
+    include_corporate_actions=True,
+    include_sessions=True,
+    deterministic_id=True,
+)
 ```
-
-`create_daily_bar_replay` calls `get_daily_bars_dataset`.
-`replay_daily_bars_dataset` accepts an in-memory `DailyBarsDataset`.
 
 ### Snapshot
 
 ```python
-from quant_platform.simulation import replay_daily_bars_snapshot
-
 replay = replay_daily_bars_snapshot("/path/to/snapshot")
 ```
 
-This reads `manifest.json` and `daily_bars.csv`, runs the existing
-artifact verification (`verify_snapshot_artifacts`), and does **not**
-query PostgreSQL. A broken folder (hash mismatch, missing file) fails
-with `broken_snapshot`.
+Bars only. Integrity verification still runs first.
 
 ## Script
-
-Database replay (`--as-of`, `--start`, `--end` required):
 
 ```bash
 uv run python scripts/replay-daily-dataset.py \
   --as-of 2024-01-10T00:00:00Z \
   --start 2024-01-01T00:00:00Z \
   --end 2024-01-05T00:00:00Z \
-  --symbol FIXT
+  --symbol FIXT \
+  --calendar XNYS \
+  --include-sessions \
+  --include-corporate-actions \
+  --audit \
+  --deterministic-id
 ```
-
-Snapshot replay (no database):
-
-```bash
-uv run python scripts/replay-daily-dataset.py \
-  --snapshot-dir /tmp/fixt-snapshot \
-  --json
-```
-
-Prints `replay_id`, counts, and first/last event times. `--json` prints
-the summary mapping. It does not print `DATABASE_URL`. It does not trade.
 
 ## What does not exist
 

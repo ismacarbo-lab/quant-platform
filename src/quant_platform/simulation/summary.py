@@ -27,10 +27,13 @@ class ReplaySummary:
     as_of: datetime
     event_count: int
     bar_count: int
+    session_count: int
+    corporate_action_count: int
     instrument_count: int
     first_event_time: datetime | None
     last_event_time: datetime | None
     content_hash: str | None
+    stream_hash: str | None
     source_type: str
     warnings: tuple[str, ...]
 
@@ -44,10 +47,13 @@ class ReplaySummary:
             "as_of": self.as_of.isoformat(),
             "event_count": self.event_count,
             "bar_count": self.bar_count,
+            "session_count": self.session_count,
+            "corporate_action_count": self.corporate_action_count,
             "instrument_count": self.instrument_count,
             "first_event_time": _iso(self.first_event_time),
             "last_event_time": _iso(self.last_event_time),
             "content_hash": self.content_hash,
+            "stream_hash": self.stream_hash,
             "source_type": self.source_type,
             "warnings": list(self.warnings),
         }

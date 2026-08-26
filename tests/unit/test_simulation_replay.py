@@ -205,7 +205,9 @@ def test_no_trading_event_types_exist() -> None:
 
     names = {name for name in dir(events_mod) if name.endswith("Event")}
     assert names == {
+        "CorporateActionEvent",
         "MarketBarEvent",
+        "MarketSessionEvent",
         "ReplayEvent",
         "ReplayFinishedEvent",
         "ReplayStartedEvent",

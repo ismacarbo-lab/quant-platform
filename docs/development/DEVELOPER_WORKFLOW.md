@@ -177,9 +177,21 @@ uv run python scripts/replay-daily-dataset.py \
 uv run python scripts/replay-daily-dataset.py \
   --snapshot-dir /tmp/fixt-snapshot \
   --json
+
+uv run python scripts/replay-daily-dataset.py \
+  --as-of 2024-01-10T00:00:00Z \
+  --start 2024-01-01T00:00:00Z \
+  --end 2024-01-05T00:00:00Z \
+  --symbol FIXT \
+  --include-corporate-actions \
+  --include-sessions \
+  --calendar XNYS \
+  --audit \
+  --deterministic-id
 ```
 
-See [docs/simulation/DATASET_REPLAY.md](../simulation/DATASET_REPLAY.md).
+See [docs/simulation/DATASET_REPLAY.md](../simulation/DATASET_REPLAY.md)
+and [docs/simulation/REPLAY_AUDIT.md](../simulation/REPLAY_AUDIT.md).
 
 Stop (keeps the volume):
 
