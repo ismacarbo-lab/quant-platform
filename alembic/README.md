@@ -15,6 +15,8 @@ Phase 2.3 revision `0005_catalog` adds `dataset_snapshots` (snapshot
 metadata only; not bar storage).
 Phase 3.3 revision `0006_replay_runs` adds `simulation_replay_runs`
 (replay-run metadata only; not event rows).
+Phase 4.0 revision `0007_backtest_runs` adds `backtest_runs`
+(dry-run backtest metadata only; not orders or event rows).
 None of these revisions create orders, trades, or broker tables.
 
 ```bash

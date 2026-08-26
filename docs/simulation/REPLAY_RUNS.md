@@ -191,6 +191,7 @@ uv run python scripts/check-replay-readiness.py \
 ```
 
 Details: [BACKTEST_READINESS.md](BACKTEST_READINESS.md).
+Dry-run engine (NoOp, no orders): [BACKTEST_ENGINE.md](../backtest/BACKTEST_ENGINE.md).
 
 ## Why this is not backtesting
 
@@ -207,8 +208,7 @@ Those packages still do not exist.
 ## What does not exist yet
 
 - strategies, signals, indicators-as-signals
-- backtesting engine, optimizer, risk engine
-  ([BACKTEST_READINESS.md](BACKTEST_READINESS.md) only gates future use)
+- real investment policies, optimizer, risk engine
 - orders, trades, fills, portfolio, positions
 - brokers, paper trading, live trading
 - HTTP routes beyond `GET /health`

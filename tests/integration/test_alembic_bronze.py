@@ -24,6 +24,7 @@ _IDENTITY_TABLES = frozenset(
 _MASTER_TABLES = frozenset({"exchanges", "corporate_actions"})
 _CATALOG_TABLES = frozenset({"dataset_snapshots"})
 _REPLAY_RUN_TABLES = frozenset({"simulation_replay_runs"})
+_BACKTEST_TABLES = frozenset({"backtest_runs"})
 _SILVER_TABLES = frozenset(
     {"data_sources", "instruments", "ingestion_runs", "daily_bars"}
 )
@@ -41,6 +42,7 @@ def test_bronze_revision_downgrade_and_upgrade(postgres_engine: Engine) -> None:
         assert tables.isdisjoint(_MASTER_TABLES)
         assert tables.isdisjoint(_CATALOG_TABLES)
         assert tables.isdisjoint(_REPLAY_RUN_TABLES)
+        assert tables.isdisjoint(_BACKTEST_TABLES)
         assert _SILVER_TABLES <= tables
     finally:
         command.upgrade(cfg, "head")
@@ -52,6 +54,7 @@ def test_bronze_revision_downgrade_and_upgrade(postgres_engine: Engine) -> None:
     assert _MASTER_TABLES <= tables
     assert _CATALOG_TABLES <= tables
     assert _REPLAY_RUN_TABLES <= tables
+    assert _BACKTEST_TABLES <= tables
 
 
 def test_identity_revision_downgrade_and_upgrade(postgres_engine: Engine) -> None:
@@ -65,6 +68,7 @@ def test_identity_revision_downgrade_and_upgrade(postgres_engine: Engine) -> Non
         assert tables.isdisjoint(_MASTER_TABLES)
         assert tables.isdisjoint(_CATALOG_TABLES)
         assert tables.isdisjoint(_REPLAY_RUN_TABLES)
+        assert tables.isdisjoint(_BACKTEST_TABLES)
         assert _BRONZE_TABLES <= tables
         assert _SILVER_TABLES <= tables
     finally:
@@ -76,6 +80,7 @@ def test_identity_revision_downgrade_and_upgrade(postgres_engine: Engine) -> Non
     assert _MASTER_TABLES <= tables
     assert _CATALOG_TABLES <= tables
     assert _REPLAY_RUN_TABLES <= tables
+    assert _BACKTEST_TABLES <= tables
 
 
 def test_master_revision_downgrade_and_upgrade(postgres_engine: Engine) -> None:
@@ -88,6 +93,7 @@ def test_master_revision_downgrade_and_upgrade(postgres_engine: Engine) -> None:
         assert tables.isdisjoint(_MASTER_TABLES)
         assert tables.isdisjoint(_CATALOG_TABLES)
         assert tables.isdisjoint(_REPLAY_RUN_TABLES)
+        assert tables.isdisjoint(_BACKTEST_TABLES)
         assert _IDENTITY_TABLES <= tables
         assert _BRONZE_TABLES <= tables
         assert _SILVER_TABLES <= tables
@@ -99,3 +105,4 @@ def test_master_revision_downgrade_and_upgrade(postgres_engine: Engine) -> None:
     assert _IDENTITY_TABLES <= tables
     assert _CATALOG_TABLES <= tables
     assert _REPLAY_RUN_TABLES <= tables
+    assert _BACKTEST_TABLES <= tables

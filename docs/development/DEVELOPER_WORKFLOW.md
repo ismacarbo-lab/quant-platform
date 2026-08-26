@@ -219,6 +219,24 @@ See [docs/simulation/DATASET_REPLAY.md](../simulation/DATASET_REPLAY.md),
 [docs/simulation/REPLAY_RUNS.md](../simulation/REPLAY_RUNS.md),
 and [docs/simulation/BACKTEST_READINESS.md](../simulation/BACKTEST_READINESS.md).
 
+Dry-run a ready replay run with `NoOpBacktestPolicy` (not a strategy,
+not trading). `--register` requires `--output-dir`:
+
+```bash
+uv run python scripts/run-backtest.py \
+  --replay-id ID_A \
+  --replay-base-dir /tmp/fixt-replay \
+  --output-dir /tmp/fixt-backtest \
+  --register \
+  --deterministic-id \
+  --json
+
+uv run python scripts/list-backtest-runs.py --usable-only --json
+```
+
+See [docs/backtest/BACKTEST_ENGINE.md](../backtest/BACKTEST_ENGINE.md)
+and [docs/backtest/NOOP_POLICY.md](../backtest/NOOP_POLICY.md).
+
 Event JSON fixtures for tests live in `tests/fixtures/replay_events/`.
 
 Stop (keeps the volume):

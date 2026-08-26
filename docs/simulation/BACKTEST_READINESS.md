@@ -1,11 +1,11 @@
 # Backtest readiness — Phase 3.4
 
 A **readiness gate** decides whether a registered replay run is fit to
-feed a **future** backtesting engine. It does **not** run a backtest.
+feed the dry-run backtest engine. It does **not** run a strategy.
 
-There is still no strategy, signal, portfolio, order, fill, broker, or
-PnL. This phase only compares replay runs and checks that the data
-stream is reproducible.
+There is still no investment policy, signal, portfolio, order, fill,
+broker, or PnL in this gate. Phase 4.0 consumes only runs where
+`ready_for_backtest` is true: [BACKTEST_ENGINE.md](../backtest/BACKTEST_ENGINE.md).
 
 Package: `quant_platform.simulation.readiness` plus
 `run_compare` and `constructs`.
@@ -106,19 +106,16 @@ report = evaluate_replay_run_readiness(session, replay_id, base_dir)
 
 The scripts do not print `DATABASE_URL`.
 
-## Why backtesting still does not exist
+## Why this is not a strategy engine
 
-Readiness answers “is this event stream safe to replay again?”. A
-backtester would consume that stream to evaluate a strategy. That
-engine, and every trading object around it, is still out of scope.
+Readiness answers “is this event stream safe to replay again?”. The
+Phase 4.0 dry-run consumes that stream with `NoOpBacktestPolicy` and
+still does not place orders. A real investment strategy is out of
+scope.
 
 ## What the next phase could build
 
-A research backtesting engine that:
+A research policy that still must not place broker orders in this
+platform, plus later portfolio/PnL if explicitly scoped.
 
-- accepts only runs with `ready_for_backtest=true`
-- walks the existing event kinds (`replay_started`, sessions, corporate
-  actions, bars, `replay_finished`)
-- still must not place broker orders in this research platform
-
-That work is not in this phase.
+The dry-run loop already exists: [BACKTEST_ENGINE.md](../backtest/BACKTEST_ENGINE.md).

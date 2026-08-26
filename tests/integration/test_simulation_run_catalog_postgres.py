@@ -45,6 +45,7 @@ pytestmark = pytest.mark.postgres
 
 ROOT = Path(__file__).resolve().parents[2]
 _REPLAY_RUN_TABLES = frozenset({"simulation_replay_runs"})
+_BACKTEST_TABLES = frozenset({"backtest_runs"})
 _TRADING_TABLES = frozenset(
     {"trades", "orders", "fills", "signals", "strategies", "positions"}
 )
@@ -108,11 +109,13 @@ def test_replay_run_revision_downgrade_and_upgrade(postgres_engine: Engine) -> N
         inspect(postgres_engine).clear_cache()
         tables = set(list_public_tables(postgres_engine))
         assert tables.isdisjoint(_REPLAY_RUN_TABLES)
+        assert tables.isdisjoint(_BACKTEST_TABLES)
     finally:
         command.upgrade(cfg, "head")
         inspect(postgres_engine).clear_cache()
     tables = set(list_public_tables(postgres_engine))
     assert _REPLAY_RUN_TABLES <= tables
+    assert _BACKTEST_TABLES <= tables
     assert tables.isdisjoint(_TRADING_TABLES)
 
 

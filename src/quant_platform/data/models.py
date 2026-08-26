@@ -596,3 +596,64 @@ class SimulationReplayRunRecord(Base):
     registered_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utc_now
     )
+
+
+class BacktestRunRecord(Base):
+    """Catalog metadata for a local dry-run backtest. No orders or PnL."""
+
+    __tablename__ = "backtest_runs"
+    __table_args__ = (
+        UniqueConstraint("backtest_id", name="uq_backtest_runs_backtest_id"),
+        UniqueConstraint("manifest_hash", name="uq_backtest_runs_manifest_hash"),
+        CheckConstraint("event_count >= 0", name="ck_backtest_runs_event_count"),
+        CheckConstraint(
+            "market_event_count >= 0",
+            name="ck_backtest_runs_market_event_count",
+        ),
+        CheckConstraint(
+            "session_event_count >= 0",
+            name="ck_backtest_runs_session_event_count",
+        ),
+        CheckConstraint(
+            "corporate_action_event_count >= 0",
+            name="ck_backtest_runs_ca_event_count",
+        ),
+        CheckConstraint("warning_count >= 0", name="ck_backtest_runs_warning_count"),
+        CheckConstraint("error_count >= 0", name="ck_backtest_runs_error_count"),
+        Index("ix_backtest_runs_replay_id", "replay_id"),
+        Index("ix_backtest_runs_stream_hash", "stream_hash"),
+        Index("ix_backtest_runs_backtest_hash", "backtest_hash"),
+        Index("ix_backtest_runs_policy_name", "policy_name"),
+        Index("ix_backtest_runs_created_at", "created_at"),
+        Index("ix_backtest_runs_is_usable", "is_usable"),
+    )
+
+    id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), primary_key=True, default=uuid4
+    )
+    backtest_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    replay_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    stream_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    backtest_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    manifest_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    policy_name: Mapped[str] = mapped_column(String(64), nullable=False)
+    package_version: Mapped[str] = mapped_column(String(32), nullable=False)
+    git_commit: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    event_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    market_event_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    session_event_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    corporate_action_event_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    warning_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    error_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    is_reproducible: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    is_usable: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    request: Mapped[dict[str, object]] = mapped_column(JSONB, nullable=False)
+    summary: Mapped[dict[str, object]] = mapped_column(JSONB, nullable=False)
+    artifacts: Mapped[list[dict[str, object]]] = mapped_column(JSONB, nullable=False)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    registered_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )

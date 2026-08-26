@@ -1,4 +1,7 @@
-"""Research dataset replay. Not backtesting, strategies, or trading."""
+"""Research dataset replay. Not a strategy or trading engine.
+
+Dry-run backtest (NoOp policy only) lives in ``quant_platform.backtest``.
+"""
 
 from quant_platform.simulation.artifacts import (
     compact_audit_summary,

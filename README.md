@@ -11,8 +11,10 @@ corporate actions** (not applied to prices), a **research dataset API**
 (`as_of` required), **dataset quality reports**, **local dataset
 snapshots**, a **PostgreSQL snapshot catalog**, **deterministic
 dataset replay** with an auditable event stream, **replay-run
-artifacts** with a PostgreSQL metadata catalog, and a **backtest
-readiness gate** (no backtester). It is **not** a trading system.
+artifacts** with a PostgreSQL metadata catalog, a **backtest
+readiness gate**, and a **dry-run backtest engine**
+(`NoOpBacktestPolicy` only: counts, hashes, no orders). It is **not**
+a trading system.
 
 A pre-existing tree named `AI_VENTURE_OS_PROMPTS/` may sit next to this
 project. It is a separate product and is **not** part of `quant_platform`.
@@ -35,13 +37,15 @@ Do not mix the two.
 - Export a replay run as local JSON/JSONL artifacts and register metadata
   (hashes, counts, boundary status) in PostgreSQL.
 - Compare registered replay runs and gate whether a run is ready for a
-  future backtester (no strategy, PnL, or orders).
+  dry-run backtest (no strategy, PnL, or orders).
+- Consume a ready replay run with `NoOpBacktestPolicy`, write local
+  summary/manifest artifacts, and register metadata in PostgreSQL.
 
 ## What is not implemented
 
 - Strategies and BUY/SELL signals
 - Machine learning or LLM runtime
-- Backtester
+- Real backtester (PnL, portfolio, orders); only a NoOp dry-run exists
 - Market-data download or vendor APIs
 - Broker connectivity
 - Paper trading
@@ -166,9 +170,9 @@ postgresql+psycopg://quant:quant_dev_only_not_for_production@127.0.0.1:5434/quan
 ```
 
 There are still **no** trading tables (orders, fills, signals, strategies).
-Alembic revisions `0001_ingestion` … `0006_replay_runs` create research
-ingestion, instrument-master, snapshot-catalog, and replay-run metadata
-tables only.
+Alembic revisions `0001_ingestion` … `0007_backtest_runs` create research
+ingestion, instrument-master, snapshot-catalog, replay-run, and dry-run
+backtest metadata tables only.
 
 ## Migrations
 
@@ -221,8 +225,10 @@ Replay audit (stream hash, order, PIT checks):
 [docs/simulation/REPLAY_AUDIT.md](docs/simulation/REPLAY_AUDIT.md).
 Replay runs (local artifacts + PostgreSQL metadata catalog):
 [docs/simulation/REPLAY_RUNS.md](docs/simulation/REPLAY_RUNS.md).
-Backtest readiness (compare runs; gate, not a backtester):
+Backtest readiness (compare runs; gate, not a strategy):
 [docs/simulation/BACKTEST_READINESS.md](docs/simulation/BACKTEST_READINESS.md).
+Dry-run backtest engine (NoOp policy, no orders or PnL):
+[docs/backtest/BACKTEST_ENGINE.md](docs/backtest/BACKTEST_ENGINE.md).
 
 See [docs/development/DEVELOPER_WORKFLOW.md](docs/development/DEVELOPER_WORKFLOW.md)
 for install, Compose, Alembic, port 5434 conflicts, and CI.

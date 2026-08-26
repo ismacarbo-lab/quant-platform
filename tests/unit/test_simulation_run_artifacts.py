@@ -335,6 +335,7 @@ def test_metadata_has_replay_runs_table_not_trading() -> None:
 
     names = set(Base.metadata.tables)
     assert "simulation_replay_runs" in names
+    assert "backtest_runs" in names
     for fragment in _TRADING_FRAGMENTS:
         assert fragment not in names
     assert names.isdisjoint(

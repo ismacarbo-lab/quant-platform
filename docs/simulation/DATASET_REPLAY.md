@@ -9,7 +9,8 @@ fixes the **replay boundary**: `ReplayStartedEvent` is always first,
 the started bookend. Phase 3.3 exports a **replay run** (local JSON/JSONL
 artifacts) and registers **metadata** in PostgreSQL.
 
-It is **not** backtesting, not a strategy, and not trading.
+It is **not** a strategy and not trading. A later dry-run backtest
+consumes ready replay runs: [BACKTEST_ENGINE.md](../backtest/BACKTEST_ENGINE.md).
 
 Package: `quant_platform.simulation`.
 
@@ -203,7 +204,8 @@ Details: [REPLAY_RUNS.md](REPLAY_RUNS.md).
 ## What does not exist
 
 - strategies, signals, indicators-as-signals
-- backtesting engine, optimizer, risk engine
+- real investment policies, optimizer, risk engine
+  (dry-run NoOp engine: [BACKTEST_ENGINE.md](../backtest/BACKTEST_ENGINE.md))
 - orders, trades, fills, portfolio, positions
 - brokers, paper trading, live trading
 - HTTP routes beyond `GET /health`
