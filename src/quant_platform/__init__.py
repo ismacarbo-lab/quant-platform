@@ -8,6 +8,8 @@ and correction audit) without signals, orders, fills, portfolio, or PnL.
 Phase 5.1 adds a ResearchPolicy regression matrix with golden fixtures.
 Phase 5.2 hardens a research-mode release candidate (status, guardrails,
 and local release checks) still without trading or AI runtime.
+Phase 5.3 adds an end-to-end research evidence bundle (local fixtures
+through snapshot, replay, dry-run, experiment, and release status).
 """
 
 __version__ = "0.1.0"

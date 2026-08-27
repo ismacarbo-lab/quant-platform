@@ -1,4 +1,4 @@
-# Architecture — Phase 5.2
+# Architecture — Phase 5.3
 
 Status: research ingestion, an internal **dataset query API**, **dataset
 quality reports**, **local hashed snapshots**, a **PostgreSQL snapshot
@@ -14,8 +14,9 @@ orders), **policy-output observation reports** with dedicated
 integrity checks, and a **backtest experiment registry** that groups
 those dry-runs, plus an **experiment usability gate**, **aggregated
 research reports**, **data-quality research policies**, a
-**ResearchPolicy regression matrix**, and a **research-mode release
-candidate** (status and guardrails). No LLM runtime, strategies,
+**ResearchPolicy regression matrix**, a **research-mode release
+candidate** (status and guardrails), and a **local research evidence
+bundle**. No LLM runtime, strategies,
 brokers, or execution.
 
 ## Modular monolith
@@ -31,7 +32,7 @@ src/quant_platform/
   research/     PIT datasets, quality reports, snapshots, catalog, integrity
   simulation/   dataset replay, run catalog, backtest readiness gate (no strategies)
   backtest/     dry-run engine, research policies, catalog, integrity, regression matrix (no orders)
-  release/      research release-candidate status and checks (no trading)
+  release/      research release-candidate status, checks, and evidence bundle (no trading)
   storage/      PostgreSQL engine/session, SQLAlchemy Base
   monitoring/   structured logging
   api/          internal HTTP surface (health)
@@ -47,7 +48,7 @@ Documented future areas (no empty implementation packages in Phase 0):
 | `storage` | Persistence adapters | engine/session only |
 | `research` | Dataset queries, experiment runners | PIT datasets, quality reports, snapshots, catalog, integrity; no notebooks |
 | `simulation` | Dataset replay timeline | events, boundaries, stream hash, audit, run artifacts + catalog, readiness gate; no strategies |
-| `backtesting` | Simulation engine | Phase 5.2 package `backtest/` plus `release/`: dry-run, research policy, regression matrix, experiments, usability, release checks; no orders/PnL |
+| `backtesting` | Simulation engine | Phase 5.3 package `backtest/` plus `release/`: dry-run, research policy, regression matrix, experiments, usability, release checks, evidence bundle; no orders/PnL |
 | `strategies` | Signal generation | not implemented |
 | `ml` | Model training/inference | not implemented |
 | `portfolio` | Positions, target holdings | not implemented |
@@ -118,7 +119,8 @@ rows that are not applied**. Gold feature tables are still future work.
    strategy or PnL tables. Phase 4.4 adds experiment folders that point
    at those dry-runs; still no PnL. Phase 4.5 adds experiment usability
    and observation aggregates; still no PnL. Phase 5.0 adds data-quality
-   research policies; still no PnL.
+   research policies; still no PnL. Phase 5.3 packages those steps into a
+   local evidence bundle; still no PnL.
 
 Instruments are keyed by `(symbol, asset_class, exchange_id, currency)` using
 PostgreSQL `UNIQUE NULLS NOT DISTINCT`. Calendars are local fixtures only.
@@ -148,7 +150,8 @@ research dataset API **requires** `as_of`. See
 [BACKTEST_EXPERIMENT_USABILITY.md](../backtest/BACKTEST_EXPERIMENT_USABILITY.md),
 [DATA_QUALITY_POLICIES.md](../backtest/DATA_QUALITY_POLICIES.md),
 [POLICY_REGRESSION_MATRIX.md](../backtest/POLICY_REGRESSION_MATRIX.md),
-and [RESEARCH_RELEASE_CANDIDATE.md](../release/RESEARCH_RELEASE_CANDIDATE.md).
+[RESEARCH_RELEASE_CANDIDATE.md](../release/RESEARCH_RELEASE_CANDIDATE.md),
+and [RESEARCH_EVIDENCE_BUNDLE.md](../release/RESEARCH_EVIDENCE_BUNDLE.md).
 
 ### Point-in-time timestamps
 
@@ -212,6 +215,9 @@ Phase 4.0 adds `backtest_runs` (dry-run backtest metadata only).
 Phase 4.4 adds `backtest_experiments` (experiment metadata only).
 Phase 4.5 does not add tables.
 Phase 5.0 does not add tables.
+Phase 5.1 does not add tables.
+Phase 5.2 does not add tables.
+Phase 5.3 does not add tables.
 There are still **no** orders, fills, trades, strategies, or broker tables.
 SQLite is rejected. Instrument uniqueness uses PostgreSQL
 `UNIQUE NULLS NOT DISTINCT` (PG 15+).
@@ -252,6 +258,10 @@ Phase 4.5 adds an experiment usability gate and aggregated research
 reports (no schema change; still no orders or PnL).
 Phase 5.0 adds data-quality research policies (no schema change; still
 no orders or PnL).
+Phase 5.1 adds a ResearchPolicy regression matrix (no schema change).
+Phase 5.2 hardens a research-mode release candidate (no schema change).
+Phase 5.3 adds a local end-to-end research evidence bundle (no schema
+change; still no orders or PnL).
 None of these add HTTP routes or gold/trading tables.
 
 ## AI usage boundary

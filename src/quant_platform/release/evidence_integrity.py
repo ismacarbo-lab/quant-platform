@@ -1,0 +1,396 @@
+"""Verify a local research evidence bundle. Read-only; not trading."""
+
+from __future__ import annotations
+
+import json
+from collections.abc import Mapping
+from dataclasses import dataclass
+from enum import StrEnum
+from pathlib import Path
+
+from quant_platform.backtest.observations import contains_operative_language
+from quant_platform.release.evidence_bundle import hash_research_evidence_bundle
+from quant_platform.release.evidence_types import (
+    EVIDENCE_MANIFEST_NAME,
+    EVIDENCE_SUMMARY_NAME,
+    RELEASE_STATUS_NAME,
+)
+from quant_platform.research.snapshots import (
+    is_sha256_digest,
+    manifest_contains_secrets,
+)
+from quant_platform.simulation.constructs import detect_trading_constructs
+from quant_platform.simulation.run_types import artifact_path_is_unsafe
+
+EVIDENCE_INTEGRITY_KIND = "research_evidence_bundle_integrity"
+EVIDENCE_INTEGRITY_FORMAT_VERSION = 1
+
+_HASH_FIELDS = (
+    "snapshot_hash",
+    "stream_hash",
+    "backtest_hash",
+    "experiment_hash",
+    "report_hash",
+    "release_report_hash",
+    "bundle_hash",
+)
+
+_FORBIDDEN_METRIC_TOKENS = (
+    "sharpe",
+    "drawdown",
+    "hit_ratio",
+    "hit ratio",
+    "pnl",
+    "returns",
+)
+
+
+class EvidenceIntegritySeverity(StrEnum):
+    INFO = "info"
+    WARNING = "warning"
+    ERROR = "error"
+
+
+class EvidenceIntegrityCode(StrEnum):
+    MISSING_MANIFEST = "missing_manifest"
+    MISSING_SUMMARY = "missing_summary"
+    MISSING_RELEASE_STATUS = "missing_release_status"
+    INVALID_JSON = "invalid_json"
+    ABSOLUTE_PATH = "absolute_path"
+    PATH_ESCAPE = "path_escape"
+    SECRET_LIKE_VALUE = "secret_like_value"  # noqa: S105
+    INVALID_HASH = "invalid_hash"
+    HASH_MISMATCH = "hash_mismatch"
+    MISSING_ARTIFACT = "missing_artifact"
+    STEP_COUNT_MISMATCH = "step_count_mismatch"
+    FORBIDDEN_METRIC = "forbidden_metric"
+    OPERATIVE_LANGUAGE = "operative_language"
+    TRADING_CONSTRUCT = "trading_construct"
+
+
+@dataclass(frozen=True, slots=True)
+class EvidenceIntegrityIssue:
+    severity: str
+    code: str
+    message: str
+
+    def as_mapping(self) -> dict[str, object]:
+        return {
+            "severity": self.severity,
+            "code": self.code,
+            "message": self.message,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class EvidenceIntegrityReport:
+    ok: bool
+    bundle_dir: str
+    bundle_hash: str | None
+    recomputed_bundle_hash: str | None
+    error_count: int
+    warning_count: int
+    issues: tuple[EvidenceIntegrityIssue, ...]
+
+    def as_mapping(self) -> dict[str, object]:
+        return {
+            "kind": EVIDENCE_INTEGRITY_KIND,
+            "format_version": EVIDENCE_INTEGRITY_FORMAT_VERSION,
+            "ok": self.ok,
+            "bundle_dir": self.bundle_dir,
+            "bundle_hash": self.bundle_hash,
+            "recomputed_bundle_hash": self.recomputed_bundle_hash,
+            "error_count": self.error_count,
+            "warning_count": self.warning_count,
+            "issues": [item.as_mapping() for item in self.issues],
+        }
+
+
+def verify_research_evidence_bundle(bundle_dir: Path | str) -> EvidenceIntegrityReport:
+    """Read-only checks of a local evidence bundle. Does not trade."""
+    root = Path(bundle_dir)
+    issues: list[EvidenceIntegrityIssue] = []
+    manifest_payload: dict[str, object] | None = None
+    summary_payload: dict[str, object] | None = None
+    stored_hash: str | None = None
+    recomputed: str | None = None
+
+    manifest_path = root / EVIDENCE_MANIFEST_NAME
+    summary_path = root / EVIDENCE_SUMMARY_NAME
+    release_path = root / RELEASE_STATUS_NAME
+    if not manifest_path.is_file():
+        issues.append(
+            _error(
+                EvidenceIntegrityCode.MISSING_MANIFEST,
+                "evidence_manifest.json is missing",
+            )
+        )
+    if not summary_path.is_file():
+        issues.append(
+            _error(
+                EvidenceIntegrityCode.MISSING_SUMMARY,
+                "evidence_summary.json is missing",
+            )
+        )
+    if not release_path.is_file():
+        issues.append(
+            _error(
+                EvidenceIntegrityCode.MISSING_RELEASE_STATUS,
+                "release_status.json is missing",
+            )
+        )
+
+    if manifest_path.is_file():
+        manifest_payload = _load_json(manifest_path, issues, "evidence_manifest.json")
+    if summary_path.is_file():
+        summary_payload = _load_json(summary_path, issues, "evidence_summary.json")
+    if release_path.is_file():
+        _load_json(release_path, issues, "release_status.json")
+
+    for payload, label in (
+        (manifest_payload, "evidence_manifest.json"),
+        (summary_payload, "evidence_summary.json"),
+    ):
+        if payload is None:
+            continue
+        blob = json.dumps(payload, sort_keys=True, ensure_ascii=True)
+        if manifest_contains_secrets(blob):
+            issues.append(
+                _error(
+                    EvidenceIntegrityCode.SECRET_LIKE_VALUE,
+                    f"{label} contains a secret-like value",
+                )
+            )
+        if contains_operative_language(blob):
+            issues.append(
+                _error(
+                    EvidenceIntegrityCode.OPERATIVE_LANGUAGE,
+                    f"{label} contains investment-decision wording",
+                )
+            )
+        lowered = blob.lower()
+        for token in _FORBIDDEN_METRIC_TOKENS:
+            if token in lowered:
+                issues.append(
+                    _error(
+                        EvidenceIntegrityCode.FORBIDDEN_METRIC,
+                        f"{label} contains a forbidden research metric",
+                    )
+                )
+                break
+        _check_paths(payload, root, issues)
+
+    findings = detect_trading_constructs()
+    if findings:
+        issues.append(
+            _error(
+                EvidenceIntegrityCode.TRADING_CONSTRUCT,
+                "trading constructs were detected in the research package",
+            )
+        )
+
+    if manifest_payload is not None:
+        stored_hash = _optional_hash(manifest_payload.get("bundle_hash"), issues)
+        for field in _HASH_FIELDS:
+            raw = manifest_payload.get(field)
+            if raw is None or raw == "":
+                continue
+            if not isinstance(raw, str) or not is_sha256_digest(raw):
+                issues.append(
+                    _error(
+                        EvidenceIntegrityCode.INVALID_HASH,
+                        f"{field} is not a sha256 digest",
+                    )
+                )
+        try:
+            recomputed = hash_research_evidence_bundle(manifest_payload)
+        except Exception:
+            issues.append(
+                _error(
+                    EvidenceIntegrityCode.INVALID_HASH,
+                    "evidence bundle hash could not be recomputed",
+                )
+            )
+        if (
+            stored_hash is not None
+            and recomputed is not None
+            and stored_hash != recomputed
+        ):
+            issues.append(
+                _error(
+                    EvidenceIntegrityCode.HASH_MISMATCH,
+                    "bundle_hash does not match the recomputed digest",
+                )
+            )
+        _check_step_counts(manifest_payload, issues)
+        if summary_payload is not None:
+            _check_step_counts(summary_payload, issues)
+
+    error_count = sum(
+        1 for item in issues if item.severity == EvidenceIntegritySeverity.ERROR
+    )
+    warning_count = sum(
+        1 for item in issues if item.severity == EvidenceIntegritySeverity.WARNING
+    )
+    return EvidenceIntegrityReport(
+        ok=error_count == 0,
+        bundle_dir=root.name,
+        bundle_hash=stored_hash,
+        recomputed_bundle_hash=recomputed,
+        error_count=error_count,
+        warning_count=warning_count,
+        issues=tuple(issues),
+    )
+
+
+def evidence_integrity_json(report: EvidenceIntegrityReport) -> str:
+    return json.dumps(report.as_mapping(), indent=2, sort_keys=True, ensure_ascii=True)
+
+
+def _load_json(
+    path: Path, issues: list[EvidenceIntegrityIssue], label: str
+) -> dict[str, object] | None:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        issues.append(
+            _error(EvidenceIntegrityCode.INVALID_JSON, f"{label} is not valid JSON")
+        )
+        return None
+    if not isinstance(payload, dict):
+        issues.append(
+            _error(EvidenceIntegrityCode.INVALID_JSON, f"{label} must be an object")
+        )
+        return None
+    return payload
+
+
+def _check_paths(
+    payload: Mapping[str, object],
+    root: Path,
+    issues: list[EvidenceIntegrityIssue],
+) -> None:
+    artifacts = payload.get("artifacts")
+    if not isinstance(artifacts, list):
+        return
+    for item in artifacts:
+        if not isinstance(item, Mapping):
+            issues.append(
+                _error(
+                    EvidenceIntegrityCode.INVALID_JSON,
+                    "each artifact must be an object",
+                )
+            )
+            continue
+        raw = item.get("path")
+        if not isinstance(raw, str) or not raw.strip():
+            issues.append(
+                _error(
+                    EvidenceIntegrityCode.MISSING_ARTIFACT,
+                    "artifact path is empty",
+                )
+            )
+            continue
+        path = raw.strip().replace("\\", "/")
+        candidate = Path(path)
+        if candidate.is_absolute():
+            issues.append(
+                _error(
+                    EvidenceIntegrityCode.ABSOLUTE_PATH,
+                    "artifact paths must be relative",
+                )
+            )
+            continue
+        if ".." in candidate.parts:
+            issues.append(
+                _error(
+                    EvidenceIntegrityCode.PATH_ESCAPE,
+                    "artifact paths must not traverse parent directories",
+                )
+            )
+            continue
+        if artifact_path_is_unsafe(path):
+            issues.append(
+                _error(
+                    EvidenceIntegrityCode.PATH_ESCAPE,
+                    "artifact path is not safe",
+                )
+            )
+            continue
+        target = (root / path).resolve()
+        try:
+            target.relative_to(root.resolve())
+        except ValueError:
+            issues.append(
+                _error(
+                    EvidenceIntegrityCode.PATH_ESCAPE,
+                    "artifact path escaped the bundle directory",
+                )
+            )
+            continue
+        if not target.is_file():
+            issues.append(
+                _error(
+                    EvidenceIntegrityCode.MISSING_ARTIFACT,
+                    f"declared artifact is missing: {path}",
+                )
+            )
+
+
+def _check_step_counts(
+    payload: Mapping[str, object], issues: list[EvidenceIntegrityIssue]
+) -> None:
+    steps = payload.get("steps")
+    if not isinstance(steps, list):
+        return
+    declared = payload.get("step_count")
+    if declared is not None and declared != len(steps):
+        issues.append(
+            _error(
+                EvidenceIntegrityCode.STEP_COUNT_MISMATCH,
+                "step_count does not match the steps list",
+            )
+        )
+    errors = payload.get("errors")
+    error_count = payload.get("error_count")
+    if (
+        isinstance(errors, list)
+        and error_count is not None
+        and error_count != len(errors)
+    ):
+        issues.append(
+            _error(
+                EvidenceIntegrityCode.STEP_COUNT_MISMATCH,
+                "error_count does not match the errors list",
+            )
+        )
+    ok = payload.get("ok")
+    if ok is True and isinstance(errors, list) and errors:
+        issues.append(
+            _error(
+                EvidenceIntegrityCode.STEP_COUNT_MISMATCH,
+                "ok is true but errors are present",
+            )
+        )
+
+
+def _optional_hash(value: object, issues: list[EvidenceIntegrityIssue]) -> str | None:
+    if value is None or value == "":
+        return None
+    if not isinstance(value, str) or not is_sha256_digest(value):
+        issues.append(
+            _error(
+                EvidenceIntegrityCode.INVALID_HASH,
+                "bundle_hash is not a sha256 digest",
+            )
+        )
+        return None
+    return value
+
+
+def _error(code: EvidenceIntegrityCode, message: str) -> EvidenceIntegrityIssue:
+    return EvidenceIntegrityIssue(
+        severity=EvidenceIntegritySeverity.ERROR.value,
+        code=code.value,
+        message=message,
+    )

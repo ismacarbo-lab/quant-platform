@@ -12,6 +12,7 @@ Scripts: `scripts/research-status.py`,
 Related: [POLICY_REGRESSION_MATRIX.md](../backtest/POLICY_REGRESSION_MATRIX.md),
 [DATA_QUALITY_POLICIES.md](../backtest/DATA_QUALITY_POLICIES.md),
 [DEVELOPER_WORKFLOW.md](../development/DEVELOPER_WORKFLOW.md),
+[RESEARCH_EVIDENCE_BUNDLE.md](RESEARCH_EVIDENCE_BUNDLE.md),
 [AI_USAGE_BOUNDARY.md](../ai/AI_USAGE_BOUNDARY.md).
 
 **No Alembic revision for this phase.** Expected head remains
@@ -49,6 +50,11 @@ This is **not** a production trading system. It does **not** include:
 
 Passing release checks means the research foundation is intact. It does
 **not** mean a strategy exists or that results are profitable.
+
+The [research evidence bundle](RESEARCH_EVIDENCE_BUNDLE.md) is a separate
+**manual** check: it runs the local fixture → ingest → snapshot → replay
+→ dry-run → experiment path and writes a hashed pack. It is not part of
+`make quality`.
 
 ## How to run the release check
 
@@ -88,6 +94,17 @@ make policy-regression
 make architecture-check
 make quality
 ```
+
+## Manual evidence bundle
+
+Local PostgreSQL required. Not part of `make quality`:
+
+```bash
+make research-evidence-bundle
+make verify-research-evidence-bundle
+```
+
+See [RESEARCH_EVIDENCE_BUNDLE.md](RESEARCH_EVIDENCE_BUNDLE.md).
 
 ## How to interpret the report
 

@@ -174,3 +174,6 @@ before updating `matrix.json` by hand. See
 
 Release-candidate status and guardrails:
 [RESEARCH_RELEASE_CANDIDATE.md](../release/RESEARCH_RELEASE_CANDIDATE.md).
+End-to-end evidence bundle (manual, local fixtures, default policy
+`data_quality`):
+[RESEARCH_EVIDENCE_BUNDLE.md](../release/RESEARCH_EVIDENCE_BUNDLE.md).

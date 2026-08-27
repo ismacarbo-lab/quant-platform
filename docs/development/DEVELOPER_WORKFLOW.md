@@ -60,6 +60,8 @@ make quality
 | Architecture guards | `make architecture-check` |
 | Research release check | `uv run python scripts/research-release-check.py` / `make research-release-check` |
 | Research status (no DB) | `uv run python scripts/research-status.py` / `make research-status` |
+| Research evidence bundle (needs PostgreSQL; not in `make quality`) | `uv run python scripts/build-research-evidence-bundle.py …` / `make research-evidence-bundle` |
+| Verify evidence bundle | `uv run python scripts/verify-research-evidence-bundle.py --bundle-dir DIR` / `make verify-research-evidence-bundle` |
 
 Unit tests and `tests/integration/test_local_infra.py` do **not** need Docker.
 Tests marked `postgres` need a reachable PostgreSQL; they skip unless
@@ -279,6 +281,14 @@ uv run python scripts/run-policy-regression-matrix.py --json
 uv run python scripts/run-policy-regression-matrix.py \
   --output-dir /tmp/policy-regression \
   --update-expected
+
+uv run python scripts/build-research-evidence-bundle.py \
+  --fixture-dir tests/fixtures/e2e_research_bundle \
+  --output-dir /tmp/research-evidence-bundle \
+  --deterministic-id \
+  --json
+uv run python scripts/verify-research-evidence-bundle.py \
+  --bundle-dir /tmp/research-evidence-bundle
 ```
 
 See [docs/backtest/BACKTEST_ENGINE.md](../backtest/BACKTEST_ENGINE.md),
@@ -290,10 +300,12 @@ See [docs/backtest/BACKTEST_ENGINE.md](../backtest/BACKTEST_ENGINE.md),
 [docs/backtest/BACKTEST_EXPERIMENT_USABILITY.md](../backtest/BACKTEST_EXPERIMENT_USABILITY.md),
 [docs/backtest/DATA_QUALITY_POLICIES.md](../backtest/DATA_QUALITY_POLICIES.md),
 [docs/backtest/POLICY_REGRESSION_MATRIX.md](../backtest/POLICY_REGRESSION_MATRIX.md),
-and [docs/release/RESEARCH_RELEASE_CANDIDATE.md](../release/RESEARCH_RELEASE_CANDIDATE.md).
+[docs/release/RESEARCH_RELEASE_CANDIDATE.md](../release/RESEARCH_RELEASE_CANDIDATE.md),
+and [docs/release/RESEARCH_EVIDENCE_BUNDLE.md](../release/RESEARCH_EVIDENCE_BUNDLE.md).
 
 Event JSON fixtures for tests live in `tests/fixtures/replay_events/`.
 Policy regression fixtures live in `tests/fixtures/policy_regression/`.
+End-to-end evidence fixtures live in `tests/fixtures/e2e_research_bundle/`.
 
 Stop (keeps the volume):
 

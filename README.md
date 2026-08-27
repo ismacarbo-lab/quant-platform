@@ -20,7 +20,9 @@ a **backtest experiment registry** that groups dry-runs, an **experiment
 usability gate**, **aggregated experiment research reports**,
 **data-quality research policies**, and a **ResearchPolicy regression
 matrix** (still no PnL or orders). Phase 5.2 adds a **research-mode
-release candidate** check and status report.
+release candidate** check and status report. Phase 5.3 adds a **local
+research evidence bundle** that runs the fixture-to-release path without
+trading.
 It is **not** a trading system.
 
 A pre-existing tree named `AI_VENTURE_OS_PROMPTS/` may sit next to this
@@ -64,6 +66,9 @@ Do not mix the two.
   observation counts; still no PnL).
 - Run a research-mode release candidate check (status, guardrails, policy
   regression; still no trading or AI runtime).
+- Build and verify a local end-to-end research evidence bundle (fixtures
+  through snapshot, replay, dry-run, experiment, and release status;
+  still no PnL or orders).
 
 ## What is not implemented
 
@@ -269,6 +274,8 @@ Research-policy regression matrix (golden hashes, not PnL):
 [docs/backtest/POLICY_REGRESSION_MATRIX.md](docs/backtest/POLICY_REGRESSION_MATRIX.md).
 Research-mode release candidate (what is ready, what is not):
 [docs/release/RESEARCH_RELEASE_CANDIDATE.md](docs/release/RESEARCH_RELEASE_CANDIDATE.md).
+End-to-end research evidence bundle (manual, local fixtures only):
+[docs/release/RESEARCH_EVIDENCE_BUNDLE.md](docs/release/RESEARCH_EVIDENCE_BUNDLE.md).
 
 See [docs/development/DEVELOPER_WORKFLOW.md](docs/development/DEVELOPER_WORKFLOW.md)
 for install, Compose, Alembic, port 5434 conflicts, and CI.

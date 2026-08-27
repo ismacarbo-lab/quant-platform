@@ -1,0 +1,278 @@
+"""Research evidence-bundle checks without Docker. No trading."""
+
+from __future__ import annotations
+
+import importlib.util
+import json
+from dataclasses import replace
+from datetime import UTC, datetime
+from pathlib import Path
+
+import pytest
+
+from quant_platform.release.evidence_bundle import hash_research_evidence_bundle
+from quant_platform.release.evidence_integrity import (
+    EvidenceIntegrityCode,
+    verify_research_evidence_bundle,
+)
+from quant_platform.release.evidence_types import (
+    EVIDENCE_MANIFEST_NAME,
+    EVIDENCE_SUMMARY_NAME,
+    RELEASE_STATUS_NAME,
+    EvidenceBundleError,
+    ResearchEvidenceBundleArtifact,
+    ResearchEvidenceBundleIssue,
+    ResearchEvidenceBundleManifest,
+    ResearchEvidenceBundleStep,
+)
+from quant_platform.simulation.constructs import detect_trading_constructs
+
+_SCRIPTS = Path(__file__).resolve().parents[2] / "scripts"
+_FAKE_HASH = "sha256:" + ("a" * 64)
+_OTHER_HASH = "sha256:" + ("b" * 64)
+_STAMP = datetime(2024, 1, 2, tzinfo=UTC)
+
+
+def _load_script(filename: str):
+    path = _SCRIPTS / filename
+    spec = importlib.util.spec_from_file_location(filename.replace("-", "_"), path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _assert_no_secrets(blob: str) -> None:
+    lowered = blob.lower()
+    assert "postgresql+psycopg://" not in lowered
+    assert "quant_dev_only_not_for_production" not in lowered
+    assert "://quant:" not in lowered
+    assert "DATABASE_URL" not in blob
+
+
+def _manifest(
+    **overrides: object,
+) -> ResearchEvidenceBundleManifest:
+    payload: dict[str, object] = {
+        "bundle_id": "11111111-1111-1111-1111-111111111111",
+        "created_at": _STAMP,
+        "package_version": "0.1.0",
+        "git_commit": "deadbeef",
+        "app_mode": "research",
+        "alembic_head": "0009_backtest_experiments",
+        "dataset_snapshot_id": "snap-1",
+        "replay_id": "replay-1",
+        "backtest_id": "backtest-1",
+        "experiment_id": "experiment-1",
+        "snapshot_hash": _FAKE_HASH,
+        "stream_hash": _FAKE_HASH,
+        "backtest_hash": _FAKE_HASH,
+        "experiment_hash": _FAKE_HASH,
+        "report_hash": _FAKE_HASH,
+        "release_report_hash": _FAKE_HASH,
+        "steps": (
+            ResearchEvidenceBundleStep(name="validate_research_mode", status="ok"),
+            ResearchEvidenceBundleStep(name="replay_run", status="ok"),
+        ),
+        "artifacts": (
+            ResearchEvidenceBundleArtifact(
+                name="manifest", path=EVIDENCE_MANIFEST_NAME, kind="json"
+            ),
+        ),
+        "warnings": (),
+        "errors": (),
+        "ok": True,
+        "bundle_hash": "",
+        "replay_ready": True,
+        "backtest_usable": True,
+        "experiment_usable": True,
+        "release_ok": True,
+        "policy_name": "data_quality",
+    }
+    payload.update(overrides)
+    return ResearchEvidenceBundleManifest(**payload)  # type: ignore[arg-type]
+
+
+def _write_valid_bundle(root: Path) -> ResearchEvidenceBundleManifest:
+    draft = _manifest()
+    digest = hash_research_evidence_bundle(draft)
+    manifest = replace(draft, bundle_hash=digest)
+    payload = manifest.as_mapping()
+    summary = {
+        "kind": payload["kind"],
+        "format_version": payload["format_version"],
+        "bundle_id": payload["bundle_id"],
+        "created_at": payload["created_at"],
+        "package_version": payload["package_version"],
+        "git_commit": payload["git_commit"],
+        "app_mode": payload["app_mode"],
+        "alembic_head": payload["alembic_head"],
+        "policy_name": payload["policy_name"],
+        "snapshot_hash": payload["snapshot_hash"],
+        "stream_hash": payload["stream_hash"],
+        "backtest_hash": payload["backtest_hash"],
+        "experiment_hash": payload["experiment_hash"],
+        "report_hash": payload["report_hash"],
+        "release_report_hash": payload["release_report_hash"],
+        "ok": payload["ok"],
+        "bundle_hash": payload["bundle_hash"],
+        "step_count": payload["step_count"],
+        "error_count": payload["error_count"],
+        "steps": payload["steps"],
+        "artifacts": payload["artifacts"],
+        "errors": payload["errors"],
+    }
+    root.mkdir(parents=True, exist_ok=True)
+    (root / EVIDENCE_MANIFEST_NAME).write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    (root / EVIDENCE_SUMMARY_NAME).write_text(
+        json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    (root / RELEASE_STATUS_NAME).write_text("{}\n", encoding="utf-8")
+    return manifest
+
+
+def test_manifest_serializes_without_secrets() -> None:
+    blob = json.dumps(_manifest().as_mapping(), sort_keys=True)
+    _assert_no_secrets(blob)
+    assert "buy" not in blob.lower()
+    assert "portfolio" not in blob.lower()
+
+
+def test_artifact_paths_must_be_relative() -> None:
+    artifact = ResearchEvidenceBundleArtifact(
+        name="escaped", path="/var/absolute/secret.json", kind="json"
+    )
+    with pytest.raises(EvidenceBundleError, match="relative"):
+        artifact.as_mapping()
+
+
+def test_path_traversal_is_rejected(tmp_path: Path) -> None:
+    root = tmp_path / "bundle"
+    manifest = _write_valid_bundle(root)
+    payload = manifest.as_mapping()
+    payload["artifacts"] = [
+        {"name": "escaped", "path": "../secret.json", "kind": "json"}
+    ]
+    (root / EVIDENCE_MANIFEST_NAME).write_text(
+        json.dumps(payload, indent=2) + "\n", encoding="utf-8"
+    )
+    report = verify_research_evidence_bundle(root)
+    assert report.ok is False
+    codes = {item.code for item in report.issues}
+    assert EvidenceIntegrityCode.PATH_ESCAPE.value in codes
+
+
+def test_bundle_hash_is_stable_across_ids_and_clock() -> None:
+    left = _manifest(
+        bundle_id="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        created_at=datetime(2024, 1, 1, tzinfo=UTC),
+        git_commit="one",
+    )
+    right = _manifest(
+        bundle_id="bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+        created_at=datetime(2025, 12, 31, tzinfo=UTC),
+        git_commit="two",
+    )
+    assert hash_research_evidence_bundle(left) == hash_research_evidence_bundle(right)
+    assert hash_research_evidence_bundle(left) == hash_research_evidence_bundle(
+        left.as_mapping()
+    )
+
+
+def test_bundle_hash_changes_when_stream_hash_changes() -> None:
+    left = hash_research_evidence_bundle(_manifest(stream_hash=_FAKE_HASH))
+    right = hash_research_evidence_bundle(_manifest(stream_hash=_OTHER_HASH))
+    assert left != right
+    assert left.startswith("sha256:")
+    assert len(left) == 71
+
+
+def test_forbidden_terms_are_detected(tmp_path: Path) -> None:
+    root = tmp_path / "bundle"
+    manifest = _write_valid_bundle(root)
+    payload = manifest.as_mapping()
+    payload["errors"] = [
+        {
+            "severity": "error",
+            "code": "demo",
+            "message": "do not buy this research note",
+            "step": None,
+        }
+    ]
+    (root / EVIDENCE_MANIFEST_NAME).write_text(
+        json.dumps(payload, indent=2) + "\n", encoding="utf-8"
+    )
+    report = verify_research_evidence_bundle(root)
+    assert report.ok is False
+    codes = {item.code for item in report.issues}
+    assert EvidenceIntegrityCode.OPERATIVE_LANGUAGE.value in codes
+
+
+def test_evidence_integrity_missing_manifest(tmp_path: Path) -> None:
+    report = verify_research_evidence_bundle(tmp_path / "missing")
+    assert report.ok is False
+    codes = {item.code for item in report.issues}
+    assert EvidenceIntegrityCode.MISSING_MANIFEST.value in codes
+    assert EvidenceIntegrityCode.MISSING_SUMMARY.value in codes
+    assert EvidenceIntegrityCode.MISSING_RELEASE_STATUS.value in codes
+
+
+def test_evidence_integrity_valid_fixture(tmp_path: Path) -> None:
+    root = tmp_path / "bundle"
+    _write_valid_bundle(root)
+    report = verify_research_evidence_bundle(root)
+    assert report.ok is True
+    assert report.bundle_hash == report.recomputed_bundle_hash
+    assert report.error_count == 0
+
+
+def test_verify_script_json_has_no_database_url(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root = tmp_path / "bundle"
+    _write_valid_bundle(root)
+    runner = _load_script("verify-research-evidence-bundle.py")
+    code = runner.main(["--bundle-dir", str(root), "--json"])
+    captured = capsys.readouterr()
+    assert code == 0
+    _assert_no_secrets(captured.out)
+    payload = json.loads(captured.out)
+    assert payload["ok"] is True
+    assert payload["kind"] == "research_evidence_bundle_integrity"
+
+
+def test_build_script_rejects_invalid_policy_json(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    runner = _load_script("build-research-evidence-bundle.py")
+    code = runner.main(
+        [
+            "--fixture-dir",
+            "/var/unused",
+            "--output-dir",
+            "/var/unused-out",
+            "--policy-config-json",
+            "[1]",
+        ]
+    )
+    captured = capsys.readouterr()
+    assert code == 1
+    _assert_no_secrets(captured.err + captured.out)
+    assert "JSON object" in captured.err
+
+
+def test_no_trading_constructs_in_research_package() -> None:
+    findings = detect_trading_constructs()
+    assert findings == ()
+    issue = ResearchEvidenceBundleIssue(
+        severity="error", code="demo", message="quality note only"
+    )
+    blob = json.dumps(issue.as_mapping())
+    assert "strategy" not in blob
+    assert "signal" not in blob
+    assert "order" not in blob
+    assert "fill" not in blob
+    assert "portfolio" not in blob
+    assert "pnl" not in blob

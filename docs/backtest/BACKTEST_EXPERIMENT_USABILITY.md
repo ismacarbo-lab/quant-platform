@@ -24,6 +24,8 @@ Engine: [BACKTEST_ENGINE.md](BACKTEST_ENGINE.md).
 
 Data-quality policies: [DATA_QUALITY_POLICIES.md](DATA_QUALITY_POLICIES.md).
 
+End-to-end research evidence: [RESEARCH_EVIDENCE_BUNDLE.md](../release/RESEARCH_EVIDENCE_BUNDLE.md).
+
 **No Alembic revision for this phase.** Catalog table
 `backtest_experiments` already exists from `0009_backtest_experiments`.
 
@@ -217,3 +219,7 @@ PnL would be a later product, behind this gate.
 - HTTP routes beyond `GET /health`
 - cloud object storage
 - dynamic external policy plugins
+
+A passing experiment usability gate is one input to the
+[research evidence bundle](../release/RESEARCH_EVIDENCE_BUNDLE.md). That
+bundle still does not compute PnL or returns.

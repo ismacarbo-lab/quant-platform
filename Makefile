@@ -1,4 +1,4 @@
-.PHONY: lint format format-check typecheck test test-fast test-postgres check-db migrate compose-config quality policy-regression architecture-check research-release-check research-status
+.PHONY: lint format format-check typecheck test test-fast test-postgres check-db migrate compose-config quality policy-regression architecture-check research-release-check research-status research-evidence-bundle verify-research-evidence-bundle
 
 lint:
 	uv run ruff check .
@@ -41,5 +41,15 @@ research-release-check:
 
 research-status:
 	uv run python scripts/research-status.py
+
+research-evidence-bundle:
+	uv run python scripts/build-research-evidence-bundle.py \
+		--fixture-dir tests/fixtures/e2e_research_bundle \
+		--output-dir /tmp/research-evidence-bundle \
+		--deterministic-id
+
+verify-research-evidence-bundle:
+	uv run python scripts/verify-research-evidence-bundle.py \
+		--bundle-dir /tmp/research-evidence-bundle
 
 quality: lint format-check typecheck test-fast compose-config

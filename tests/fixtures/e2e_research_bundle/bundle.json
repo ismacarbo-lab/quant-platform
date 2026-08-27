@@ -1,0 +1,14 @@
+{
+  "kind": "research_evidence_bundle_fixture",
+  "format_version": 1,
+  "as_of": "2024-01-10T00:00:00+00:00",
+  "start_time": "2024-01-01T00:00:00+00:00",
+  "end_time": "2024-01-08T00:00:00+00:00",
+  "symbols": ["E2EA"],
+  "exchange_codes": ["XE2E"],
+  "calendar_code": "E2E_EQUITY",
+  "asset_class": "equity",
+  "currency": "USD",
+  "source_name": "e2e_local_csv",
+  "vendor": "local_csv"
+}

@@ -1,0 +1,2 @@
+symbol,exchange_code,asset_class,currency,action_type,effective_time,available_time,quantity_before,quantity_after,cash_amount,old_value,new_value,note
+E2EA,XE2E,equity,USD,split,2024-01-03T00:00:00+00:00,2024-01-02T20:00:00+00:00,1,2,,,,fictional 2-for-1

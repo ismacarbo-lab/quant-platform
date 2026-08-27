@@ -1,0 +1,5 @@
+calendar_code,calendar_name,calendar_timezone,session_date,session_kind,open_time,close_time,note
+E2E_EQUITY,Fictional e2e equity sessions,UTC,2024-01-01,holiday,,,New Year
+E2E_EQUITY,Fictional e2e equity sessions,UTC,2024-01-02,open,09:30:00,16:00:00,regular
+E2E_EQUITY,Fictional e2e equity sessions,UTC,2024-01-03,open,09:30:00,16:00:00,regular
+E2E_EQUITY,Fictional e2e equity sessions,UTC,2024-01-04,exceptional_close,,,weather close
