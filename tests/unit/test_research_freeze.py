@@ -26,6 +26,7 @@ _CHECKLIST = _ROOT / "docs" / "release" / "FINAL_RESEARCH_CHECKLIST.md"
 _COMMANDS = _ROOT / "docs" / "release" / "COMMANDS.md"
 _RISKS = _ROOT / "docs" / "release" / "RISK_REGISTER.md"
 _REMOTE = _ROOT / "docs" / "release" / "REMOTE_RELEASE_VERIFICATION.md"
+_POST_TAG = _ROOT / "docs" / "release" / "POST_TAG_RELEASE_NOTES.md"
 _ADR = _ROOT / "docs" / "adr" / "0003-research-mode-freeze.md"
 
 
@@ -102,6 +103,18 @@ def test_remote_release_verification_doc() -> None:
     assert "research-only" in lowered
     assert "not a trading" in lowered
     assert "main" in lowered
+
+
+def test_post_tag_release_notes_doc() -> None:
+    assert _POST_TAG.is_file()
+    text = _POST_TAG.read_text(encoding="utf-8")
+    lowered = " ".join(text.lower().replace("*", " ").split())
+    assert "DATABASE_URL" not in text
+    assert "postgresql+psycopg://" not in text.lower()
+    assert "v0.1.0-research" in text
+    assert "research-only" in lowered
+    assert "not a trading" in lowered
+    assert "5969890be489519993ee97e8f4f4768789a33a1d" in text
 
 
 def test_release_status_json_includes_freeze_fields(

@@ -170,7 +170,8 @@ Not in `make quality`. Needs PostgreSQL.
 
 ## Remote verification and tag
 
-See [REMOTE_RELEASE_VERIFICATION.md](REMOTE_RELEASE_VERIFICATION.md).
+See [REMOTE_RELEASE_VERIFICATION.md](REMOTE_RELEASE_VERIFICATION.md) and
+[POST_TAG_RELEASE_NOTES.md](POST_TAG_RELEASE_NOTES.md).
 
-Proposed tag: `v0.1.0-research`. Do not create or push it until that
-report is approved.
+Annotated tag `v0.1.0-research` exists on `origin`. Do not create another
+tag for this freeze.

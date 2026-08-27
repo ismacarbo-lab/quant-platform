@@ -11,8 +11,9 @@ Related: [RESEARCH_HANDOFF.md](RESEARCH_HANDOFF.md),
 **No Alembic revision for this phase.** Expected head remains
 `0009_backtest_experiments`.
 
-This report is a working-tree document until approved. Do **not** create
-the proposed tag until this file is accepted.
+This report was the pre-tag verification. The annotated tag
+`v0.1.0-research` was created afterward; see
+[POST_TAG_RELEASE_NOTES.md](POST_TAG_RELEASE_NOTES.md).
 
 ## Verification timestamp
 
