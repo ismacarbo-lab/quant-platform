@@ -1,0 +1,316 @@
+{
+  "kind": "policy_regression_matrix",
+  "format_version": 1,
+  "description": "Deterministic ResearchPolicy output regression. Not a strategy.",
+  "cases": [
+    {
+      "case_id": "noop-simple-bars",
+      "description": "NoOp over a tiny bar stream",
+      "fixture_path": "simple_bars.jsonl",
+      "policy_name": "noop",
+      "policy_config": {},
+      "expected_policy_output_hash": "sha256:c2460baa95ad6e948744a6d73cdff2d0fdbd452d6b25c116bf5cb2f3332db21a",
+      "expected_observation_count": 0,
+      "expected_counts_by_kind": {},
+      "expected_counts_by_severity": {}
+    },
+    {
+      "case_id": "noop-explicit-config",
+      "description": "NoOp with an explicit research note",
+      "fixture_path": "simple_bars.jsonl",
+      "policy_name": "noop",
+      "policy_config": {
+        "note": "regression"
+      },
+      "expected_policy_output_hash": "sha256:68b746f17a3ff77861f1764783e889d646b0f0450512fe547917e63c3d5a5cbc",
+      "expected_observation_count": 0,
+      "expected_counts_by_kind": {},
+      "expected_counts_by_severity": {}
+    },
+    {
+      "case_id": "noop-unknown-event",
+      "description": "NoOp emits a warning observation for an unrecognized kind",
+      "fixture_path": "unknown_event.jsonl",
+      "policy_name": "noop",
+      "policy_config": {
+        "emit_observations": true
+      },
+      "expected_policy_output_hash": "sha256:b02c77aae4ad38f20807e3b12b9905c3d04443b875972dc57a80922715bdf131",
+      "expected_observation_count": 5,
+      "expected_counts_by_kind": {
+        "event_seen": 3,
+        "policy_note": 1,
+        "unknown_event": 1
+      },
+      "expected_counts_by_severity": {
+        "info": 4,
+        "warning": 1
+      }
+    },
+    {
+      "case_id": "event-counting-simple-bars",
+      "description": "Event counting over a tiny bar stream",
+      "fixture_path": "simple_bars.jsonl",
+      "policy_name": "event_counting",
+      "policy_config": {},
+      "expected_policy_output_hash": "sha256:6ccc5ac6c8a325fb669a1c9d270c1871fdb0497778b6d92c795ed34fe182e6e3",
+      "expected_observation_count": 4,
+      "expected_counts_by_kind": {
+        "event_seen": 3,
+        "policy_note": 1
+      },
+      "expected_counts_by_severity": {
+        "info": 4
+      }
+    },
+    {
+      "case_id": "event-counting-explicit-config",
+      "description": "Event counting with an explicit research note",
+      "fixture_path": "sessions_and_bars.jsonl",
+      "policy_name": "event_counting",
+      "policy_config": {
+        "note": "audit-only"
+      },
+      "expected_policy_output_hash": "sha256:262ca9e76978a6ffb1fecef3faf04fd9a173c3a0faf19be2a16af1f9a4acdb86",
+      "expected_observation_count": 5,
+      "expected_counts_by_kind": {
+        "event_seen": 3,
+        "policy_note": 1,
+        "session_seen": 1
+      },
+      "expected_counts_by_severity": {
+        "info": 5
+      }
+    },
+    {
+      "case_id": "event-counting-unknown-event",
+      "description": "Event counting warns on an unrecognized stream item",
+      "fixture_path": "unknown_event.jsonl",
+      "policy_name": "event_counting",
+      "policy_config": {},
+      "expected_policy_output_hash": "sha256:457ba431fdfd47f4e48de7cf25501188a89d50c5caaeb927004b079bdbff4b99",
+      "expected_observation_count": 5,
+      "expected_counts_by_kind": {
+        "event_seen": 3,
+        "policy_note": 1,
+        "unknown_event": 1
+      },
+      "expected_counts_by_severity": {
+        "info": 4,
+        "warning": 1
+      }
+    },
+    {
+      "case_id": "data-quality-simple-bars",
+      "description": "Data quality summary over a tiny bar stream",
+      "fixture_path": "simple_bars.jsonl",
+      "policy_name": "data_quality",
+      "policy_config": {},
+      "expected_policy_output_hash": "sha256:1306f393d60aa2bfe7ae88f121fd2706f2c00c4c1689d4c347561aa944d43dc5",
+      "expected_observation_count": 1,
+      "expected_counts_by_kind": {
+        "data_quality_summary": 1
+      },
+      "expected_counts_by_severity": {
+        "info": 1
+      }
+    },
+    {
+      "case_id": "data-quality-explicit-config",
+      "description": "Data quality with per-event observations enabled",
+      "fixture_path": "sessions_and_bars.jsonl",
+      "policy_name": "data_quality",
+      "policy_config": {
+        "emit_event_observations": true,
+        "emit_summary_observations": true
+      },
+      "expected_policy_output_hash": "sha256:52eac0a49481eda331adadd96a762f75c50d36adadc2d9dff6f245d479864b16",
+      "expected_observation_count": 5,
+      "expected_counts_by_kind": {
+        "data_quality_summary": 1,
+        "event_seen": 3,
+        "session_seen": 1
+      },
+      "expected_counts_by_severity": {
+        "info": 5
+      }
+    },
+    {
+      "case_id": "data-quality-unknown-event",
+      "description": "Data quality warns on an unrecognized stream item",
+      "fixture_path": "unknown_event.jsonl",
+      "policy_name": "data_quality",
+      "policy_config": {},
+      "expected_policy_output_hash": "sha256:e200a9052abe474b65601a25614ef1711c0dddd94138b2fafbd8a88387444003",
+      "expected_observation_count": 2,
+      "expected_counts_by_kind": {
+        "data_quality_summary": 1,
+        "unknown_event": 1
+      },
+      "expected_counts_by_severity": {
+        "info": 1,
+        "warning": 1
+      }
+    },
+    {
+      "case_id": "coverage-simple-bars",
+      "description": "Coverage summary over a tiny bar stream",
+      "fixture_path": "simple_bars.jsonl",
+      "policy_name": "coverage",
+      "policy_config": {},
+      "expected_policy_output_hash": "sha256:23299632d3a43079ba6a8ecf8168e9867affc0a6c5c0a7a70c3979a3ee226ccb",
+      "expected_observation_count": 2,
+      "expected_counts_by_kind": {
+        "coverage_summary": 1,
+        "instrument_seen": 1
+      },
+      "expected_counts_by_severity": {
+        "info": 2
+      }
+    },
+    {
+      "case_id": "coverage-explicit-config",
+      "description": "Coverage with expected dates that are present",
+      "fixture_path": "simple_bars.jsonl",
+      "policy_name": "coverage",
+      "policy_config": {
+        "expected_dates": [
+          "2024-01-02"
+        ],
+        "max_gap_days": 10
+      },
+      "expected_policy_output_hash": "sha256:689dba1eaa65ed1706721270f21db5782c81949c443db792d7f8dbc0936f0ada",
+      "expected_observation_count": 2,
+      "expected_counts_by_kind": {
+        "coverage_summary": 1,
+        "instrument_seen": 1
+      },
+      "expected_counts_by_severity": {
+        "info": 2
+      }
+    },
+    {
+      "case_id": "coverage-gap-warning",
+      "description": "Coverage warns when bar dates exceed max_gap_days",
+      "fixture_path": "gaps.jsonl",
+      "policy_name": "coverage",
+      "policy_config": {
+        "max_gap_days": 1
+      },
+      "expected_policy_output_hash": "sha256:cbd318d3308341461f6705a929bbba0cd3bcb59fb4cf7a3f2012553777452229",
+      "expected_observation_count": 3,
+      "expected_counts_by_kind": {
+        "coverage_gap": 1,
+        "coverage_summary": 1,
+        "instrument_seen": 1
+      },
+      "expected_counts_by_severity": {
+        "info": 2,
+        "warning": 1
+      }
+    },
+    {
+      "case_id": "corporate-action-audit-basic",
+      "description": "Corporate action audit over a pre-known split",
+      "fixture_path": "corporate_actions.jsonl",
+      "policy_name": "corporate_action_audit",
+      "policy_config": {},
+      "expected_policy_output_hash": "sha256:27267cdb44889a1e771cb6a738154bf0693ddd6538076bdf3b85e598bab3b26e",
+      "expected_observation_count": 1,
+      "expected_counts_by_kind": {
+        "corporate_action_summary": 1
+      },
+      "expected_counts_by_severity": {
+        "info": 1
+      }
+    },
+    {
+      "case_id": "corporate-action-audit-explicit-config",
+      "description": "Corporate action audit emits each matching split",
+      "fixture_path": "corporate_actions.jsonl",
+      "policy_name": "corporate_action_audit",
+      "policy_config": {
+        "emit_each_action": true,
+        "action_types": [
+          "split"
+        ]
+      },
+      "expected_policy_output_hash": "sha256:82be8b9e97bec8980a9013d05e6725bab6f48133c7809b39d1be6b679e29b052",
+      "expected_observation_count": 2,
+      "expected_counts_by_kind": {
+        "corporate_action_seen": 1,
+        "corporate_action_summary": 1
+      },
+      "expected_counts_by_severity": {
+        "info": 2
+      }
+    },
+    {
+      "case_id": "corporate-action-audit-unknown-event",
+      "description": "Corporate action audit warns on an unrecognized kind",
+      "fixture_path": "unknown_event.jsonl",
+      "policy_name": "corporate_action_audit",
+      "policy_config": {},
+      "expected_policy_output_hash": "sha256:83a264f3025933c117cbecd7c3a50a4a894b237cb367e8518da837531f22723e",
+      "expected_observation_count": 2,
+      "expected_counts_by_kind": {
+        "corporate_action_summary": 1,
+        "unknown_event": 1
+      },
+      "expected_counts_by_severity": {
+        "info": 1,
+        "warning": 1
+      }
+    },
+    {
+      "case_id": "correction-audit-basic",
+      "description": "Correction audit over a restated bar",
+      "fixture_path": "corrections.jsonl",
+      "policy_name": "correction_audit",
+      "policy_config": {},
+      "expected_policy_output_hash": "sha256:f16dce4d6874ec631d22e0539559a137872f867758453df3414513de3409ae58",
+      "expected_observation_count": 1,
+      "expected_counts_by_kind": {
+        "correction_summary": 1
+      },
+      "expected_counts_by_severity": {
+        "info": 1
+      }
+    },
+    {
+      "case_id": "correction-audit-explicit-config",
+      "description": "Correction audit emits each restated bar",
+      "fixture_path": "corrections.jsonl",
+      "policy_name": "correction_audit",
+      "policy_config": {
+        "emit_each_correction": true
+      },
+      "expected_policy_output_hash": "sha256:ec328f7371987746c3b6098fe009ca5b1ac30f8634af65bb97a6a47e9f27bd18",
+      "expected_observation_count": 2,
+      "expected_counts_by_kind": {
+        "correction_seen": 1,
+        "correction_summary": 1
+      },
+      "expected_counts_by_severity": {
+        "info": 2
+      }
+    },
+    {
+      "case_id": "correction-audit-unknown-event",
+      "description": "Correction audit warns on an unrecognized kind",
+      "fixture_path": "unknown_event.jsonl",
+      "policy_name": "correction_audit",
+      "policy_config": {},
+      "expected_policy_output_hash": "sha256:8d8247ba0f58dd49fbd090e3d84106d971ad1d8079213e66a76e08004acf0cf2",
+      "expected_observation_count": 2,
+      "expected_counts_by_kind": {
+        "correction_summary": 1,
+        "unknown_event": 1
+      },
+      "expected_counts_by_severity": {
+        "info": 1,
+        "warning": 1
+      }
+    }
+  ]
+}

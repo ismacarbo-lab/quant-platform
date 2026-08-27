@@ -10,10 +10,14 @@ Interface: [RESEARCH_POLICY_INTERFACE.md](RESEARCH_POLICY_INTERFACE.md).
 Engine: [BACKTEST_ENGINE.md](BACKTEST_ENGINE.md).
 Policy output: [POLICY_OUTPUT_INTEGRITY.md](POLICY_OUTPUT_INTEGRITY.md).
 Experiments: [BACKTEST_EXPERIMENTS.md](BACKTEST_EXPERIMENTS.md).
+Regression matrix: [POLICY_REGRESSION_MATRIX.md](POLICY_REGRESSION_MATRIX.md).
 
 **No Alembic revision for this phase.** Catalog columns already exist.
 
 Passing these policies does **not** mean an edge exists.
+
+Output stability is checked by the [policy regression
+matrix](POLICY_REGRESSION_MATRIX.md), not by PnL.
 
 ## What they observe
 
@@ -141,6 +145,8 @@ uv run python scripts/run-backtest-experiment.py \
 
 `same replay + same policy config` ⇒ same `policy_output_hash` and
 `backtest_hash`. Experiment research reports aggregate the new kinds.
+The regression matrix pins those hashes to golden fixtures; it still
+does not compute PnL.
 
 Scripts do not print `DATABASE_URL`. They do not trade.
 
@@ -160,3 +166,8 @@ PnL.
 - risk engine, optimizer, ML, LLM runtime
 - HTTP routes beyond `GET /health`
 - dynamic external policy plugins
+
+After changing a quality policy, run
+`scripts/run-policy-regression-matrix.py` and review expected hashes
+before updating `matrix.json` by hand. See
+[POLICY_REGRESSION_MATRIX.md](POLICY_REGRESSION_MATRIX.md).

@@ -113,6 +113,18 @@ from quant_platform.backtest.policy_registry import (
     get_research_policy,
     registered_policy_names,
 )
+from quant_platform.backtest.policy_regression import (
+    hash_policy_regression_report,
+    load_policy_regression_matrix,
+    run_policy_regression_matrix,
+)
+from quant_platform.backtest.policy_regression_artifacts import (
+    write_policy_regression_artifacts,
+)
+from quant_platform.backtest.policy_regression_types import (
+    PolicyRegressionMatrixReport,
+    PolicyRegressionResult,
+)
 from quant_platform.backtest.readiness import (
     BacktestUsabilityReport,
     build_backtest_usability_report,
@@ -182,6 +194,8 @@ __all__ = [
     "ObservationReport",
     "PolicyOutputComparison",
     "PolicyOutputVerificationReport",
+    "PolicyRegressionMatrixReport",
+    "PolicyRegressionResult",
     "PolicyRunOutput",
     "ResearchObservation",
     "ResearchPolicy",
@@ -216,8 +230,10 @@ __all__ = [
     "hash_backtest_result",
     "hash_backtest_summary",
     "hash_policy_output",
+    "hash_policy_regression_report",
     "list_backtest_experiments",
     "list_backtest_runs",
+    "load_policy_regression_matrix",
     "raise_if_manifest_hash_conflict",
     "register_backtest_experiment",
     "register_backtest_run",
@@ -227,6 +243,7 @@ __all__ = [
     "resolve_experiment_directory",
     "run_backtest_experiment",
     "run_backtest_from_replay_run",
+    "run_policy_regression_matrix",
     "validate_backtest_experiment_manifest",
     "validate_backtest_run_manifest",
     "verify_backtest_artifacts",
@@ -237,4 +254,5 @@ __all__ = [
     "write_backtest_artifacts",
     "write_backtest_experiment_artifacts",
     "write_backtest_experiment_report_artifacts",
+    "write_policy_regression_artifacts",
 ]

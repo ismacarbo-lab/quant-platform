@@ -270,6 +270,11 @@ uv run python scripts/run-backtest.py \
   --policy-name data_quality \
   --register \
   --deterministic-id
+
+uv run python scripts/run-policy-regression-matrix.py --json
+uv run python scripts/run-policy-regression-matrix.py \
+  --output-dir /tmp/policy-regression \
+  --update-expected
 ```
 
 See [docs/backtest/BACKTEST_ENGINE.md](../backtest/BACKTEST_ENGINE.md),
@@ -279,9 +284,11 @@ See [docs/backtest/BACKTEST_ENGINE.md](../backtest/BACKTEST_ENGINE.md),
 [docs/backtest/POLICY_OUTPUT_INTEGRITY.md](../backtest/POLICY_OUTPUT_INTEGRITY.md),
 [docs/backtest/BACKTEST_EXPERIMENTS.md](../backtest/BACKTEST_EXPERIMENTS.md),
 [docs/backtest/BACKTEST_EXPERIMENT_USABILITY.md](../backtest/BACKTEST_EXPERIMENT_USABILITY.md),
-and [docs/backtest/DATA_QUALITY_POLICIES.md](../backtest/DATA_QUALITY_POLICIES.md).
+[docs/backtest/DATA_QUALITY_POLICIES.md](../backtest/DATA_QUALITY_POLICIES.md),
+and [docs/backtest/POLICY_REGRESSION_MATRIX.md](../backtest/POLICY_REGRESSION_MATRIX.md).
 
 Event JSON fixtures for tests live in `tests/fixtures/replay_events/`.
+Policy regression fixtures live in `tests/fixtures/policy_regression/`.
 
 Stop (keeps the volume):
 

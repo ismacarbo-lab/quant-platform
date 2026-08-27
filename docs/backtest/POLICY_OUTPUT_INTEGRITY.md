@@ -1,4 +1,4 @@
-# Policy output integrity — Phase 4.3 / 4.5 / 5.0
+# Policy output integrity — Phase 4.3 / 4.5 / 5.0 / 5.1
 
 Read-only checks and summaries for `policy_output.json` produced by a
 research policy. This layer does **not** write files, mutate catalog
@@ -15,6 +15,7 @@ Research policy: [RESEARCH_POLICY_INTERFACE.md](RESEARCH_POLICY_INTERFACE.md).
 Backtest folder integrity: [BACKTEST_INTEGRITY.md](BACKTEST_INTEGRITY.md).
 Experiment aggregation: [BACKTEST_EXPERIMENT_USABILITY.md](BACKTEST_EXPERIMENT_USABILITY.md).
 Data-quality policies: [DATA_QUALITY_POLICIES.md](DATA_QUALITY_POLICIES.md).
+Regression matrix: [POLICY_REGRESSION_MATRIX.md](POLICY_REGRESSION_MATRIX.md).
 
 **No Alembic revision for this phase.** Catalog columns already exist
 from `0008_backtest_policy_metadata`.
@@ -106,7 +107,10 @@ Reports count what the replay showed. They do not decide to open,
 close, or size a position. `NoOpBacktestPolicy` / `event_counting`
 remain event observers. Phase 5.0 data-quality policies are the same
 kind of observer: they count stream facts, not decisions. See
-[DATA_QUALITY_POLICIES.md](DATA_QUALITY_POLICIES.md).
+[DATA_QUALITY_POLICIES.md](DATA_QUALITY_POLICIES.md). The regression
+matrix compares `policy_output_hash` and observation counts against
+golden fixtures without computing PnL. See
+[POLICY_REGRESSION_MATRIX.md](POLICY_REGRESSION_MATRIX.md).
 
 ## CLI
 
@@ -118,6 +122,7 @@ uv run python scripts/verify-policy-output.py \
   --json
 uv run python scripts/verify-backtest-run.py \
   --run-dir /tmp/fixt-backtest
+uv run python scripts/run-policy-regression-matrix.py --json
 uv run python scripts/report-backtest-experiment.py \
   --experiment-id <experiment_id> \
   --base-dir /tmp/fixt-experiment

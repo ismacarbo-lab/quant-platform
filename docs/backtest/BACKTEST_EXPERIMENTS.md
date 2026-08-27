@@ -1,4 +1,4 @@
-# Backtest experiments — Phase 4.4 / 4.5 / 5.0
+# Backtest experiments — Phase 4.4 / 4.5 / 5.0 / 5.1
 
 A **backtest experiment** groups already-allowed dry-run backtest runs
 under one reproducible research record.
@@ -17,6 +17,7 @@ Integrity: [BACKTEST_INTEGRITY.md](BACKTEST_INTEGRITY.md).
 Experiment usability and research reports:
 [BACKTEST_EXPERIMENT_USABILITY.md](BACKTEST_EXPERIMENT_USABILITY.md).
 Data-quality policies: [DATA_QUALITY_POLICIES.md](DATA_QUALITY_POLICIES.md).
+Regression matrix: [POLICY_REGRESSION_MATRIX.md](POLICY_REGRESSION_MATRIX.md).
 
 ## What an experiment is
 
@@ -208,6 +209,10 @@ The check does not copy events or invent PnL.
 member must be a usable backtest result, artifacts must verify, and
 there must be no trading constructs. See
 [BACKTEST_EXPERIMENT_USABILITY.md](BACKTEST_EXPERIMENT_USABILITY.md).
+
+Policy hashes used by experiments can also be pinned with the
+[regression matrix](POLICY_REGRESSION_MATRIX.md). That check still does
+not compute PnL.
 
 ## What still does not exist
 

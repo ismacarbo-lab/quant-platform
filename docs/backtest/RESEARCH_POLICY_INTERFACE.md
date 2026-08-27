@@ -1,4 +1,4 @@
-# Research policy interface — Phase 4.2 / 5.0
+# Research policy interface — Phase 4.2 / 5.0 / 5.1
 
 A **research policy** is an event observer used by the dry-run backtest
 engine. It is **not** a `Strategy`, not a signal model, and not an
@@ -15,6 +15,7 @@ Policy output reports: [POLICY_OUTPUT_INTEGRITY.md](POLICY_OUTPUT_INTEGRITY.md).
 Experiments: [BACKTEST_EXPERIMENTS.md](BACKTEST_EXPERIMENTS.md).
 Experiment usability: [BACKTEST_EXPERIMENT_USABILITY.md](BACKTEST_EXPERIMENT_USABILITY.md).
 Data-quality policies: [DATA_QUALITY_POLICIES.md](DATA_QUALITY_POLICIES.md).
+Regression matrix: [POLICY_REGRESSION_MATRIX.md](POLICY_REGRESSION_MATRIX.md).
 
 ## What ResearchPolicy is
 
@@ -147,3 +148,8 @@ on disk, not in JSONB.
 - dynamic policy plugins
 - HTTP routes beyond `GET /health`
 - cloud object storage
+
+Phase 5.1 pins policy outputs with a golden regression matrix. See
+[POLICY_REGRESSION_MATRIX.md](POLICY_REGRESSION_MATRIX.md). A new
+ResearchPolicy still goes through the static registry; there are no
+external plugins.

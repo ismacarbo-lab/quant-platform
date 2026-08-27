@@ -1,4 +1,4 @@
-# Architecture — Phase 5.0
+# Architecture — Phase 5.1
 
 Status: research ingestion, an internal **dataset query API**, **dataset
 quality reports**, **local hashed snapshots**, a **PostgreSQL snapshot
@@ -13,8 +13,9 @@ backtest artifact integrity** plus result comparison / usability, a
 orders), **policy-output observation reports** with dedicated
 integrity checks, and a **backtest experiment registry** that groups
 those dry-runs, plus an **experiment usability gate**, **aggregated
-research reports**, and **data-quality research policies**. No LLM
-runtime, strategies, brokers, or execution.
+research reports**, **data-quality research policies**, and a
+**ResearchPolicy regression matrix**. No LLM runtime, strategies,
+brokers, or execution.
 
 ## Modular monolith
 
@@ -28,7 +29,7 @@ src/quant_platform/
   data/         local CSV ingest, PIT daily bars, repositories
   research/     PIT datasets, quality reports, snapshots, catalog, integrity
   simulation/   dataset replay, run catalog, backtest readiness gate (no strategies)
-  backtest/     dry-run engine, research policies, catalog, integrity (no orders)
+  backtest/     dry-run engine, research policies, catalog, integrity, regression matrix (no orders)
   storage/      PostgreSQL engine/session, SQLAlchemy Base
   monitoring/   structured logging
   api/          internal HTTP surface (health)
@@ -44,7 +45,7 @@ Documented future areas (no empty implementation packages in Phase 0):
 | `storage` | Persistence adapters | engine/session only |
 | `research` | Dataset queries, experiment runners | PIT datasets, quality reports, snapshots, catalog, integrity; no notebooks |
 | `simulation` | Dataset replay timeline | events, boundaries, stream hash, audit, run artifacts + catalog, readiness gate; no strategies |
-| `backtesting` | Simulation engine | Phase 5.0 package `backtest/`: dry-run, research policy, data-quality policies, experiments, usability; no orders/PnL |
+| `backtesting` | Simulation engine | Phase 5.1 package `backtest/`: dry-run, research policy, data-quality policies, regression matrix, experiments, usability; no orders/PnL |
 | `strategies` | Signal generation | not implemented |
 | `ml` | Model training/inference | not implemented |
 | `portfolio` | Positions, target holdings | not implemented |
@@ -143,7 +144,8 @@ research dataset API **requires** `as_of`. See
 [RESEARCH_POLICY_INTERFACE.md](../backtest/RESEARCH_POLICY_INTERFACE.md),
 [BACKTEST_EXPERIMENTS.md](../backtest/BACKTEST_EXPERIMENTS.md),
 [BACKTEST_EXPERIMENT_USABILITY.md](../backtest/BACKTEST_EXPERIMENT_USABILITY.md),
-and [DATA_QUALITY_POLICIES.md](../backtest/DATA_QUALITY_POLICIES.md).
+[DATA_QUALITY_POLICIES.md](../backtest/DATA_QUALITY_POLICIES.md),
+and [POLICY_REGRESSION_MATRIX.md](../backtest/POLICY_REGRESSION_MATRIX.md).
 
 ### Point-in-time timestamps
 

@@ -1,4 +1,4 @@
-# Backtest engine foundation — Phase 4.0 / 4.1 / 4.2 / 4.3 / 4.4 / 4.5 / 5.0
+# Backtest engine foundation — Phase 4.0 / 4.1 / 4.2 / 4.3 / 4.4 / 4.5 / 5.0 / 5.1
 
 This phase adds an **offline dry-run backtest engine**. It consumes a
 registered replay run that already passed the readiness gate, walks the
@@ -23,6 +23,8 @@ Experiment usability and aggregated research reports:
 [BACKTEST_EXPERIMENT_USABILITY.md](BACKTEST_EXPERIMENT_USABILITY.md).
 Data-quality policies (not strategies):
 [DATA_QUALITY_POLICIES.md](DATA_QUALITY_POLICIES.md).
+Regression matrix (output stability, not PnL):
+[POLICY_REGRESSION_MATRIX.md](POLICY_REGRESSION_MATRIX.md).
 
 ## What this backtest is
 
@@ -208,6 +210,9 @@ register_backtest_run(session, result.manifest)
 
 The engine fails if the readiness gate is red. Scripts do not print
 `DATABASE_URL`.
+
+Policy output stability across commits is checked with the
+[regression matrix](POLICY_REGRESSION_MATRIX.md), not with PnL.
 
 ## What still does not exist
 
