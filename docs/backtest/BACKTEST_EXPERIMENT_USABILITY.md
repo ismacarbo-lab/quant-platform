@@ -1,4 +1,4 @@
-# Backtest experiment usability — Phase 4.5
+# Backtest experiment usability — Phase 4.5 / 5.0
 
 A registered dry-run **experiment** can be intact as a catalog row and
 still be unfit as research evidence (missing member artifacts, a member
@@ -21,6 +21,8 @@ Experiments: [BACKTEST_EXPERIMENTS.md](BACKTEST_EXPERIMENTS.md).
 Member usability: [BACKTEST_INTEGRITY.md](BACKTEST_INTEGRITY.md).
 Observation reports: [POLICY_OUTPUT_INTEGRITY.md](POLICY_OUTPUT_INTEGRITY.md).
 Engine: [BACKTEST_ENGINE.md](BACKTEST_ENGINE.md).
+
+Data-quality policies: [DATA_QUALITY_POLICIES.md](DATA_QUALITY_POLICIES.md).
 
 **No Alembic revision for this phase.** Catalog table
 `backtest_experiments` already exists from `0009_backtest_experiments`.
@@ -195,6 +197,10 @@ issues. Exit status `1` if the experiment is not usable.
 Scripts do not print `DATABASE_URL`.
 
 ## Why there is still no PnL or portfolio
+
+Experiment research reports sum observation counts, including Phase 5.0
+kinds such as `data_quality_summary` and `coverage_gap`. They still do
+not compute PnL.
 
 An experiment is a **group of dry-runs**. Member policies still only
 count events and emit observations. Aggregating those counts is not a

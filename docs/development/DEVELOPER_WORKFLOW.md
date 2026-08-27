@@ -263,6 +263,13 @@ uv run python scripts/report-backtest-experiment.py \
   --experiment-id ID_A \
   --base-dir /tmp/fixt-experiment \
   --output-dir /tmp/fixt-experiment
+uv run python scripts/run-backtest.py \
+  --replay-id ID_A \
+  --replay-base-dir /tmp/fixt-replay \
+  --output-dir /tmp/fixt-quality \
+  --policy-name data_quality \
+  --register \
+  --deterministic-id
 ```
 
 See [docs/backtest/BACKTEST_ENGINE.md](../backtest/BACKTEST_ENGINE.md),
@@ -271,7 +278,8 @@ See [docs/backtest/BACKTEST_ENGINE.md](../backtest/BACKTEST_ENGINE.md),
 [docs/backtest/RESEARCH_POLICY_INTERFACE.md](../backtest/RESEARCH_POLICY_INTERFACE.md),
 [docs/backtest/POLICY_OUTPUT_INTEGRITY.md](../backtest/POLICY_OUTPUT_INTEGRITY.md),
 [docs/backtest/BACKTEST_EXPERIMENTS.md](../backtest/BACKTEST_EXPERIMENTS.md),
-and [docs/backtest/BACKTEST_EXPERIMENT_USABILITY.md](../backtest/BACKTEST_EXPERIMENT_USABILITY.md).
+[docs/backtest/BACKTEST_EXPERIMENT_USABILITY.md](../backtest/BACKTEST_EXPERIMENT_USABILITY.md),
+and [docs/backtest/DATA_QUALITY_POLICIES.md](../backtest/DATA_QUALITY_POLICIES.md).
 
 Event JSON fixtures for tests live in `tests/fixtures/replay_events/`.
 

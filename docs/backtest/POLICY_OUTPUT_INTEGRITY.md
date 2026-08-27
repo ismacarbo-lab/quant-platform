@@ -1,4 +1,4 @@
-# Policy output integrity — Phase 4.3 / 4.5
+# Policy output integrity — Phase 4.3 / 4.5 / 5.0
 
 Read-only checks and summaries for `policy_output.json` produced by a
 research policy. This layer does **not** write files, mutate catalog
@@ -14,6 +14,7 @@ Engine: [BACKTEST_ENGINE.md](BACKTEST_ENGINE.md).
 Research policy: [RESEARCH_POLICY_INTERFACE.md](RESEARCH_POLICY_INTERFACE.md).
 Backtest folder integrity: [BACKTEST_INTEGRITY.md](BACKTEST_INTEGRITY.md).
 Experiment aggregation: [BACKTEST_EXPERIMENT_USABILITY.md](BACKTEST_EXPERIMENT_USABILITY.md).
+Data-quality policies: [DATA_QUALITY_POLICIES.md](DATA_QUALITY_POLICIES.md).
 
 **No Alembic revision for this phase.** Catalog columns already exist
 from `0008_backtest_policy_metadata`.
@@ -39,7 +40,9 @@ orders, or returns.
 
 Allowed kinds: `event_seen`, `session_seen`, `corporate_action_seen`,
 `correction_seen`, `missing_expected_event`, `unknown_event`,
-`policy_note`.
+`policy_note`, `data_quality_summary`, `coverage_summary`,
+`coverage_gap`, `instrument_seen`, `corporate_action_summary`,
+`correction_summary`, `temporal_consistency_warning`.
 
 Severity: `info`, `warning`, `error`.
 
@@ -49,7 +52,8 @@ about the replay stream.
 ## What an observation must not contain
 
 Whole-word tokens such as buy, sell, hold, signal, order, trade, target,
-weight, position, portfolio, PnL, return, exposure.
+weight, position, portfolio, PnL, return, exposure, recommendation,
+alpha.
 
 Absolute filesystem paths, secrets (`DATABASE_URL`, passwords), random
 UUIDs, and wall-clock stamps are also rejected by integrity.
@@ -100,7 +104,9 @@ They still do not compute PnL or emit signals. See
 
 Reports count what the replay showed. They do not decide to open,
 close, or size a position. `NoOpBacktestPolicy` / `event_counting`
-remain event observers.
+remain event observers. Phase 5.0 data-quality policies are the same
+kind of observer: they count stream facts, not decisions. See
+[DATA_QUALITY_POLICIES.md](DATA_QUALITY_POLICIES.md).
 
 ## CLI
 

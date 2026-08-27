@@ -1,11 +1,12 @@
-# Research policy interface — Phase 4.2
+# Research policy interface — Phase 4.2 / 5.0
 
 A **research policy** is an event observer used by the dry-run backtest
 engine. It is **not** a `Strategy`, not a signal model, and not an
 execution engine.
 
 Package: `quant_platform.backtest.policy_interface`,
-`observations`, `policy_registry`, and `policy`.
+`observations`, `policy_registry`, `policy`, and
+`data_quality_policies`.
 
 Engine: [BACKTEST_ENGINE.md](BACKTEST_ENGINE.md).
 NoOp: [NOOP_POLICY.md](NOOP_POLICY.md).
@@ -13,6 +14,7 @@ Integrity: [BACKTEST_INTEGRITY.md](BACKTEST_INTEGRITY.md).
 Policy output reports: [POLICY_OUTPUT_INTEGRITY.md](POLICY_OUTPUT_INTEGRITY.md).
 Experiments: [BACKTEST_EXPERIMENTS.md](BACKTEST_EXPERIMENTS.md).
 Experiment usability: [BACKTEST_EXPERIMENT_USABILITY.md](BACKTEST_EXPERIMENT_USABILITY.md).
+Data-quality policies: [DATA_QUALITY_POLICIES.md](DATA_QUALITY_POLICIES.md).
 
 ## What ResearchPolicy is
 
@@ -34,7 +36,10 @@ A strategy would decide to buy, sell, hold, size, or rebalance. That
 would introduce signals, orders, and look-ahead risk. This interface
 only **watches** a ready replay stream and records descriptive notes.
 
-Allowed names: `ResearchPolicy`, `EventObserver`, `EventCountingResearchPolicy`.
+Allowed names: `ResearchPolicy`, `EventObserver`,
+`EventCountingResearchPolicy`, `DataQualityResearchPolicy`,
+`CoverageResearchPolicy`, `CorporateActionAuditPolicy`,
+`CorrectionAuditPolicy`.
 Forbidden names in this layer: Strategy, Signal, Alpha, Execution,
 Order, Portfolio, Trade.
 
@@ -42,7 +47,10 @@ Order, Portfolio, Trade.
 
 - `ResearchObservation` (`event_seen`, `session_seen`,
   `corporate_action_seen`, `correction_seen`, `unknown_event`,
-  `missing_expected_event`, `policy_note`)
+  `missing_expected_event`, `policy_note`, `data_quality_summary`,
+  `coverage_summary`, `coverage_gap`, `instrument_seen`,
+  `corporate_action_summary`, `correction_summary`,
+  `temporal_consistency_warning`)
 - counters and non-financial descriptive metrics
 - warnings / errors
 - audit notes in `policy_config` (JSON object, no secrets)
@@ -67,13 +75,17 @@ entry points, no imports from arbitrary paths.
 |------|----------------|
 | `noop` | `EventCountingResearchPolicy` (alias `NoOpBacktestPolicy`). Counts events. Observations off unless `emit_observations=true` in config. |
 | `event_counting` | Same class with informational observations enabled. |
+| `data_quality` | `DataQualityResearchPolicy`. Stream quality counts and optional per-event notes. |
+| `coverage` | `CoverageResearchPolicy`. Instruments, bar counts, simple date gaps. |
+| `corporate_action_audit` | `CorporateActionAuditPolicy`. Corporate-action counts; does not adjust prices. |
+| `correction_audit` | `CorrectionAuditPolicy`. Correction-bar counts; does not pick a version. |
 
 Unknown names raise `invalid_policy`. `momentum` and similar names are
 rejected.
 
 A Phase 4.4 experiment binds **one** of these names and groups the
-resulting dry-runs. Phase 4.5 aggregates those members' observation
-reports; it does not add a third policy or a strategy.
+resulting dry-runs. Phase 4.5 aggregates observation reports. Phase 5.0
+adds the four data-quality names; it does not add a strategy.
 
 `NoOpBacktestPolicy` and `EventCountingBacktestPolicy` remain aliases of
 `EventCountingResearchPolicy` for Phase 4.0 compatibility.

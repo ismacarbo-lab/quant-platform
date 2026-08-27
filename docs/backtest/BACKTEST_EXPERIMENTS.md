@@ -1,4 +1,4 @@
-# Backtest experiments — Phase 4.4 / 4.5
+# Backtest experiments — Phase 4.4 / 4.5 / 5.0
 
 A **backtest experiment** groups already-allowed dry-run backtest runs
 under one reproducible research record.
@@ -16,13 +16,16 @@ Policy: [RESEARCH_POLICY_INTERFACE.md](RESEARCH_POLICY_INTERFACE.md).
 Integrity: [BACKTEST_INTEGRITY.md](BACKTEST_INTEGRITY.md).
 Experiment usability and research reports:
 [BACKTEST_EXPERIMENT_USABILITY.md](BACKTEST_EXPERIMENT_USABILITY.md).
+Data-quality policies: [DATA_QUALITY_POLICIES.md](DATA_QUALITY_POLICIES.md).
 
 ## What an experiment is
 
 An experiment is a named cartesian product of:
 
 - one or more ready `replay_id` values (duplicates dropped, order kept)
-- one registered research policy (`noop` or `event_counting`)
+- one registered research policy (`noop`, `event_counting`,
+  `data_quality`, `coverage`, `corporate_action_audit`, or
+  `correction_audit`)
 - one or more JSON-safe `policy_configs` (empty list becomes `{}`)
 
 Each pair `(replay_id, policy_config)` becomes a member dry-run written
@@ -36,6 +39,7 @@ Typical uses:
 - same replay, several allowed configs
 - several replay runs, same safe policy
 - NoOp vs `event_counting` as **two** experiments, then compare them
+- a `data_quality` or `coverage` grid over several replay ids
 - a hash and usability summary across members
 
 ## Why it is not a strategy

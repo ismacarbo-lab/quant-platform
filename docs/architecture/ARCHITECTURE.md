@@ -1,4 +1,4 @@
-# Architecture — Phase 4.5
+# Architecture — Phase 5.0
 
 Status: research ingestion, an internal **dataset query API**, **dataset
 quality reports**, **local hashed snapshots**, a **PostgreSQL snapshot
@@ -12,8 +12,9 @@ backtest artifact integrity** plus result comparison / usability, a
 **research-policy interface** (observations and counters; no signals or
 orders), **policy-output observation reports** with dedicated
 integrity checks, and a **backtest experiment registry** that groups
-those dry-runs, plus an **experiment usability gate** and **aggregated
-research reports**. No LLM runtime, strategies, brokers, or execution.
+those dry-runs, plus an **experiment usability gate**, **aggregated
+research reports**, and **data-quality research policies**. No LLM
+runtime, strategies, brokers, or execution.
 
 ## Modular monolith
 
@@ -43,7 +44,7 @@ Documented future areas (no empty implementation packages in Phase 0):
 | `storage` | Persistence adapters | engine/session only |
 | `research` | Dataset queries, experiment runners | PIT datasets, quality reports, snapshots, catalog, integrity; no notebooks |
 | `simulation` | Dataset replay timeline | events, boundaries, stream hash, audit, run artifacts + catalog, readiness gate; no strategies |
-| `backtesting` | Simulation engine | Phase 4.5 package `backtest/`: dry-run, research policy, experiments, usability, reports; no orders/PnL |
+| `backtesting` | Simulation engine | Phase 5.0 package `backtest/`: dry-run, research policy, data-quality policies, experiments, usability; no orders/PnL |
 | `strategies` | Signal generation | not implemented |
 | `ml` | Model training/inference | not implemented |
 | `portfolio` | Positions, target holdings | not implemented |
@@ -113,7 +114,8 @@ rows that are not applied**. Gold feature tables are still future work.
    Phase 4.1 verifies those artifacts and compares runs without adding
    strategy or PnL tables. Phase 4.4 adds experiment folders that point
    at those dry-runs; still no PnL. Phase 4.5 adds experiment usability
-   and observation aggregates; still no PnL.
+   and observation aggregates; still no PnL. Phase 5.0 adds data-quality
+   research policies; still no PnL.
 
 Instruments are keyed by `(symbol, asset_class, exchange_id, currency)` using
 PostgreSQL `UNIQUE NULLS NOT DISTINCT`. Calendars are local fixtures only.
@@ -139,8 +141,9 @@ research dataset API **requires** `as_of`. See
 [BACKTEST_ENGINE.md](../backtest/BACKTEST_ENGINE.md),
 [BACKTEST_INTEGRITY.md](../backtest/BACKTEST_INTEGRITY.md),
 [RESEARCH_POLICY_INTERFACE.md](../backtest/RESEARCH_POLICY_INTERFACE.md),
-[BACKTEST_EXPERIMENTS.md](../backtest/BACKTEST_EXPERIMENTS.md), and
-[BACKTEST_EXPERIMENT_USABILITY.md](../backtest/BACKTEST_EXPERIMENT_USABILITY.md).
+[BACKTEST_EXPERIMENTS.md](../backtest/BACKTEST_EXPERIMENTS.md),
+[BACKTEST_EXPERIMENT_USABILITY.md](../backtest/BACKTEST_EXPERIMENT_USABILITY.md),
+and [DATA_QUALITY_POLICIES.md](../backtest/DATA_QUALITY_POLICIES.md).
 
 ### Point-in-time timestamps
 
@@ -203,6 +206,7 @@ Phase 3.3 adds `simulation_replay_runs` (replay-run metadata only).
 Phase 4.0 adds `backtest_runs` (dry-run backtest metadata only).
 Phase 4.4 adds `backtest_experiments` (experiment metadata only).
 Phase 4.5 does not add tables.
+Phase 5.0 does not add tables.
 There are still **no** orders, fills, trades, strategies, or broker tables.
 SQLite is rejected. Instrument uniqueness uses PostgreSQL
 `UNIQUE NULLS NOT DISTINCT` (PG 15+).
@@ -241,6 +245,8 @@ Phase 4.4 adds `backtest_experiments` (`0009_backtest_experiments`;
 groups dry-run metadata; still no orders or PnL).
 Phase 4.5 adds an experiment usability gate and aggregated research
 reports (no schema change; still no orders or PnL).
+Phase 5.0 adds data-quality research policies (no schema change; still
+no orders or PnL).
 None of these add HTTP routes or gold/trading tables.
 
 ## AI usage boundary

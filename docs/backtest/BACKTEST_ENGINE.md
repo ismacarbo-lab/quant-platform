@@ -1,4 +1,4 @@
-# Backtest engine foundation — Phase 4.0 / 4.1 / 4.2 / 4.3 / 4.4 / 4.5
+# Backtest engine foundation — Phase 4.0 / 4.1 / 4.2 / 4.3 / 4.4 / 4.5 / 5.0
 
 This phase adds an **offline dry-run backtest engine**. It consumes a
 registered replay run that already passed the readiness gate, walks the
@@ -21,6 +21,8 @@ Experiments (group dry-runs; not a strategy):
 [BACKTEST_EXPERIMENTS.md](BACKTEST_EXPERIMENTS.md).
 Experiment usability and aggregated research reports:
 [BACKTEST_EXPERIMENT_USABILITY.md](BACKTEST_EXPERIMENT_USABILITY.md).
+Data-quality policies (not strategies):
+[DATA_QUALITY_POLICIES.md](DATA_QUALITY_POLICIES.md).
 
 ## What this backtest is
 
@@ -31,7 +33,9 @@ A controlled loop:
    false.
 3. Read `events.jsonl` from the local replay-run folder.
 4. Recompute `stream_hash` and require a match.
-5. Apply a registered `ResearchPolicy` (`noop` by default).
+5. Apply a registered `ResearchPolicy` (`noop` by default, or
+   `event_counting`, `data_quality`, `coverage`,
+   `corporate_action_audit`, `correction_audit`).
 6. Write `summary.json`, `manifest.json`, and `policy_output.json`
    (optional).
 7. Optionally register metadata in `backtest_runs`.
@@ -104,6 +108,8 @@ Table: `backtest_runs`. Alembic revisions `0007_backtest_runs` and
 [BACKTEST_EXPERIMENTS.md](BACKTEST_EXPERIMENTS.md). Phase 4.5 adds an
 experiment usability gate and research reports without a schema change;
 see [BACKTEST_EXPERIMENT_USABILITY.md](BACKTEST_EXPERIMENT_USABILITY.md).
+Phase 5.0 registers data-quality policies without a schema change;
+see [DATA_QUALITY_POLICIES.md](DATA_QUALITY_POLICIES.md).
 
 Metadata only (hashes, counts, request/summary JSON, relative artifact
 names). No event rows, orders, fills, or positions.
@@ -167,6 +173,13 @@ uv run python scripts/run-backtest-experiment.py \
   --register \
   --deterministic-id \
   --json
+uv run python scripts/run-backtest.py \
+  --replay-id <replay_id> \
+  --replay-base-dir /tmp/fixt-replay \
+  --output-dir /tmp/fixt-quality \
+  --policy-name data_quality \
+  --register \
+  --deterministic-id
 uv run python scripts/check-backtest-experiment-usability.py \
   --experiment-id <experiment_id> \
   --base-dir /tmp/fixt-experiment

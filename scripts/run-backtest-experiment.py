@@ -10,6 +10,7 @@ from pathlib import Path
 from quant_platform.backtest.errors import BacktestError
 from quant_platform.backtest.experiment_types import BacktestExperimentRequest
 from quant_platform.backtest.experiments import run_backtest_experiment
+from quant_platform.backtest.policy_registry import registered_policy_names
 from quant_platform.core.config import get_settings
 from quant_platform.core.redact import redact_secret_text
 from quant_platform.simulation.errors import SimulationError
@@ -46,7 +47,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--policy-name",
         default="noop",
-        help="Registered research policy (default: noop).",
+        help=(
+            "Registered research policy ("
+            + ", ".join(sorted(registered_policy_names()))
+            + "). Default: noop. Not a strategy."
+        ),
     )
     parser.add_argument(
         "--policy-config-json",

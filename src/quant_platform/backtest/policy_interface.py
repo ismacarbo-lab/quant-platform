@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
+from quant_platform.backtest.errors import BacktestError, BacktestErrorCode
 from quant_platform.backtest.observations import PolicyRunOutput
 from quant_platform.simulation.events import (
     CorporateActionEvent,
@@ -44,6 +46,73 @@ class ResearchPolicy(Protocol):
     def on_replay_finished(self, event: ReplayFinishedEvent) -> None: ...
 
     def finalize(self) -> PolicyRunOutput: ...
+
+
+@runtime_checkable
+class CountingResearchPolicy(Protocol):
+    """Research policy that exposes stream counters. Not a trading API."""
+
+    event_count: int
+    market_event_count: int
+    session_event_count: int
+    corporate_action_event_count: int
+    started_event_seen: bool
+    finished_event_seen: bool
+    warnings: tuple[str, ...]
+    errors: tuple[str, ...]
+
+    def emitted_orders(self) -> tuple[object, ...]: ...
+
+    def emitted_fills(self) -> tuple[object, ...]: ...
+
+    def emitted_signals(self) -> tuple[object, ...]: ...
+
+
+@dataclass(frozen=True, slots=True)
+class ResearchPolicyStreamMetrics:
+    """Event counts collected by a research policy. Not PnL or holdings."""
+
+    event_count: int
+    market_event_count: int
+    session_event_count: int
+    corporate_action_event_count: int
+    started_event_seen: bool
+    finished_event_seen: bool
+    warnings: tuple[str, ...]
+    errors: tuple[str, ...]
+    orders: tuple[object, ...]
+    fills: tuple[object, ...]
+    signals: tuple[object, ...]
+
+
+def research_policy_stream_metrics(policy: object) -> ResearchPolicyStreamMetrics:
+    """Read stream counters from a research policy. Rejects trading payloads."""
+    if not isinstance(policy, CountingResearchPolicy):
+        raise BacktestError(
+            "registered research policy must count events without trading",
+            code=BacktestErrorCode.INVALID_POLICY,
+        )
+    orders = tuple(policy.emitted_orders())
+    fills = tuple(policy.emitted_fills())
+    signals = tuple(policy.emitted_signals())
+    if orders or fills or signals:
+        raise BacktestError(
+            "research policy must not emit orders, fills, or signals",
+            code=BacktestErrorCode.INVALID_POLICY,
+        )
+    return ResearchPolicyStreamMetrics(
+        event_count=int(policy.event_count),
+        market_event_count=int(policy.market_event_count),
+        session_event_count=int(policy.session_event_count),
+        corporate_action_event_count=int(policy.corporate_action_event_count),
+        started_event_seen=bool(policy.started_event_seen),
+        finished_event_seen=bool(policy.finished_event_seen),
+        warnings=tuple(policy.warnings),
+        errors=tuple(policy.errors),
+        orders=orders,
+        fills=fills,
+        signals=signals,
+    )
 
 
 def apply_research_event(policy: ResearchPolicy, event: ReplayEvent | str) -> None:

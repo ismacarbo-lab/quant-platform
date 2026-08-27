@@ -14,7 +14,8 @@ readiness).
 `0008_backtest_policy_metadata` for catalog columns, not for the
 verifier.
 
-Registered research policies (`noop`, `event_counting`) may appear in
+Registered research policies (`noop`, `event_counting`, `data_quality`,
+`coverage`, `corporate_action_audit`, `correction_audit`) may appear in
 manifests. Passing integrity or `usable_result` does **not** mean a
 strategy exists, that PnL was computed, or that the result is
 economically interesting.
@@ -26,6 +27,7 @@ Policy output: [POLICY_OUTPUT_INTEGRITY.md](POLICY_OUTPUT_INTEGRITY.md).
 Replay readiness (different gate): [BACKTEST_READINESS.md](../simulation/BACKTEST_READINESS.md).
 Experiments: [BACKTEST_EXPERIMENTS.md](BACKTEST_EXPERIMENTS.md).
 Experiment usability: [BACKTEST_EXPERIMENT_USABILITY.md](BACKTEST_EXPERIMENT_USABILITY.md).
+Data-quality policies: [DATA_QUALITY_POLICIES.md](DATA_QUALITY_POLICIES.md).
 
 ## What is verified
 
@@ -36,8 +38,9 @@ For a backtest directory:
 - hashes look like `sha256:<64 hex>` (`stream_hash`, `backtest_hash`,
   `manifest_hash`, `policy_output_hash`)
 - `replay_id` is present
-- `policy_name` is a registered research policy (`noop` or
-  `event_counting`)
+- `policy_name` is a registered research policy (`noop`,
+  `event_counting`, `data_quality`, `coverage`,
+  `corporate_action_audit`, or `correction_audit`)
 - `manifest_hash` matches a recomputation of the manifest (`manifest_hash`
   field excluded)
 - `backtest_hash` matches a recomputation from `summary.json` (counts,
@@ -119,8 +122,9 @@ research-policy result intact enough to keep as evidence?
 - catalog `is_reproducible` and `is_usable` are true
 - catalog `error_count == 0`
 - local artifact verification has no errors
-- `policy_name` is a registered research policy (`noop` or
-  `event_counting`)
+- `policy_name` is a registered research policy (`noop`,
+  `event_counting`, `data_quality`, `coverage`,
+  `corporate_action_audit`, or `correction_audit`)
 - `policy_output_ok` is true (valid `policy_output.json`, matching hash,
   no operative wording)
 - `backtest_hash` and `manifest_hash` look like `sha256:<64 hex>`

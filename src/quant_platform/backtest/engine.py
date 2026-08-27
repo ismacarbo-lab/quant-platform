@@ -11,8 +11,10 @@ from sqlalchemy.orm import Session
 
 from quant_platform.backtest.artifacts import write_backtest_artifacts
 from quant_platform.backtest.errors import BacktestError, BacktestErrorCode
-from quant_platform.backtest.policy import EventCountingResearchPolicy
-from quant_platform.backtest.policy_interface import apply_research_event
+from quant_platform.backtest.policy_interface import (
+    apply_research_event,
+    research_policy_stream_metrics,
+)
 from quant_platform.backtest.policy_registry import get_research_policy
 from quant_platform.backtest.results import derive_backtest_id, hash_backtest_counts
 from quant_platform.backtest.types import (
@@ -68,30 +70,26 @@ def execute_backtest(
             code=BacktestErrorCode.CATALOG_INVALID,
         )
     policy = get_research_policy(request.policy_name, request.policy_config)
-    if not isinstance(policy, EventCountingResearchPolicy):
-        raise BacktestError(
-            "registered research policy must count events without trading",
-            code=BacktestErrorCode.INVALID_POLICY,
-        )
     for event in events:
         apply_research_event(policy, event)
     output = policy.finalize()
+    metrics = research_policy_stream_metrics(policy)
     backtest_hash = hash_backtest_counts(
         replay_id=request.replay_id,
         stream_hash=stream_hash,
         policy_name=request.policy_name,
         policy_config=dict(request.policy_config or {}),
         policy_output_hash=output.policy_output_hash,
-        event_count=policy.event_count,
-        market_event_count=policy.market_event_count,
-        session_event_count=policy.session_event_count,
-        corporate_action_event_count=policy.corporate_action_event_count,
-        started_event_seen=policy.started_event_seen,
-        finished_event_seen=policy.finished_event_seen,
-        warning_count=len(policy.warnings),
-        error_count=len(policy.errors),
-        warnings=policy.warnings,
-        errors=policy.errors,
+        event_count=metrics.event_count,
+        market_event_count=metrics.market_event_count,
+        session_event_count=metrics.session_event_count,
+        corporate_action_event_count=metrics.corporate_action_event_count,
+        started_event_seen=metrics.started_event_seen,
+        finished_event_seen=metrics.finished_event_seen,
+        warning_count=len(metrics.warnings),
+        error_count=len(metrics.errors),
+        warnings=metrics.warnings,
+        errors=metrics.errors,
     )
     backtest_id = (
         derive_backtest_id(backtest_hash) if request.deterministic_id else uuid4()
@@ -104,24 +102,24 @@ def execute_backtest(
         policy_name=request.policy_name,
         policy_config=dict(request.policy_config or {}),
         policy_output_hash=output.policy_output_hash,
-        event_count=policy.event_count,
-        market_event_count=policy.market_event_count,
-        session_event_count=policy.session_event_count,
-        corporate_action_event_count=policy.corporate_action_event_count,
-        started_event_seen=policy.started_event_seen,
-        finished_event_seen=policy.finished_event_seen,
-        warning_count=len(policy.warnings),
-        error_count=len(policy.errors),
-        warnings=policy.warnings,
-        errors=policy.errors,
+        event_count=metrics.event_count,
+        market_event_count=metrics.market_event_count,
+        session_event_count=metrics.session_event_count,
+        corporate_action_event_count=metrics.corporate_action_event_count,
+        started_event_seen=metrics.started_event_seen,
+        finished_event_seen=metrics.finished_event_seen,
+        warning_count=len(metrics.warnings),
+        error_count=len(metrics.errors),
+        warnings=metrics.warnings,
+        errors=metrics.errors,
     )
     return BacktestResult(
         request=request,
         summary=summary,
         policy_output=output,
-        orders=policy.emitted_orders(),
-        fills=policy.emitted_fills(),
-        signals=policy.emitted_signals(),
+        orders=metrics.orders,
+        fills=metrics.fills,
+        signals=metrics.signals,
     )
 
 

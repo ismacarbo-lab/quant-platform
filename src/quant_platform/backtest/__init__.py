@@ -18,6 +18,12 @@ from quant_platform.backtest.compare import (
     diff_backtest_runs,
     diff_catalog_backtest_runs,
 )
+from quant_platform.backtest.data_quality_policies import (
+    CorporateActionAuditPolicy,
+    CorrectionAuditPolicy,
+    CoverageResearchPolicy,
+    DataQualityResearchPolicy,
+)
 from quant_platform.backtest.engine import (
     execute_backtest,
     require_backtest_readiness,
@@ -120,6 +126,10 @@ from quant_platform.backtest.results import (
     hash_backtest_summary,
 )
 from quant_platform.backtest.types import (
+    CORPORATE_ACTION_AUDIT_POLICY_NAME,
+    CORRECTION_AUDIT_POLICY_NAME,
+    COVERAGE_POLICY_NAME,
+    DATA_QUALITY_POLICY_NAME,
     EVENT_COUNTING_POLICY_NAME,
     NOOP_POLICY_NAME,
     BacktestArtifact,
@@ -133,6 +143,10 @@ from quant_platform.backtest.types import (
 )
 
 __all__ = [
+    "CORPORATE_ACTION_AUDIT_POLICY_NAME",
+    "CORRECTION_AUDIT_POLICY_NAME",
+    "COVERAGE_POLICY_NAME",
+    "DATA_QUALITY_POLICY_NAME",
     "EVENT_COUNTING_POLICY_NAME",
     "NOOP_POLICY_NAME",
     "BacktestArtifact",
@@ -158,6 +172,10 @@ __all__ = [
     "BacktestRunDiff",
     "BacktestSummary",
     "BacktestUsabilityReport",
+    "CorporateActionAuditPolicy",
+    "CorrectionAuditPolicy",
+    "CoverageResearchPolicy",
+    "DataQualityResearchPolicy",
     "EventCountingBacktestPolicy",
     "EventCountingResearchPolicy",
     "NoOpBacktestPolicy",
