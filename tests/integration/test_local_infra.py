@@ -43,3 +43,32 @@ def test_ci_workflow_does_not_require_github_secrets() -> None:
     assert 'pytest -m "not postgres"' in workflow
     assert "pytest -m postgres" in workflow
     assert "alembic upgrade head" in workflow
+    assert "run-policy-regression-matrix.py" in workflow
+    assert "research-release-check.py" in workflow
+    assert "test_architecture_boundaries.py" in workflow
+    assert "--skip-db" in workflow
+    assert "--skip-compose" in workflow
+    assert "--skip-regression" in workflow
+
+
+def test_makefile_has_release_targets() -> None:
+    text = (ROOT / "Makefile").read_text(encoding="utf-8")
+    assert "research-release-check" in text
+    assert "policy-regression" in text
+    assert "architecture-check" in text
+    assert "quality: lint format-check typecheck test-fast compose-config" in text
+
+
+def test_scripts_do_not_print_database_url() -> None:
+    for path in sorted((ROOT / "scripts").glob("*.py")):
+        text = path.read_text(encoding="utf-8")
+        lowered = text.lower()
+        assert "print(settings.database_url)" not in lowered
+        assert 'print(os.environ["database_url"])' not in lowered
+        assert "print(os.environ['database_url'])" not in lowered
+
+
+def test_alembic_ini_uses_postgres_not_sqlite() -> None:
+    text = (ROOT / "alembic.ini").read_text(encoding="utf-8")
+    assert "postgresql" in text
+    assert "sqlite" not in text.lower()

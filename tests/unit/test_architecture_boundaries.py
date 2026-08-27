@@ -2,100 +2,75 @@
 
 from __future__ import annotations
 
-import tomllib
 from pathlib import Path
+
+from quant_platform.core.config import Settings
+from quant_platform.release.constants import (
+    DISABLED_CAPABILITIES,
+    FORBIDDEN_DEPENDENCY_NAMES,
+    FORBIDDEN_RUNTIME_PACKAGES,
+)
+from quant_platform.release.guards import (
+    declared_requirement_names,
+    detect_ai_runtime,
+    forbidden_dependencies_declared,
+    forbidden_runtime_packages_present,
+    settings_ai_vendor_fields,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 PACKAGE_ROOT = ROOT / "src" / "quant_platform"
 PYPROJECT = ROOT / "pyproject.toml"
 
-FORBIDDEN_RUNTIME_PACKAGES = (
-    "execution",
-    "broker",
-    "brokers",
-    "trading",
-    "orders",
-    "portfolio",
-    "positions",
-    "strategies",
-    "signals",
-)
-
-FORBIDDEN_DEPENDENCY_NAMES = frozenset(
-    {
-        "alpaca",
-        "alpaca-py",
-        "ib-insync",
-        "ib_insync",
-        "ibapi",
-        "ccxt",
-        "yfinance",
-        "openai",
-        "anthropic",
-        "langchain",
-        "llama-index",
-        "llama_index",
-        "transformers",
-        "cursor",
-        "cursor-sdk",
-        "cursor_sdk",
-    }
-)
-
-
-def _requirement_name(spec: str) -> str:
-    token = spec.strip()
-    for separator in ("[", ">", "<", "=", "!", "~", ";", " "):
-        token = token.split(separator, 1)[0]
-    return token.strip().lower()
-
-
-def _declared_requirement_names() -> set[str]:
-    data = tomllib.loads(PYPROJECT.read_text(encoding="utf-8"))
-    names: set[str] = set()
-    project = data.get("project", {})
-    for spec in project.get("dependencies", []):
-        if isinstance(spec, str):
-            names.add(_requirement_name(spec))
-    optional = project.get("optional-dependencies", {})
-    if isinstance(optional, dict):
-        for group in optional.values():
-            for spec in group:
-                if isinstance(spec, str):
-                    names.add(_requirement_name(spec))
-    for group in data.get("dependency-groups", {}).values():
-        if not isinstance(group, list):
-            continue
-        for spec in group:
-            if isinstance(spec, str):
-                names.add(_requirement_name(spec))
-    return names
-
 
 def test_forbidden_runtime_packages_are_absent() -> None:
-    present = []
+    assert forbidden_runtime_packages_present(PACKAGE_ROOT) == ()
     for name in FORBIDDEN_RUNTIME_PACKAGES:
-        if (PACKAGE_ROOT / name).exists() or (PACKAGE_ROOT / f"{name}.py").exists():
-            present.append(name)
-    assert present == []
+        assert not (PACKAGE_ROOT / name).exists()
+        assert not (PACKAGE_ROOT / f"{name}.py").exists()
 
 
 def test_pyproject_has_no_trading_or_ai_runtime_dependencies() -> None:
-    declared = _declared_requirement_names()
-    leaked = sorted(declared & FORBIDDEN_DEPENDENCY_NAMES)
-    assert leaked == []
+    leaked = forbidden_dependencies_declared(PYPROJECT)
+    assert leaked == ()
+    declared = declared_requirement_names(PYPROJECT)
+    assert declared.isdisjoint(FORBIDDEN_DEPENDENCY_NAMES)
 
 
 def test_cursor_is_not_a_package_dependency() -> None:
-    declared = _declared_requirement_names()
+    declared = declared_requirement_names(PYPROJECT)
     assert "cursor" not in declared
     assert "cursor-sdk" not in declared
     assert "cursor_sdk" not in declared
 
 
 def test_settings_have_no_ai_vendor_fields() -> None:
-    from quant_platform.core.config import Settings
-
+    hits = settings_ai_vendor_fields(Settings.model_fields)
+    assert hits == ()
     names = {field.lower() for field in Settings.model_fields}
-    for needle in ("openai", "anthropic", "langchain", "cursor"):
+    for needle in ("openai", "anthropic", "langchain", "cursor", "rag"):
         assert all(needle not in name for name in names)
+
+
+def test_ai_runtime_is_not_detected_in_this_repo() -> None:
+    findings = detect_ai_runtime(
+        package_root=PACKAGE_ROOT,
+        pyproject_path=PYPROJECT,
+        settings_fields=Settings.model_fields,
+    )
+    assert findings == ()
+
+
+def test_disabled_capabilities_cover_trading_and_ai() -> None:
+    disabled = set(DISABLED_CAPABILITIES)
+    for name in (
+        "paper_trading",
+        "live_trading",
+        "brokers",
+        "ai_runtime",
+        "signals",
+        "strategies",
+        "portfolio",
+        "order_execution",
+    ):
+        assert name in disabled

@@ -91,6 +91,9 @@ uv run python scripts/run-policy-regression-matrix.py \
 
 `APP_MODE` must be `research`. The script never prints `DATABASE_URL`.
 
+The research release check also runs this matrix unless `--skip-regression`
+is set. See [RESEARCH_RELEASE_CANDIDATE.md](../release/RESEARCH_RELEASE_CANDIDATE.md).
+
 Without `--update-expected`, any error issue (missing fixture, unknown
 policy, invalid config, hash/count drift, forbidden language, unexpected
 failure) exits non-zero.

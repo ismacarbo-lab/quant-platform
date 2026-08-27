@@ -56,6 +56,10 @@ make quality
 | Fast tests only | `uv run pytest -m "not postgres"` / `make test-fast` |
 | Postgres tests only | `uv run pytest -m postgres` / `make test-postgres` |
 | Compose file | `docker compose config` / `make compose-config` |
+| Policy regression | `uv run python scripts/run-policy-regression-matrix.py` / `make policy-regression` |
+| Architecture guards | `make architecture-check` |
+| Research release check | `uv run python scripts/research-release-check.py` / `make research-release-check` |
+| Research status (no DB) | `uv run python scripts/research-status.py` / `make research-status` |
 
 Unit tests and `tests/integration/test_local_infra.py` do **not** need Docker.
 Tests marked `postgres` need a reachable PostgreSQL; they skip unless
@@ -285,7 +289,8 @@ See [docs/backtest/BACKTEST_ENGINE.md](../backtest/BACKTEST_ENGINE.md),
 [docs/backtest/BACKTEST_EXPERIMENTS.md](../backtest/BACKTEST_EXPERIMENTS.md),
 [docs/backtest/BACKTEST_EXPERIMENT_USABILITY.md](../backtest/BACKTEST_EXPERIMENT_USABILITY.md),
 [docs/backtest/DATA_QUALITY_POLICIES.md](../backtest/DATA_QUALITY_POLICIES.md),
-and [docs/backtest/POLICY_REGRESSION_MATRIX.md](../backtest/POLICY_REGRESSION_MATRIX.md).
+[docs/backtest/POLICY_REGRESSION_MATRIX.md](../backtest/POLICY_REGRESSION_MATRIX.md),
+and [docs/release/RESEARCH_RELEASE_CANDIDATE.md](../release/RESEARCH_RELEASE_CANDIDATE.md).
 
 Event JSON fixtures for tests live in `tests/fixtures/replay_events/`.
 Policy regression fixtures live in `tests/fixtures/policy_regression/`.

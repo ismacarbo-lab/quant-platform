@@ -11,6 +11,8 @@ jobs:
   quality:
     name: lint-typecheck-fast-tests
     runs-on: ubuntu-latest
+    env:
+      APP_MODE: research
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
@@ -27,6 +29,16 @@ jobs:
         run: uv run mypy src
       - name: Fast tests (no PostgreSQL)
         run: uv run pytest -m "not postgres"
+      - name: Architecture boundary tests
+        run: uv run pytest tests/unit/test_architecture_boundaries.py tests/unit/test_config.py tests/integration/test_local_infra.py
+      - name: Policy regression matrix
+        env:
+          APP_MODE: research
+        run: uv run python scripts/run-policy-regression-matrix.py
+      - name: Research release check (no DB)
+        env:
+          APP_MODE: research
+        run: uv run python scripts/research-release-check.py --skip-db --skip-compose --skip-regression
       - name: Docker Compose config
         run: docker compose config
 

@@ -6,6 +6,8 @@ research policies, experiment registry, usability gates, and hashes.
 Phase 5.0 adds data-quality research policies (coverage, corporate-action
 and correction audit) without signals, orders, fills, portfolio, or PnL.
 Phase 5.1 adds a ResearchPolicy regression matrix with golden fixtures.
+Phase 5.2 hardens a research-mode release candidate (status, guardrails,
+and local release checks) still without trading or AI runtime.
 """
 
 __version__ = "0.1.0"

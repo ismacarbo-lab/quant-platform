@@ -171,3 +171,6 @@ After changing a quality policy, run
 `scripts/run-policy-regression-matrix.py` and review expected hashes
 before updating `matrix.json` by hand. See
 [POLICY_REGRESSION_MATRIX.md](POLICY_REGRESSION_MATRIX.md).
+
+Release-candidate status and guardrails:
+[RESEARCH_RELEASE_CANDIDATE.md](../release/RESEARCH_RELEASE_CANDIDATE.md).

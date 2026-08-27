@@ -19,7 +19,8 @@ interface** without signals, **policy-output observation reports**, and
 a **backtest experiment registry** that groups dry-runs, an **experiment
 usability gate**, **aggregated experiment research reports**,
 **data-quality research policies**, and a **ResearchPolicy regression
-matrix** (still no PnL or orders).
+matrix** (still no PnL or orders). Phase 5.2 adds a **research-mode
+release candidate** check and status report.
 It is **not** a trading system.
 
 A pre-existing tree named `AI_VENTURE_OS_PROMPTS/` may sit next to this
@@ -61,6 +62,8 @@ Do not mix the two.
   signals or orders.
 - Pin ResearchPolicy outputs with a golden regression matrix (hashes and
   observation counts; still no PnL).
+- Run a research-mode release candidate check (status, guardrails, policy
+  regression; still no trading or AI runtime).
 
 ## What is not implemented
 
@@ -264,6 +267,8 @@ Data-quality research policies (not strategies):
 [docs/backtest/DATA_QUALITY_POLICIES.md](docs/backtest/DATA_QUALITY_POLICIES.md).
 Research-policy regression matrix (golden hashes, not PnL):
 [docs/backtest/POLICY_REGRESSION_MATRIX.md](docs/backtest/POLICY_REGRESSION_MATRIX.md).
+Research-mode release candidate (what is ready, what is not):
+[docs/release/RESEARCH_RELEASE_CANDIDATE.md](docs/release/RESEARCH_RELEASE_CANDIDATE.md).
 
 See [docs/development/DEVELOPER_WORKFLOW.md](docs/development/DEVELOPER_WORKFLOW.md)
 for install, Compose, Alembic, port 5434 conflicts, and CI.
