@@ -167,3 +167,10 @@ Not in `make quality`. Needs PostgreSQL.
   observations; update `matrix.json` by hand if the change is intended.
 - If **setup-uv** fails: retry / pin the action; do not weaken gates.
 - Never paste passwords or connection URLs into issues or logs.
+
+## Remote verification and tag
+
+See [REMOTE_RELEASE_VERIFICATION.md](REMOTE_RELEASE_VERIFICATION.md).
+
+Proposed tag: `v0.1.0-research`. Do not create or push it until that
+report is approved.

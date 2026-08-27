@@ -25,6 +25,7 @@ _CAPABILITY = _ROOT / "docs" / "release" / "CAPABILITY_MATRIX.md"
 _CHECKLIST = _ROOT / "docs" / "release" / "FINAL_RESEARCH_CHECKLIST.md"
 _COMMANDS = _ROOT / "docs" / "release" / "COMMANDS.md"
 _RISKS = _ROOT / "docs" / "release" / "RISK_REGISTER.md"
+_REMOTE = _ROOT / "docs" / "release" / "REMOTE_RELEASE_VERIFICATION.md"
 _ADR = _ROOT / "docs" / "adr" / "0003-research-mode-freeze.md"
 
 
@@ -88,6 +89,19 @@ def test_final_checklist_mentions_venture_os_prompts() -> None:
     text = _CHECKLIST.read_text(encoding="utf-8")
     assert "AI_VENTURE_OS_PROMPTS" in text
     assert "/home/isma/invest" in text
+
+
+def test_remote_release_verification_doc() -> None:
+    assert _REMOTE.is_file()
+    text = _REMOTE.read_text(encoding="utf-8")
+    lowered = " ".join(text.lower().replace("*", " ").split())
+    assert "DATABASE_URL" not in text
+    assert "postgresql+psycopg://" not in text.lower()
+    assert "v0.1.0-research" in text
+    assert "9b7fe7c312734fc5d3a5029a45d2128701a9aa07" in text
+    assert "research-only" in lowered
+    assert "not a trading" in lowered
+    assert "main" in lowered
 
 
 def test_release_status_json_includes_freeze_fields(
