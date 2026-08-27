@@ -17,7 +17,10 @@ from quant_platform.core.config import Settings, get_settings
 from quant_platform.release.constants import (
     DISABLED_CAPABILITIES,
     ENABLED_CAPABILITIES,
+    EVIDENCE_BUNDLE_DOC_PATH,
+    EVIDENCE_BUNDLE_MODULE_PATH,
     EXPECTED_ALEMBIC_HEAD,
+    FREEZE_DOC_PATHS,
     RELEASE_STATUS_HASH_FORMAT_VERSION,
     RELEASE_STATUS_HASH_KIND,
 )
@@ -68,6 +71,13 @@ DOCUMENTED_RELEASE_RISKS: tuple[ReleaseRiskItem, ...] = (
             "Replay and backtest artifacts stay on a local base-dir, not cloud storage."
         ),
     ),
+    ReleaseRiskItem(
+        code="evidence_not_profitability",
+        message=(
+            "The evidence bundle proves the research pipeline ran; "
+            "it does not measure returns or edge."
+        ),
+    ),
 )
 
 
@@ -110,6 +120,8 @@ def hash_release_status_report(
         "alembic_head_scripts": payload.get("alembic_head_scripts"),
         "database_required": payload.get("database_required"),
         "database_checked": payload.get("database_checked"),
+        "final_freeze_ready": payload.get("final_freeze_ready"),
+        "evidence_bundle_available": payload.get("evidence_bundle_available"),
         "capabilities": payload.get("capabilities"),
         "registered_policy_names": payload.get("registered_policy_names"),
         "regression_case_count": payload.get("regression_case_count"),
@@ -150,6 +162,13 @@ def build_release_status(
     error_count = sum(1 for item in ranked_checks if item.status == "error")
     warning_count = sum(1 for item in ranked_checks if item.status == "warning")
     ok = error_count == 0 and cfg.is_research_mode
+    bundle_available = evidence_bundle_available(root)
+    freeze_ready = final_freeze_ready(
+        repo_root=root,
+        research_mode=cfg.is_research_mode,
+        alembic_heads=heads,
+        evidence_bundle=bundle_available,
+    )
     draft = ReleaseStatusReport(
         ok=ok,
         app_mode=str(cfg.app_mode),
@@ -167,6 +186,8 @@ def build_release_status(
         regression_case_count=case_count,
         trading_constructs_detected=trading_constructs_detected,
         ai_runtime_detected=ai_runtime_detected,
+        final_freeze_ready=freeze_ready,
+        evidence_bundle_available=bundle_available,
         checks=ranked_checks,
         risks=DOCUMENTED_RELEASE_RISKS,
         error_count=error_count,
@@ -174,6 +195,42 @@ def build_release_status(
         report_hash="",
     )
     return replace(draft, report_hash=hash_release_status_report(draft))
+
+
+def freeze_docs_available(repo_root: Path | str | None = None) -> bool:
+    """True when Phase 5.4 freeze documents exist. No network, no PostgreSQL."""
+    root = Path(repo_root) if repo_root is not None else repository_root()
+    return all((root / relative).is_file() for relative in FREEZE_DOC_PATHS)
+
+
+def evidence_bundle_available(repo_root: Path | str | None = None) -> bool:
+    """True when evidence-bundle docs and module exist. Does not build a bundle."""
+    root = Path(repo_root) if repo_root is not None else repository_root()
+    return (root / EVIDENCE_BUNDLE_DOC_PATH).is_file() and (
+        root / EVIDENCE_BUNDLE_MODULE_PATH
+    ).is_file()
+
+
+def final_freeze_ready(
+    *,
+    repo_root: Path | str | None = None,
+    research_mode: bool,
+    alembic_heads: Sequence[str],
+    evidence_bundle: bool | None = None,
+) -> bool:
+    """Lightweight freeze signal from docs and Alembic scripts. Not a trade go-live."""
+    root = Path(repo_root) if repo_root is not None else repository_root()
+    bundle_ok = (
+        evidence_bundle
+        if evidence_bundle is not None
+        else evidence_bundle_available(root)
+    )
+    return (
+        research_mode
+        and freeze_docs_available(root)
+        and bundle_ok
+        and tuple(alembic_heads) == (EXPECTED_ALEMBIC_HEAD,)
+    )
 
 
 def _regression_case_count(matrix_path: Path | str | None) -> int:

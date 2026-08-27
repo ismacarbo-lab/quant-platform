@@ -62,6 +62,8 @@ make quality
 | Research status (no DB) | `uv run python scripts/research-status.py` / `make research-status` |
 | Research evidence bundle (needs PostgreSQL; not in `make quality`) | `uv run python scripts/build-research-evidence-bundle.py …` / `make research-evidence-bundle` |
 | Verify evidence bundle | `uv run python scripts/verify-research-evidence-bundle.py --bundle-dir DIR` / `make verify-research-evidence-bundle` |
+| Canonical command list | [COMMANDS.md](../release/COMMANDS.md) |
+| Freeze handoff | [RESEARCH_HANDOFF.md](../release/RESEARCH_HANDOFF.md) |
 
 Unit tests and `tests/integration/test_local_infra.py` do **not** need Docker.
 Tests marked `postgres` need a reachable PostgreSQL; they skip unless
@@ -301,7 +303,9 @@ See [docs/backtest/BACKTEST_ENGINE.md](../backtest/BACKTEST_ENGINE.md),
 [docs/backtest/DATA_QUALITY_POLICIES.md](../backtest/DATA_QUALITY_POLICIES.md),
 [docs/backtest/POLICY_REGRESSION_MATRIX.md](../backtest/POLICY_REGRESSION_MATRIX.md),
 [docs/release/RESEARCH_RELEASE_CANDIDATE.md](../release/RESEARCH_RELEASE_CANDIDATE.md),
-and [docs/release/RESEARCH_EVIDENCE_BUNDLE.md](../release/RESEARCH_EVIDENCE_BUNDLE.md).
+[docs/release/RESEARCH_EVIDENCE_BUNDLE.md](../release/RESEARCH_EVIDENCE_BUNDLE.md),
+[docs/release/COMMANDS.md](../release/COMMANDS.md),
+and [docs/release/RESEARCH_HANDOFF.md](../release/RESEARCH_HANDOFF.md).
 
 Event JSON fixtures for tests live in `tests/fixtures/replay_events/`.
 Policy regression fixtures live in `tests/fixtures/policy_regression/`.

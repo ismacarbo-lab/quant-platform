@@ -1,33 +1,84 @@
 # quant_platform
 
-Phase 0 foundation for a professional quantitative research platform.
+**Research-only** quantitative platform. This stage is **frozen** (Phase
+5.4). It is **not** a trading system: no strategies, signals, orders,
+fills, portfolio, PnL, returns, brokers, paper trading, live trading, or
+AI runtime.
 
-This repository currently provides a **research-only** software base:
-typed configuration, UTC clocks, structured logging, PostgreSQL, Alembic,
-an internal health API, **local CSV daily-bar ingestion** with point-in-time
-timestamps, a **bronze audit layer**, an **instrument master** (exchanges,
-composite identity, identifiers), **manual calendars**, **stored
-corporate actions** (not applied to prices), a **research dataset API**
-(`as_of` required), **dataset quality reports**, **local dataset
-snapshots**, a **PostgreSQL snapshot catalog**, **deterministic
-dataset replay** with an auditable event stream, **replay-run
-artifacts** with a PostgreSQL metadata catalog, a **backtest
-readiness gate**, a **dry-run backtest engine**
-(`NoOpBacktestPolicy` / `ResearchPolicy`: counts, hashes, observations,
-no orders), **backtest artifact integrity**, a **research-policy
-interface** without signals, **policy-output observation reports**, and
-a **backtest experiment registry** that groups dry-runs, an **experiment
-usability gate**, **aggregated experiment research reports**,
-**data-quality research policies**, and a **ResearchPolicy regression
-matrix** (still no PnL or orders). Phase 5.2 adds a **research-mode
-release candidate** check and status report. Phase 5.3 adds a **local
-research evidence bundle** that runs the fixture-to-release path without
-trading.
-It is **not** a trading system.
+Handoff: [docs/release/RESEARCH_HANDOFF.md](docs/release/RESEARCH_HANDOFF.md).
+Evidence bundle: [docs/release/RESEARCH_EVIDENCE_BUNDLE.md](docs/release/RESEARCH_EVIDENCE_BUNDLE.md).
+Capabilities: [docs/release/CAPABILITY_MATRIX.md](docs/release/CAPABILITY_MATRIX.md).
+Freeze ADR: [docs/adr/0003-research-mode-freeze.md](docs/adr/0003-research-mode-freeze.md).
+
+`APP_MODE` accepts only `research`. `paper` and `live` fail validation.
+The only HTTP route is `GET /health`.
 
 A pre-existing tree named `AI_VENTURE_OS_PROMPTS/` may sit next to this
 project. It is a separate product and is **not** part of `quant_platform`.
 Do not mix the two.
+
+## Quickstart
+
+```bash
+uv python install 3.13
+uv sync
+cp .env.example .env
+make quality
+```
+
+With local PostgreSQL:
+
+```bash
+docker compose up -d postgres
+uv run alembic upgrade head
+uv run python scripts/check-db.py
+uv run pytest -m postgres
+```
+
+Minimal evidence pack (fixtures only, no vendors):
+[docs/release/MINIMAL_REPRODUCIBLE_EXAMPLE.md](docs/release/MINIMAL_REPRODUCIBLE_EXAMPLE.md).
+
+Canonical commands: [docs/release/COMMANDS.md](docs/release/COMMANDS.md).
+
+## Final release checks
+
+```bash
+make quality
+make policy-regression
+make research-release-check
+make research-status
+```
+
+Optional with PostgreSQL: `uv run pytest -m postgres`, then
+`make research-evidence-bundle` and `make verify-research-evidence-bundle`.
+
+Manual list: [docs/release/FINAL_RESEARCH_CHECKLIST.md](docs/release/FINAL_RESEARCH_CHECKLIST.md).
+
+Green checks mean the **research** pipeline is intact. They do **not**
+mean profitability or a license to trade.
+
+## Boundaries
+
+Implemented: local PIT ingestion, datasets, quality, snapshots, replay,
+dry-run research policies, experiments, release checks, evidence bundle.
+
+Prohibited in this freeze: strategy, signal, portfolio, PnL, orders,
+brokers, paper/live, external vendors, AI runtime.
+
+Full matrix: [docs/release/CAPABILITY_MATRIX.md](docs/release/CAPABILITY_MATRIX.md).
+Risks: [docs/release/RISK_REGISTER.md](docs/release/RISK_REGISTER.md).
+
+## What this repo contains
+
+This repository provides a **research-only** software base: typed
+configuration, UTC clocks, structured logging, PostgreSQL, Alembic, an
+internal health API, **local CSV daily-bar ingestion** with point-in-time
+timestamps, bronze/silver, instrument master, calendars, stored
+corporate actions (not applied), dataset API, quality reports, snapshots,
+catalog, replay, dry-run backtest (`ResearchPolicy` observers, no
+orders), experiments, policy regression, release checks, and a local
+**research evidence bundle**. Phase 5.4 freezes that stage.
+It is **not** a trading system.
 
 ## Current purpose
 
@@ -69,6 +120,8 @@ Do not mix the two.
 - Build and verify a local end-to-end research evidence bundle (fixtures
   through snapshot, replay, dry-run, experiment, and release status;
   still no PnL or orders).
+- Freeze this research stage with a technical handoff, checklists,
+  capability/risk matrices, and ADR 0003 (still no trading or AI runtime).
 
 ## What is not implemented
 
@@ -276,6 +329,10 @@ Research-mode release candidate (what is ready, what is not):
 [docs/release/RESEARCH_RELEASE_CANDIDATE.md](docs/release/RESEARCH_RELEASE_CANDIDATE.md).
 End-to-end research evidence bundle (manual, local fixtures only):
 [docs/release/RESEARCH_EVIDENCE_BUNDLE.md](docs/release/RESEARCH_EVIDENCE_BUNDLE.md).
+Handoff and freeze:
+[docs/release/RESEARCH_HANDOFF.md](docs/release/RESEARCH_HANDOFF.md),
+[docs/release/CAPABILITY_MATRIX.md](docs/release/CAPABILITY_MATRIX.md),
+[docs/adr/0003-research-mode-freeze.md](docs/adr/0003-research-mode-freeze.md).
 
 See [docs/development/DEVELOPER_WORKFLOW.md](docs/development/DEVELOPER_WORKFLOW.md)
 for install, Compose, Alembic, port 5434 conflicts, and CI.
@@ -284,4 +341,5 @@ for install, Compose, Alembic, port 5434 conflicts, and CI.
 
 See [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md),
 [docs/adr/0001-foundation-architecture.md](docs/adr/0001-foundation-architecture.md),
-and [docs/adr/0002-ai-usage-boundary.md](docs/adr/0002-ai-usage-boundary.md).
+[docs/adr/0002-ai-usage-boundary.md](docs/adr/0002-ai-usage-boundary.md),
+and [docs/adr/0003-research-mode-freeze.md](docs/adr/0003-research-mode-freeze.md).

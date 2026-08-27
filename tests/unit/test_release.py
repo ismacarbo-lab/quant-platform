@@ -59,6 +59,14 @@ def test_status_report_serializes_without_secrets(
     assert report.regression_case_count >= 18
     assert report.report_hash == hash_release_status_report(report)
     assert report.report_hash == hash_release_status_report(report.as_mapping())
+    assert report.final_freeze_ready is True
+    assert report.evidence_bundle_available is True
+    assert report.alembic_head_expected == EXPECTED_ALEMBIC_HEAD
+    disabled = set(report.capabilities.disabled)
+    assert "paper_trading" in disabled
+    assert "live_trading" in disabled
+    assert "brokers" in disabled
+    assert "ai_runtime" in disabled
 
 
 def test_expected_alembic_head_matches_scripts() -> None:
@@ -175,6 +183,9 @@ def test_release_check_json_script_has_no_database_url(
     status_payload = json.loads(status_out.out)
     _assert_no_secrets(status_out.out + status_out.err)
     assert status_payload["registered_policy_count"] >= 6
+    assert status_payload["final_freeze_ready"] is True
+    assert status_payload["evidence_bundle_available"] is True
+    assert status_payload["alembic_head_expected"] == EXPECTED_ALEMBIC_HEAD
     assert "paper_trading" in status_payload["capabilities"]["disabled"]
     assert "live_trading" in status_payload["capabilities"]["disabled"]
     assert "brokers" in status_payload["capabilities"]["disabled"]

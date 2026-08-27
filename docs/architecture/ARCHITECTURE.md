@@ -1,4 +1,4 @@
-# Architecture — Phase 5.3
+# Architecture — Phase 5.4
 
 Status: research ingestion, an internal **dataset query API**, **dataset
 quality reports**, **local hashed snapshots**, a **PostgreSQL snapshot
@@ -15,8 +15,9 @@ integrity checks, and a **backtest experiment registry** that groups
 those dry-runs, plus an **experiment usability gate**, **aggregated
 research reports**, **data-quality research policies**, a
 **ResearchPolicy regression matrix**, a **research-mode release
-candidate** (status and guardrails), and a **local research evidence
-bundle**. No LLM runtime, strategies,
+candidate** (status and guardrails), a **local research evidence
+bundle**, and a **research-mode freeze** (handoff, checklists, no new
+trading). No LLM runtime, strategies,
 brokers, or execution.
 
 ## Modular monolith
@@ -48,7 +49,7 @@ Documented future areas (no empty implementation packages in Phase 0):
 | `storage` | Persistence adapters | engine/session only |
 | `research` | Dataset queries, experiment runners | PIT datasets, quality reports, snapshots, catalog, integrity; no notebooks |
 | `simulation` | Dataset replay timeline | events, boundaries, stream hash, audit, run artifacts + catalog, readiness gate; no strategies |
-| `backtesting` | Simulation engine | Phase 5.3 package `backtest/` plus `release/`: dry-run, research policy, regression matrix, experiments, usability, release checks, evidence bundle; no orders/PnL |
+| `backtesting` | Simulation engine | Phase 5.4 package `backtest/` plus `release/`: dry-run, research policy, regression matrix, experiments, usability, release checks, evidence bundle, freeze docs; no orders/PnL |
 | `strategies` | Signal generation | not implemented |
 | `ml` | Model training/inference | not implemented |
 | `portfolio` | Positions, target holdings | not implemented |
@@ -151,7 +152,10 @@ research dataset API **requires** `as_of`. See
 [DATA_QUALITY_POLICIES.md](../backtest/DATA_QUALITY_POLICIES.md),
 [POLICY_REGRESSION_MATRIX.md](../backtest/POLICY_REGRESSION_MATRIX.md),
 [RESEARCH_RELEASE_CANDIDATE.md](../release/RESEARCH_RELEASE_CANDIDATE.md),
-and [RESEARCH_EVIDENCE_BUNDLE.md](../release/RESEARCH_EVIDENCE_BUNDLE.md).
+[RESEARCH_EVIDENCE_BUNDLE.md](../release/RESEARCH_EVIDENCE_BUNDLE.md),
+[RESEARCH_HANDOFF.md](../release/RESEARCH_HANDOFF.md),
+[CAPABILITY_MATRIX.md](../release/CAPABILITY_MATRIX.md),
+and [ADR 0003](../adr/0003-research-mode-freeze.md).
 
 ### Point-in-time timestamps
 
@@ -218,6 +222,7 @@ Phase 5.0 does not add tables.
 Phase 5.1 does not add tables.
 Phase 5.2 does not add tables.
 Phase 5.3 does not add tables.
+Phase 5.4 does not add tables.
 There are still **no** orders, fills, trades, strategies, or broker tables.
 SQLite is rejected. Instrument uniqueness uses PostgreSQL
 `UNIQUE NULLS NOT DISTINCT` (PG 15+).
@@ -262,6 +267,8 @@ Phase 5.1 adds a ResearchPolicy regression matrix (no schema change).
 Phase 5.2 hardens a research-mode release candidate (no schema change).
 Phase 5.3 adds a local end-to-end research evidence bundle (no schema
 change; still no orders or PnL).
+Phase 5.4 freezes research mode (handoff and checklists; no schema
+change; still no orders or PnL).
 None of these add HTTP routes or gold/trading tables.
 
 ## AI usage boundary
@@ -271,8 +278,9 @@ not import Cursor, OpenAI, Anthropic, or similar clients. Future AI, if
 any, is optional, default-off, auditable, and must not trade, call brokers,
 or write market data outside the validated ingestion pipeline.
 
-See [docs/ai/AI_USAGE_BOUNDARY.md](../ai/AI_USAGE_BOUNDARY.md) and
-[ADR 0002](../adr/0002-ai-usage-boundary.md).
+See [docs/ai/AI_USAGE_BOUNDARY.md](../ai/AI_USAGE_BOUNDARY.md),
+[ADR 0002](../adr/0002-ai-usage-boundary.md), and
+[ADR 0003](../adr/0003-research-mode-freeze.md).
 
 ## API
 

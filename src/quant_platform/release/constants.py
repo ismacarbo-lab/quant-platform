@@ -5,9 +5,21 @@ from __future__ import annotations
 EXPECTED_ALEMBIC_HEAD = "0009_backtest_experiments"
 
 RELEASE_STATUS_KIND = "research_release_status"
-RELEASE_STATUS_FORMAT_VERSION = 1
+RELEASE_STATUS_FORMAT_VERSION = 2
 RELEASE_STATUS_HASH_KIND = "research_release_status"
-RELEASE_STATUS_HASH_FORMAT_VERSION = 1
+RELEASE_STATUS_HASH_FORMAT_VERSION = 2
+
+FREEZE_DOC_PATHS: tuple[str, ...] = (
+    "docs/adr/0003-research-mode-freeze.md",
+    "docs/release/CAPABILITY_MATRIX.md",
+    "docs/release/COMMANDS.md",
+    "docs/release/FINAL_RESEARCH_CHECKLIST.md",
+    "docs/release/MINIMAL_REPRODUCIBLE_EXAMPLE.md",
+    "docs/release/RESEARCH_HANDOFF.md",
+    "docs/release/RISK_REGISTER.md",
+)
+EVIDENCE_BUNDLE_DOC_PATH = "docs/release/RESEARCH_EVIDENCE_BUNDLE.md"
+EVIDENCE_BUNDLE_MODULE_PATH = "src/quant_platform/release/evidence_bundle.py"
 
 ENABLED_CAPABILITIES: tuple[str, ...] = (
     "research_mode",

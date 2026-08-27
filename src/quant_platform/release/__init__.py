@@ -18,6 +18,9 @@ from quant_platform.release.evidence_types import (
 )
 from quant_platform.release.status import (
     build_release_status,
+    evidence_bundle_available,
+    final_freeze_ready,
+    freeze_docs_available,
     hash_release_status_report,
 )
 from quant_platform.release.types import (
@@ -40,6 +43,9 @@ __all__ = [
     "ResearchEvidenceBundleResult",
     "build_release_status",
     "build_research_evidence_bundle",
+    "evidence_bundle_available",
+    "final_freeze_ready",
+    "freeze_docs_available",
     "hash_release_status_report",
     "hash_research_evidence_bundle",
     "run_research_release_checks",

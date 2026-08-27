@@ -18,7 +18,8 @@ Scripts: `scripts/build-research-evidence-bundle.py`,
 Related: [RESEARCH_RELEASE_CANDIDATE.md](RESEARCH_RELEASE_CANDIDATE.md),
 [DATA_QUALITY_POLICIES.md](../backtest/DATA_QUALITY_POLICIES.md),
 [BACKTEST_EXPERIMENT_USABILITY.md](../backtest/BACKTEST_EXPERIMENT_USABILITY.md),
-[DEVELOPER_WORKFLOW.md](../development/DEVELOPER_WORKFLOW.md).
+[DEVELOPER_WORKFLOW.md](../development/DEVELOPER_WORKFLOW.md),
+[RESEARCH_HANDOFF.md](RESEARCH_HANDOFF.md).
 
 **No Alembic revision for this phase.** Expected head remains
 `0009_backtest_experiments`.

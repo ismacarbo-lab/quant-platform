@@ -67,6 +67,8 @@ class ReleaseStatusReport:
     regression_case_count: int
     trading_constructs_detected: bool
     ai_runtime_detected: bool
+    final_freeze_ready: bool
+    evidence_bundle_available: bool
     checks: tuple[ReleaseCheckItem, ...]
     risks: tuple[ReleaseRiskItem, ...]
     error_count: int
@@ -84,6 +86,8 @@ class ReleaseStatusReport:
             "alembic_head_scripts": list(self.alembic_head_scripts),
             "database_required": self.database_required,
             "database_checked": self.database_checked,
+            "final_freeze_ready": self.final_freeze_ready,
+            "evidence_bundle_available": self.evidence_bundle_available,
             "capabilities": self.capabilities.as_mapping(),
             "registered_policy_names": list(self.registered_policy_names),
             "registered_policy_count": self.registered_policy_count,
