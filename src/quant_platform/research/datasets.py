@@ -119,24 +119,34 @@ def get_corporate_actions_for_dataset(
                 "corporate action effective_time is outside the requested range",
                 code=DatasetErrorCode.OUT_OF_RANGE,
             )
-        rows.append(
-            CorporateActionDatasetRow(
-                instrument_id=instrument.id,
-                symbol=instrument.symbol,
-                exchange_code=exchange.code if exchange is not None else None,
-                asset_class=instrument.asset_class,
-                action_type=action.action_type,
-                effective_time=action.effective_time,
-                available_time=action.available_time,
-                quantity_before=action.quantity_before,
-                quantity_after=action.quantity_after,
-                cash_amount=action.cash_amount,
-                currency=action.currency,
-                old_value=action.old_value,
-                new_value=action.new_value,
-                note=action.note,
+        rows.append(_corporate_action_dataset_row(action, instrument, exchange))
+    rows.sort(key=_corporate_action_sort_key)
+    return tuple(rows)
+
+
+def get_visible_corporate_actions(
+    session: Session,
+    request: DailyBarsDatasetRequest,
+) -> tuple[CorporateActionDatasetRow, ...]:
+    """Return every corporate action visible at ``as_of``.
+
+    Unlike ``get_corporate_actions_for_dataset``, this does **not** require
+    ``effective_time`` to fall inside the observation window. Split
+    normalization needs actions that take effect after the last bar.
+    Silver OHLCV is not changed.
+    """
+    _ensure_validated_request(request)
+    if request.uses_calendar():
+        _resolve_calendar(session, request)
+    stmt = _visible_corporate_actions_statement(request)
+    rows: list[CorporateActionDatasetRow] = []
+    for action, instrument, exchange in session.execute(stmt).tuples():
+        if action.available_time > request.as_of:
+            raise DatasetValidationError(
+                "corporate action available_time is after as_of",
+                code=DatasetErrorCode.LOOKAHEAD,
             )
-        )
+        rows.append(_corporate_action_dataset_row(action, instrument, exchange))
     rows.sort(key=_corporate_action_sort_key)
     return tuple(rows)
 
@@ -271,7 +281,40 @@ def _daily_bars_pit_statement(
     return _instrument_filters(stmt, request)
 
 
+def _corporate_action_dataset_row(
+    action: CorporateAction,
+    instrument: Instrument,
+    exchange: Exchange | None,
+) -> CorporateActionDatasetRow:
+    return CorporateActionDatasetRow(
+        id=action.id,
+        instrument_id=instrument.id,
+        symbol=instrument.symbol,
+        exchange_code=exchange.code if exchange is not None else None,
+        asset_class=instrument.asset_class,
+        action_type=action.action_type,
+        effective_time=action.effective_time,
+        available_time=action.available_time,
+        quantity_before=action.quantity_before,
+        quantity_after=action.quantity_after,
+        cash_amount=action.cash_amount,
+        currency=action.currency,
+        old_value=action.old_value,
+        new_value=action.new_value,
+        note=action.note,
+    )
+
+
 def _corporate_actions_statement(
+    request: DailyBarsDatasetRequest,
+) -> Select[Any]:
+    stmt = _visible_corporate_actions_statement(request)
+    return stmt.where(CorporateAction.effective_time >= request.start_time).where(
+        CorporateAction.effective_time <= request.end_time
+    )
+
+
+def _visible_corporate_actions_statement(
     request: DailyBarsDatasetRequest,
 ) -> Select[Any]:
     stmt: Select[Any] = (
@@ -279,8 +322,6 @@ def _corporate_actions_statement(
         .join(Instrument, CorporateAction.instrument_id == Instrument.id)
         .outerjoin(Exchange, Instrument.exchange_id == Exchange.id)
         .where(CorporateAction.available_time <= request.as_of)
-        .where(CorporateAction.effective_time >= request.start_time)
-        .where(CorporateAction.effective_time <= request.end_time)
         .order_by(
             Instrument.symbol,
             CorporateAction.effective_time,

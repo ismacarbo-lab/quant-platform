@@ -62,6 +62,8 @@ make quality
 | Research status (no DB) | `uv run python scripts/research-status.py` / `make research-status` |
 | Research evidence bundle (needs PostgreSQL; not in `make quality`) | `uv run python scripts/build-research-evidence-bundle.py …` / `make research-evidence-bundle` |
 | Verify evidence bundle | `uv run python scripts/verify-research-evidence-bundle.py --bundle-dir DIR` / `make verify-research-evidence-bundle` |
+| Build normalized dataset | `uv run python scripts/build-normalized-dataset.py …` |
+| Verify normalized dataset | `uv run python scripts/verify-normalized-dataset.py --run-dir DIR` |
 | Canonical command list | [COMMANDS.md](../release/COMMANDS.md) |
 | Freeze handoff | [RESEARCH_HANDOFF.md](../release/RESEARCH_HANDOFF.md) |
 
@@ -115,6 +117,22 @@ uv run python scripts/export-daily-dataset.py \
 ```
 
 See [docs/research/RESEARCH_DATASETS.md](../research/RESEARCH_DATASETS.md).
+
+Derived split view (does **not** rewrite `daily_bars`):
+
+```bash
+uv run python scripts/build-normalized-dataset.py \
+  --source-name local_csv \
+  --symbol FIXT \
+  --start 2024-01-01T00:00:00Z \
+  --end 2024-01-05T00:00:00Z \
+  --as-of 2024-01-20T00:00:00Z \
+  --output-dir /tmp/normalized-fixt
+uv run python scripts/verify-normalized-dataset.py \
+  --run-dir /tmp/normalized-fixt
+```
+
+See [CORPORATE_ACTION_NORMALIZATION.md](../research/CORPORATE_ACTION_NORMALIZATION.md).
 
 Diagnose coverage, calendar gaps, PIT corrections, and related ingestion
 errors (`--as-of` required):

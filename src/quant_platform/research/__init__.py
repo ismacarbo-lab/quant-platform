@@ -1,7 +1,8 @@
 """Research dataset queries. Not ingestion, strategies, or trading.
 
 This package reads silver tables already stored in PostgreSQL. It does not
-download vendors, apply corporate actions, or emit signals.
+download vendors or emit signals. Silver OHLCV is never rewritten; an
+optional derived normalization view lives in ``research.normalization``.
 """
 
 from quant_platform.research.catalog import (
@@ -32,6 +33,7 @@ from quant_platform.research.catalog_types import (
 from quant_platform.research.datasets import (
     get_corporate_actions_for_dataset,
     get_daily_bars_dataset,
+    get_visible_corporate_actions,
     list_instruments_for_dataset,
 )
 from quant_platform.research.errors import DatasetErrorCode, DatasetValidationError
@@ -49,6 +51,13 @@ from quant_platform.research.integrity_types import (
     IntegrityIssueCode,
     IntegritySeverity,
     SnapshotArtifactStatus,
+)
+from quant_platform.research.normalization import (
+    build_normalization_request,
+    build_normalized_daily_bars_dataset,
+    hash_normalized_daily_bars_dataset,
+    verify_normalization_artifacts,
+    write_normalized_dataset_artifacts,
 )
 from quant_platform.research.quality import (
     analyze_instrument_coverage,
@@ -125,6 +134,8 @@ __all__ = [
     "build_dataset_quality_request",
     "build_dataset_snapshot_catalog_filters",
     "build_dataset_snapshot_request",
+    "build_normalization_request",
+    "build_normalized_daily_bars_dataset",
     "compare_catalog_snapshots",
     "compare_dataset_snapshots",
     "create_daily_bars_snapshot",
@@ -134,8 +145,10 @@ __all__ = [
     "get_dataset_snapshot_by_id",
     "get_dataset_snapshot_by_manifest_hash",
     "get_git_commit",
+    "get_visible_corporate_actions",
     "hash_daily_bars_dataset",
     "hash_manifest_mapping",
+    "hash_normalized_daily_bars_dataset",
     "hash_quality_mapping",
     "hash_quality_report",
     "integrity_report_json",
@@ -148,9 +161,11 @@ __all__ = [
     "validate_catalog_manifest",
     "verify_catalog",
     "verify_catalog_entry_artifacts",
+    "verify_normalization_artifacts",
     "verify_snapshot_artifacts",
     "write_corporate_actions_csv",
     "write_daily_bars_csv",
     "write_dataset_quality_json",
+    "write_normalized_dataset_artifacts",
     "write_snapshot_manifest",
 ]

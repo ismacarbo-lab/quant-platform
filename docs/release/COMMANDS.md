@@ -58,6 +58,24 @@ uv run python scripts/load-daily-bars.py tests/fixtures/daily_bars_sample.csv
 
 No vendors. Local CSV only.
 
+## Normalized daily bars (derived)
+
+```bash
+uv run python scripts/build-normalized-dataset.py \
+  --source-name local_csv \
+  --symbol FIXT \
+  --start 2024-01-01T00:00:00Z \
+  --end 2024-01-05T00:00:00Z \
+  --as-of 2024-01-20T00:00:00Z \
+  --adjustment-mode split_only \
+  --output-dir /tmp/normalized-fixt
+uv run python scripts/verify-normalized-dataset.py \
+  --run-dir /tmp/normalized-fixt
+```
+
+Does not rewrite silver `daily_bars`. See
+[CORPORATE_ACTION_NORMALIZATION.md](../research/CORPORATE_ACTION_NORMALIZATION.md).
+
 ## Snapshot
 
 ```bash

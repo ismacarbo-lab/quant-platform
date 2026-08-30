@@ -1,7 +1,10 @@
 # Corporate actions — Phase 1.4
 
-Storage only. The platform records that an event exists. It does **not**
-adjust OHLCV, rewrite history, or change `instruments.symbol`.
+Storage only in silver. The platform records that an event exists. It
+does **not** rewrite `daily_bars` or change `instruments.symbol`.
+
+A derived research view can restate prices and volumes. See
+[CORPORATE_ACTION_NORMALIZATION.md](../research/CORPORATE_ACTION_NORMALIZATION.md).
 
 ## What exists
 
@@ -37,9 +40,10 @@ Announcement can precede effect: `available_time` may be **before**
 
 ## What does not exist
 
-- Price or volume adjustments
+- Mutation of silver OHLCV
+- Dividend price factors
 - Point-in-time symbol rewriting on `instruments`
-- Cash-flow accounting
+- Cash-flow accounting or performance series
 - Merger / spin-off / rights types
 - Vendor corporate-action feeds
 
@@ -51,8 +55,9 @@ unchanged until a later phase defines a listing timeline.
 `tests/fixtures/corporate_actions.csv` is fictional. Load with
 `load_corporate_actions_csv`.
 
-## Later phases
+## Derived view (Phase 6.0)
 
-Applying actions to silver bars, adjusted return series, and listing
-successor chains belong later. Do not treat stored events as an adjusted
-price engine.
+`quant_platform.research.normalization` can build a hashed local view
+(`split_only` by default). Silver rows stay as ingested. Dividends are
+informational only. That view is not a strategy and does not compute
+period results.

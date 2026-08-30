@@ -43,7 +43,10 @@ DOCUMENTED_RELEASE_RISKS: tuple[ReleaseRiskItem, ...] = (
     ),
     ReleaseRiskItem(
         code="no_advanced_normalization",
-        message="Corporate actions are stored, not applied to OHLCV.",
+        message=(
+            "Silver OHLCV stays unadjusted; optional derived split "
+            "normalization exists; dividends stay informational."
+        ),
     ),
     ReleaseRiskItem(
         code="no_portfolio_pnl",

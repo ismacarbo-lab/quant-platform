@@ -295,9 +295,11 @@ class CorporateActionDatasetRow:
     old_value: str | None
     new_value: str | None
     note: str | None
+    id: UUID | None = None
 
     def as_mapping(self) -> dict[str, object]:
         return {
+            "id": self.id,
             "instrument_id": self.instrument_id,
             "symbol": self.symbol,
             "exchange_code": self.exchange_code,

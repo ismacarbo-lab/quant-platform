@@ -1,9 +1,10 @@
 # quant_platform
 
-**Research-only** quantitative platform. This stage is **frozen** (Phase
-5.4). It is **not** a trading system: no strategies, signals, orders,
-fills, portfolio, PnL, returns, brokers, paper trading, live trading, or
-AI runtime.
+**Research-only** quantitative platform (Phase 6.0). Research mode was
+frozen at `v0.1.0-research`; this phase adds a derived corporate-action
+normalization view. It is **not** a trading system: no strategies,
+signals, orders, fills, portfolio, PnL, returns, brokers, paper trading,
+live trading, or AI runtime.
 
 Handoff: [docs/release/RESEARCH_HANDOFF.md](docs/release/RESEARCH_HANDOFF.md).
 Evidence bundle: [docs/release/RESEARCH_EVIDENCE_BUNDLE.md](docs/release/RESEARCH_EVIDENCE_BUNDLE.md).
@@ -60,10 +61,11 @@ mean profitability or a license to trade.
 ## Boundaries
 
 Implemented: local PIT ingestion, datasets, quality, snapshots, replay,
-dry-run research policies, experiments, release checks, evidence bundle.
+dry-run research policies, experiments, release checks, evidence bundle,
+derived split normalization (silver unchanged).
 
-Prohibited in this freeze: strategy, signal, portfolio, PnL, orders,
-brokers, paper/live, external vendors, AI runtime.
+Prohibited: strategy, signal, portfolio, PnL, orders, brokers,
+paper/live, external vendors, AI runtime.
 
 Full matrix: [docs/release/CAPABILITY_MATRIX.md](docs/release/CAPABILITY_MATRIX.md).
 Risks: [docs/release/RISK_REGISTER.md](docs/release/RISK_REGISTER.md).
@@ -74,10 +76,11 @@ This repository provides a **research-only** software base: typed
 configuration, UTC clocks, structured logging, PostgreSQL, Alembic, an
 internal health API, **local CSV daily-bar ingestion** with point-in-time
 timestamps, bronze/silver, instrument master, calendars, stored
-corporate actions (not applied), dataset API, quality reports, snapshots,
-catalog, replay, dry-run backtest (`ResearchPolicy` observers, no
-orders), experiments, policy regression, release checks, and a local
-**research evidence bundle**. Phase 5.4 freezes that stage.
+corporate actions (silver unadjusted; optional derived split view),
+dataset API, quality reports, snapshots, catalog, replay, dry-run
+backtest (`ResearchPolicy` observers, no orders), experiments, policy
+regression, release checks, a local **research evidence bundle**, and
+Phase 6.0 corporate-action normalization artifacts.
 It is **not** a trading system.
 
 ## Current purpose
@@ -122,6 +125,8 @@ It is **not** a trading system.
   still no PnL or orders).
 - Freeze this research stage with a technical handoff, checklists,
   capability/risk matrices, and ADR 0003 (still no trading or AI runtime).
+- Build a derived corporate-action-normalized daily-bar view (splits;
+  silver `daily_bars` unchanged; no performance metrics).
 
 ## What is not implemented
 

@@ -30,6 +30,9 @@ matrix](POLICY_REGRESSION_MATRIX.md), not by PnL.
 
 They emit only `ResearchObservation` values. They do **not** adjust
 OHLCV, pick an alternate correction version, or compute performance.
+Split restatement lives in
+[CORPORATE_ACTION_NORMALIZATION.md](../research/CORPORATE_ACTION_NORMALIZATION.md)
+and never mutates silver or these policy outputs.
 
 Existing names `noop` and `event_counting` remain.
 
@@ -66,7 +69,7 @@ returns.
 | `emit_each_action` | boolean | `false` |
 | `action_types` | list of strings or omit | all types |
 
-OHLCV is never rewritten.
+OHLCV is never rewritten by this policy. Silver stays unadjusted.
 
 ### `correction_audit`
 

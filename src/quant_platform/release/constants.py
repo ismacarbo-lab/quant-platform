@@ -43,6 +43,7 @@ ENABLED_CAPABILITIES: tuple[str, ...] = (
     "backtest_experiments",
     "policy_regression_matrix",
     "research_evidence_bundle",
+    "corporate_action_normalization",
     "health_endpoint",
 )
 
@@ -143,5 +144,6 @@ SMOKE_IMPORT_MODULES: tuple[str, ...] = (
     "quant_platform.core.config",
     "quant_platform.release.evidence_bundle",
     "quant_platform.release.status",
+    "quant_platform.research.normalization",
     "quant_platform.storage.database",
 )

@@ -18,7 +18,8 @@ Related: [RESEARCH_HANDOFF.md](RESEARCH_HANDOFF.md),
 | Bronze / silver | Raw records + canonical bars | Not gold features |
 | Instrument master | Symbol, asset class, exchange, currency | Not a broker account |
 | Calendars / sessions | Manual open, holiday, exceptional_close | Not an exchange feed |
-| Corporate action store | Facts stored, not applied to OHLCV | Not a split-adjusted tape |
+| Corporate action store | Facts stored; silver OHLCV unchanged | Not a vendor CA feed |
+| CA normalization | Derived split / reverse-split view | Not a strategy; not dividend-adjusted; not performance |
 | Dataset API | `as_of` required | Not a trading book |
 | Dataset quality | Coverage, calendar, PIT, ingest notes | Not a score of edge |
 | Snapshots | Local hashed CSV + quality + manifest | Not cloud object storage |
@@ -86,8 +87,8 @@ Only after an explicit ADR. Still research-first unless that ADR says
 otherwise:
 
 1. Richer **local** datasets (still no vendor client).
-2. Stronger PIT and corporate-action **research notes** (still not
-   applied as a strategy).
+2. Dividend or FX restatement as another **derived** view (still not a
+   strategy).
 3. A strategy **interface** with no brokers, no orders, and no PnL
    until those layers exist.
 4. Optional, default-off research assistant (see

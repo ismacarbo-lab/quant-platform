@@ -12,6 +12,8 @@ Phase 5.3 adds an end-to-end research evidence bundle (local fixtures
 through snapshot, replay, dry-run, experiment, and release status).
 Phase 5.4 freezes research mode (handoff, checklists, capability and
 risk matrices) still without trading or AI runtime.
+Phase 6.0 adds a derived corporate-action normalization view (splits)
+without mutating silver bars, signals, or performance metrics.
 """
 
 __version__ = "0.1.0"

@@ -55,8 +55,14 @@ If you do not pass a calendar, session tables are ignored.
 
 `get_corporate_actions_for_dataset(session, request)` returns stored events
 with `available_time <= as_of` and `effective_time` inside the observation
-window. Splits are **not** applied. OHLCV is unchanged. Symbols are not
-rewritten.
+window. Silver OHLCV is unchanged. Symbols are not rewritten.
+
+`get_visible_corporate_actions` drops the `effective_time` window so a
+later split can restate earlier bars. That is used only by the derived
+normalization layer. See
+[CORPORATE_ACTION_NORMALIZATION.md](CORPORATE_ACTION_NORMALIZATION.md).
+
+The raw dataset API still does **not** apply splits to `daily_bars`.
 
 ## Unbounded queries
 
