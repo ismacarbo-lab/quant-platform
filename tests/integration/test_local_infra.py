@@ -44,6 +44,7 @@ def test_ci_workflow_does_not_require_github_secrets() -> None:
     assert "pytest -m postgres" in workflow
     assert "alembic upgrade head" in workflow
     assert "run-policy-regression-matrix.py" in workflow
+    assert "run-normalization-regression.py" in workflow
     assert "research-release-check.py" in workflow
     assert "test_architecture_boundaries.py" in workflow
     assert "--skip-db" in workflow
@@ -55,6 +56,7 @@ def test_makefile_has_release_targets() -> None:
     text = (ROOT / "Makefile").read_text(encoding="utf-8")
     assert "research-release-check" in text
     assert "policy-regression" in text
+    assert "normalization-regression" in text
     assert "architecture-check" in text
     assert "quality: lint format-check typecheck test-fast compose-config" in text
 

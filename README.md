@@ -1,8 +1,9 @@
 # quant_platform
 
-**Research-only** quantitative platform (Phase 6.0). Research mode was
-frozen at `v0.1.0-research`; this phase adds a derived corporate-action
-normalization view. It is **not** a trading system: no strategies,
+**Research-only** quantitative platform (Phase 6.1). Research mode was
+frozen at `v0.1.0-research`; this phase adds a normalization regression
+matrix and an opt-in normalized dataset on the evidence bundle. It is
+**not** a trading system: no strategies,
 signals, orders, fills, portfolio, PnL, returns, brokers, paper trading,
 live trading, or AI runtime.
 
@@ -46,6 +47,7 @@ Canonical commands: [docs/release/COMMANDS.md](docs/release/COMMANDS.md).
 ```bash
 make quality
 make policy-regression
+make normalization-regression
 make research-release-check
 make research-status
 ```
@@ -62,7 +64,8 @@ mean profitability or a license to trade.
 
 Implemented: local PIT ingestion, datasets, quality, snapshots, replay,
 dry-run research policies, experiments, release checks, evidence bundle,
-derived split normalization (silver unchanged).
+derived split normalization (silver unchanged), and a normalization
+regression matrix.
 
 Prohibited: strategy, signal, portfolio, PnL, orders, brokers,
 paper/live, external vendors, AI runtime.
@@ -80,7 +83,8 @@ corporate actions (silver unadjusted; optional derived split view),
 dataset API, quality reports, snapshots, catalog, replay, dry-run
 backtest (`ResearchPolicy` observers, no orders), experiments, policy
 regression, release checks, a local **research evidence bundle**, and
-Phase 6.0 corporate-action normalization artifacts.
+Phase 6.0 corporate-action normalization artifacts plus a Phase 6.1
+normalization regression matrix.
 It is **not** a trading system.
 
 ## Current purpose
@@ -127,6 +131,8 @@ It is **not** a trading system.
   capability/risk matrices, and ADR 0003 (still no trading or AI runtime).
 - Build a derived corporate-action-normalized daily-bar view (splits;
   silver `daily_bars` unchanged; no performance metrics).
+- Pin that derived view with a golden normalization regression matrix
+  and optionally attach it to a research evidence bundle.
 
 ## What is not implemented
 
@@ -330,6 +336,8 @@ Data-quality research policies (not strategies):
 [docs/backtest/DATA_QUALITY_POLICIES.md](docs/backtest/DATA_QUALITY_POLICIES.md).
 Research-policy regression matrix (golden hashes, not PnL):
 [docs/backtest/POLICY_REGRESSION_MATRIX.md](docs/backtest/POLICY_REGRESSION_MATRIX.md).
+Corporate-action normalization regression matrix (hashes, not PnL):
+[docs/research/NORMALIZATION_REGRESSION_MATRIX.md](docs/research/NORMALIZATION_REGRESSION_MATRIX.md).
 Research-mode release candidate (what is ready, what is not):
 [docs/release/RESEARCH_RELEASE_CANDIDATE.md](docs/release/RESEARCH_RELEASE_CANDIDATE.md).
 End-to-end research evidence bundle (manual, local fixtures only):

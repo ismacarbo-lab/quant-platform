@@ -56,6 +56,9 @@ The bundle is **not**:
 - a vendor download or cloud object store
 
 Corporate actions in the fixtures are **stored**, not applied to OHLCV.
+A derived normalized dataset is **opt-in** (`--include-normalized-dataset`).
+Default bundles do not include it, so older hashes stay comparable. The
+opt-in path still does not compute returns or PnL.
 
 ## How to build it
 
@@ -85,6 +88,8 @@ Useful flags:
 | `--policy-name` | Registered research policy. Default: `data_quality`. |
 | `--policy-config-json` | Optional JSON object for that policy. |
 | `--deterministic-id` | Derive replay/backtest/experiment/bundle ids from hashes. |
+| `--include-normalized-dataset` | Opt-in derived CA view under `normalized_dataset/`. |
+| `--normalization-adjustment-mode` | Mode for that derived view. Default: `split_only`. |
 | `--json` | Print the evidence summary. |
 
 The builder fails if `APP_MODE` is not research, Alembic is not at the
@@ -94,10 +99,11 @@ errors, or any coordinated step errors. It does not print `DATABASE_URL`.
 The builder reuses existing APIs. It does not add a second ingest, replay,
 or backtest engine.
 
-Release status inside the bundle skips Compose and the policy regression
-matrix so the run stays local and reasonably fast. Run
-`make research-release-check` separately when you want the full candidate
-check.
+Release status inside the bundle skips Compose, the policy regression
+matrix, and the normalization regression matrix so the run stays local
+and reasonably fast. Run `make research-release-check` separately when
+you want the full candidate check, including
+`make normalization-regression`.
 
 ## How to verify it
 
@@ -129,6 +135,7 @@ The bundle directory contains:
 | `backtest_run/` | Dry-run summary, manifest, policy output |
 | `experiment/` | Experiment summary/manifest plus member runs |
 | `reports/` | Quality, readiness, usability, and research report JSON |
+| `normalized_dataset/` | Opt-in derived bars, report, and manifest (absent by default) |
 
 Event rows live in `replay_run/events.jsonl`. The bundle manifest does
 not copy them.
@@ -146,6 +153,7 @@ versioned.
 - experiment hash
 - research report hash
 - release report hash
+- `normalized_dataset_hash` only when the opt-in derived view is present
 - step names and statuses
 - `ok` / `error_count`
 - package version, `app_mode`, Alembic head

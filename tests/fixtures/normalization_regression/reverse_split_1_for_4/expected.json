@@ -1,0 +1,8 @@
+{
+  "expected_actions_applied": 1,
+  "expected_adjusted_bar_count": 1,
+  "expected_bar_count": 1,
+  "expected_dataset_hash": "sha256:ec2c3e3881a07e7a0d403560b8cf86741acb99e7a3fb342191c26c7084daf4cc",
+  "expected_issue_count": 0,
+  "expected_warnings": []
+}

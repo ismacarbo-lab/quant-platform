@@ -45,10 +45,21 @@ def main(argv: list[str] | None = None) -> int:
         help="Do not run the policy regression matrix.",
     )
     parser.add_argument(
+        "--skip-normalization-regression",
+        action="store_true",
+        help="Do not run the normalization regression matrix.",
+    )
+    parser.add_argument(
         "--matrix-path",
         type=Path,
         default=None,
         help="Override the policy regression matrix path.",
+    )
+    parser.add_argument(
+        "--normalization-fixtures-dir",
+        type=Path,
+        default=None,
+        help="Override the normalization regression fixtures directory.",
     )
     args = parser.parse_args(argv)
     try:
@@ -60,6 +71,8 @@ def main(argv: list[str] | None = None) -> int:
             require_db=bool(args.require_db),
             skip_compose=bool(args.skip_compose),
             skip_regression=bool(args.skip_regression),
+            skip_normalization_regression=bool(args.skip_normalization_regression),
+            normalization_fixtures_dir=args.normalization_fixtures_dir,
         )
     except Exception as exc:
         print(redact_secret_text(str(exc)), file=sys.stderr)

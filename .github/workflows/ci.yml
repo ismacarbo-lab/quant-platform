@@ -35,6 +35,10 @@ jobs:
         env:
           APP_MODE: research
         run: uv run python scripts/run-policy-regression-matrix.py
+      - name: Normalization regression matrix
+        env:
+          APP_MODE: research
+        run: uv run python scripts/run-normalization-regression.py
       - name: Research release check (no DB)
         env:
           APP_MODE: research

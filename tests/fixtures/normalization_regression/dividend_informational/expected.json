@@ -1,0 +1,10 @@
+{
+  "expected_actions_applied": 0,
+  "expected_adjusted_bar_count": 0,
+  "expected_bar_count": 1,
+  "expected_dataset_hash": "sha256:5f0ea7c38e6d6a6544b3b7869f3c21b488dc7780670600f2c58146f3c6f56364",
+  "expected_issue_count": 1,
+  "expected_warnings": [
+    "dividend_not_adjusted"
+  ]
+}

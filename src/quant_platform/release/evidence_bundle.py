@@ -97,6 +97,7 @@ from quant_platform.release.evidence_types import (
     EVIDENCE_HASH_KIND,
     EVIDENCE_STEPS,
     EXPERIMENT_DIRNAME,
+    NORMALIZED_DATASET_DIRNAME,
     RELEASE_STATUS_NAME,
     REPLAY_DIRNAME,
     REPORTS_DIRNAME,
@@ -109,6 +110,7 @@ from quant_platform.release.evidence_types import (
     STEP_EXPERIMENT_USABILITY,
     STEP_INGEST,
     STEP_LOAD_FIXTURES,
+    STEP_NORMALIZATION,
     STEP_QUALITY,
     STEP_READINESS,
     STEP_RELEASE_STATUS,
@@ -137,6 +139,26 @@ from quant_platform.release.status import (
 )
 from quant_platform.research.catalog import register_dataset_snapshot
 from quant_platform.research.errors import DatasetValidationError
+from quant_platform.research.normalization.artifacts import (
+    write_normalized_dataset_artifacts,
+)
+from quant_platform.research.normalization.datasets import (
+    build_normalized_daily_bars_dataset,
+)
+from quant_platform.research.normalization.errors import NormalizationError
+from quant_platform.research.normalization.integrity import (
+    verify_normalization_artifacts,
+)
+from quant_platform.research.normalization.types import (
+    BARS_ARTIFACT_NAME as NORMALIZED_BARS_ARTIFACT_NAME,
+)
+from quant_platform.research.normalization.types import (
+    MANIFEST_ARTIFACT_NAME as NORMALIZATION_MANIFEST_NAME,
+)
+from quant_platform.research.normalization.types import (
+    REPORT_ARTIFACT_NAME as NORMALIZATION_REPORT_NAME,
+)
+from quant_platform.research.normalization.types import build_normalization_request
 from quant_platform.research.quality import (
     get_dataset_quality_report,
     write_dataset_quality_json,
@@ -235,6 +257,9 @@ def hash_research_evidence_bundle(
         "error_count": payload.get("error_count"),
         "steps": step_rows,
     }
+    normalized_hash = payload.get("normalized_dataset_hash")
+    if normalized_hash:
+        digest["normalized_dataset_hash"] = normalized_hash
     blob = canonical_json(digest)
     if manifest_contains_secrets(blob):
         raise EvidenceBundleError(
@@ -284,6 +309,7 @@ def build_research_evidence_bundle(
     experiment_hash: str | None = None
     report_hash: str | None = None
     release_report_hash: str | None = None
+    normalized_dataset_hash: str | None = None
     replay_ready: bool | None = None
     backtest_usable: bool | None = None
     experiment_usable: bool | None = None
@@ -469,6 +495,66 @@ def build_research_evidence_bundle(
         register_dataset_snapshot(session, snapshot.manifest)
         session.flush()
         _ok(STEP_CATALOG, snapshot_id)
+
+        if request.include_normalized_dataset:
+            try:
+                norm_request = build_normalization_request(
+                    as_of=spec.as_of,
+                    start_time=spec.start_time,
+                    end_time=spec.end_time,
+                    source_name=source_name,
+                    adjustment_mode=request.normalization_adjustment_mode,
+                    symbols=spec.symbols,
+                    exchange_codes=spec.exchange_codes,
+                    asset_classes=(spec.asset_class,),
+                    currency=spec.currency,
+                    calendar_code=spec.calendar_code,
+                )
+                normalized = build_normalized_daily_bars_dataset(session, norm_request)
+                write_normalized_dataset_artifacts(
+                    normalized, output_dir / NORMALIZED_DATASET_DIRNAME
+                )
+                integrity = verify_normalization_artifacts(
+                    output_dir / NORMALIZED_DATASET_DIRNAME
+                )
+                if not integrity.ok:
+                    _fail(
+                        STEP_NORMALIZATION,
+                        "normalization_verify_failed",
+                        "normalized dataset artifacts failed verification",
+                    )
+                normalized_dataset_hash = normalized.dataset_hash
+                artifacts.extend(
+                    (
+                        ResearchEvidenceBundleArtifact(
+                            name="normalized_daily_bars",
+                            path=(
+                                f"{NORMALIZED_DATASET_DIRNAME}/"
+                                f"{NORMALIZED_BARS_ARTIFACT_NAME}"
+                            ),
+                            kind="csv",
+                        ),
+                        ResearchEvidenceBundleArtifact(
+                            name="normalization_report",
+                            path=(
+                                f"{NORMALIZED_DATASET_DIRNAME}/"
+                                f"{NORMALIZATION_REPORT_NAME}"
+                            ),
+                            kind="json",
+                        ),
+                        ResearchEvidenceBundleArtifact(
+                            name="normalization_manifest",
+                            path=(
+                                f"{NORMALIZED_DATASET_DIRNAME}/"
+                                f"{NORMALIZATION_MANIFEST_NAME}"
+                            ),
+                            kind="json",
+                        ),
+                    )
+                )
+                _ok(STEP_NORMALIZATION, normalized_dataset_hash)
+            except NormalizationError as exc:
+                _fail(STEP_NORMALIZATION, exc.code, str(exc))
 
         dataset_request = snapshot_request.dataset
         replay = create_daily_bar_replay(
@@ -756,6 +842,7 @@ def build_research_evidence_bundle(
             skip_db=request.skip_release_db,
             skip_compose=request.skip_compose,
             skip_regression=request.skip_regression,
+            skip_normalization_regression=request.skip_normalization_regression,
             research_mode=mode,
         )
         release_status = without_local_paths(release_report.as_mapping())
@@ -837,6 +924,7 @@ def build_research_evidence_bundle(
         experiment_hash=experiment_hash,
         report_hash=report_hash,
         release_report_hash=release_report_hash,
+        normalized_dataset_hash=normalized_dataset_hash,
         steps=tuple(steps),
         artifacts=_dedupe_artifacts(artifacts),
         warnings=tuple(warnings),

@@ -1,4 +1,4 @@
-# Architecture — Phase 6.0
+# Architecture — Phase 6.1
 
 Status: research ingestion, an internal **dataset query API**, **dataset
 quality reports**, **local hashed snapshots**, a **PostgreSQL snapshot
@@ -17,7 +17,9 @@ research reports**, **data-quality research policies**, a
 **ResearchPolicy regression matrix**, a **research-mode release
 candidate** (status and guardrails), a **local research evidence
 bundle**, a **research-mode freeze** (handoff, checklists), and a
-**derived corporate-action normalization** view (silver bars unchanged).
+**derived corporate-action normalization** view (silver bars unchanged)
+and a **normalization regression matrix** plus an opt-in normalized
+dataset on the evidence bundle.
 No LLM runtime, strategies, brokers, or execution.
 
 ## Modular monolith
@@ -30,7 +32,7 @@ until a measured operational need appears.
 src/quant_platform/
   core/         configuration, UTC clock, identifiers
   data/         local CSV ingest, PIT daily bars, repositories
-  research/     PIT datasets, quality reports, snapshots, catalog, integrity, CA normalization
+  research/     PIT datasets, quality reports, snapshots, catalog, integrity, CA normalization, normalization regression
   simulation/   dataset replay, run catalog, backtest readiness gate (no strategies)
   backtest/     dry-run engine, research policies, catalog, integrity, regression matrix (no orders)
   release/      research release-candidate status, checks, and evidence bundle (no trading)
@@ -47,7 +49,7 @@ Documented future areas (no empty implementation packages in Phase 0):
 | `domain` | Canonical types and invariants | documented |
 | `data` | Ingest, bronze/silver/gold, PIT | bronze, silver, identity, calendars, CA store |
 | `storage` | Persistence adapters | engine/session only |
-| `research` | Dataset queries, experiment runners | PIT datasets, quality reports, snapshots, catalog, integrity, derived CA normalization; no notebooks |
+| `research` | Dataset queries, experiment runners | PIT datasets, quality reports, snapshots, catalog, integrity, derived CA normalization, normalization regression; no notebooks |
 | `simulation` | Dataset replay timeline | events, boundaries, stream hash, audit, run artifacts + catalog, readiness gate; no strategies |
 | `backtesting` | Simulation engine | Phase 5.4 package `backtest/` plus `release/`: dry-run, research policy, regression matrix, experiments, usability, release checks, evidence bundle, freeze docs; no orders/PnL |
 | `strategies` | Signal generation | not implemented |
@@ -159,6 +161,7 @@ research dataset API **requires** `as_of`. See
 [RESEARCH_HANDOFF.md](../release/RESEARCH_HANDOFF.md),
 [CAPABILITY_MATRIX.md](../release/CAPABILITY_MATRIX.md),
 [CORPORATE_ACTION_NORMALIZATION.md](../research/CORPORATE_ACTION_NORMALIZATION.md),
+[NORMALIZATION_REGRESSION_MATRIX.md](../research/NORMALIZATION_REGRESSION_MATRIX.md),
 and [ADR 0003](../adr/0003-research-mode-freeze.md).
 
 ### Point-in-time timestamps
@@ -275,6 +278,9 @@ Phase 5.4 freezes research mode (handoff and checklists; no schema
 change; still no orders or PnL).
 Phase 6.0 adds derived corporate-action normalization (no schema
 change; silver `daily_bars` unchanged; still no orders or PnL).
+Phase 6.1 adds a normalization regression matrix and an opt-in
+normalized dataset on the evidence bundle (no schema change; still no
+orders or PnL).
 None of these add HTTP routes or gold/trading tables.
 
 ## AI usage boundary

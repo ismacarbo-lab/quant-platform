@@ -58,6 +58,19 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Derive replay, backtest, experiment, and bundle ids from hashes.",
     )
+    parser.add_argument(
+        "--include-normalized-dataset",
+        action="store_true",
+        help=(
+            "Build a derived normalized dataset into normalized_dataset/. "
+            "Opt-in; default bundles stay unchanged. No returns or PnL."
+        ),
+    )
+    parser.add_argument(
+        "--normalization-adjustment-mode",
+        default="split_only",
+        help="Adjustment mode when --include-normalized-dataset is set.",
+    )
     parser.add_argument("--json", action="store_true", dest="as_json")
     args = parser.parse_args(argv)
 
@@ -92,6 +105,8 @@ def main(argv: list[str] | None = None) -> int:
             policy_config=policy_config,
             deterministic_id=bool(args.deterministic_id),
             resolve_git=not bool(args.deterministic_id),
+            include_normalized_dataset=bool(args.include_normalized_dataset),
+            normalization_adjustment_mode=args.normalization_adjustment_mode,
         )
         result = build_research_evidence_bundle(session, request)
         if result.ok:

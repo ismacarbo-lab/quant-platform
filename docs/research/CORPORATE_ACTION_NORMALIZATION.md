@@ -7,7 +7,8 @@ performance.
 Package: `quant_platform.research.normalization`.
 
 Related: [CORPORATE_ACTIONS.md](../data/CORPORATE_ACTIONS.md),
-[RESEARCH_DATASETS.md](RESEARCH_DATASETS.md).
+[RESEARCH_DATASETS.md](RESEARCH_DATASETS.md),
+[NORMALIZATION_REGRESSION_MATRIX.md](NORMALIZATION_REGRESSION_MATRIX.md).
 
 **No Alembic revision for this phase.** Expected head remains
 `0009_backtest_experiments`.
@@ -105,6 +106,17 @@ files.
 `hash_normalized_daily_bars_dataset` is `sha256:<64 hex>`. It covers raw
 dataset identity, `as_of`, mode, applied actions, normalized values, and
 issues. It omits wall-clock, random ids, and absolute paths.
+
+## Regression matrix
+
+Phase 6.1 pins those hashes with golden fixtures under
+`tests/fixtures/normalization_regression/`. Run
+`make normalization-regression`. Update `expected.json` by hand after
+reviewing actuals. See
+[NORMALIZATION_REGRESSION_MATRIX.md](NORMALIZATION_REGRESSION_MATRIX.md).
+
+The evidence bundle can attach this derived view only when
+`--include-normalized-dataset` is set. Default bundles stay unchanged.
 
 ## Why this is not a strategy
 

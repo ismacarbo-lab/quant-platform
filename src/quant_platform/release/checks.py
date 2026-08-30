@@ -35,6 +35,11 @@ from quant_platform.release.status import (
     repository_root,
 )
 from quant_platform.release.types import ReleaseCheckItem, ReleaseStatusReport
+from quant_platform.research.normalization.errors import NormalizationError
+from quant_platform.research.normalization.regression import (
+    default_normalization_regression_dir,
+    run_normalization_regression_matrix,
+)
 from quant_platform.simulation.constructs import (
     FORBIDDEN_TABLE_NAMES,
     detect_trading_constructs,
@@ -56,8 +61,10 @@ def run_research_release_checks(
     require_db: bool = False,
     skip_compose: bool = False,
     skip_regression: bool = False,
+    skip_normalization_regression: bool = False,
     skip_imports: bool = False,
     research_mode: bool | None = None,
+    normalization_fixtures_dir: Path | str | None = None,
 ) -> ReleaseStatusReport:
     """Run research release-candidate checks. Never prints secrets."""
     root = Path(repo_root) if repo_root is not None else repository_root()
@@ -86,6 +93,13 @@ def run_research_release_checks(
         checks.append(_check_smoke_imports())
     if not skip_regression:
         checks.append(_check_policy_regression(matrix))
+    if not skip_normalization_regression:
+        fixtures = (
+            Path(normalization_fixtures_dir)
+            if normalization_fixtures_dir is not None
+            else default_normalization_regression_dir()
+        )
+        checks.append(_check_normalization_regression(fixtures))
     if not skip_compose:
         checks.append(_check_compose_config(root))
     database_checked = False
@@ -287,6 +301,28 @@ def _check_policy_regression(matrix_path: Path) -> ReleaseCheckItem:
         f"policy regression failed: {report.failed_count} cases, "
         f"{report.error_count} errors",
         code="policy_regression_failed",
+    )
+
+
+def _check_normalization_regression(fixtures_dir: Path) -> ReleaseCheckItem:
+    try:
+        report = run_normalization_regression_matrix(fixtures_dir)
+    except (NormalizationError, OSError) as exc:
+        return _error(
+            "normalization_regression",
+            f"normalization regression matrix could not run: {type(exc).__name__}",
+            code="normalization_regression_error",
+        )
+    if report.ok:
+        return _ok(
+            "normalization_regression",
+            f"{report.passed_count}/{report.case_count} regression cases passed",
+        )
+    return _error(
+        "normalization_regression",
+        f"normalization regression failed: {report.failed_count} cases, "
+        f"{report.error_count} errors",
+        code="normalization_regression_failed",
     )
 
 

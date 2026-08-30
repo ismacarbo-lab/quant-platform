@@ -24,6 +24,13 @@ from quant_platform.research.normalization.integrity import (
     NormalizationIntegrityReport,
     verify_normalization_artifacts,
 )
+from quant_platform.research.normalization.regression import (
+    hash_normalization_regression_report,
+    run_normalization_regression_matrix,
+)
+from quant_platform.research.normalization.regression_artifacts import (
+    write_normalization_regression_artifacts,
+)
 from quant_platform.research.normalization.types import (
     AdjustmentMode,
     CorporateActionFactor,
@@ -56,8 +63,11 @@ __all__ = [
     "build_normalization_request",
     "build_normalized_daily_bars_dataset",
     "compute_bar_adjustment",
+    "hash_normalization_regression_report",
     "hash_normalized_daily_bars_dataset",
+    "run_normalization_regression_matrix",
     "split_quantity_factors",
     "verify_normalization_artifacts",
+    "write_normalization_regression_artifacts",
     "write_normalized_dataset_artifacts",
 ]

@@ -44,6 +44,7 @@ ENABLED_CAPABILITIES: tuple[str, ...] = (
     "policy_regression_matrix",
     "research_evidence_bundle",
     "corporate_action_normalization",
+    "normalization_research_layer",
     "health_endpoint",
 )
 

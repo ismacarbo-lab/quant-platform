@@ -45,7 +45,8 @@ DOCUMENTED_RELEASE_RISKS: tuple[ReleaseRiskItem, ...] = (
         code="no_advanced_normalization",
         message=(
             "Silver OHLCV stays unadjusted; optional derived split "
-            "normalization exists; dividends stay informational."
+            "normalization exists; dividends stay informational; "
+            "CA methodology is limited to stored split factors."
         ),
     ),
     ReleaseRiskItem(
@@ -63,6 +64,17 @@ DOCUMENTED_RELEASE_RISKS: tuple[ReleaseRiskItem, ...] = (
     ReleaseRiskItem(
         code="policy_regression_manual_goldens",
         message="Policy regression goldens must be copied into matrix.json by hand.",
+    ),
+    ReleaseRiskItem(
+        code="normalization_dividends_informational",
+        message="Dividends are informational only; prices are not dividend-adjusted.",
+    ),
+    ReleaseRiskItem(
+        code="normalization_regression_manual_goldens",
+        message=(
+            "Normalization regression goldens must be copied into "
+            "expected.json by hand after review."
+        ),
     ),
     ReleaseRiskItem(
         code="postgresql_required",

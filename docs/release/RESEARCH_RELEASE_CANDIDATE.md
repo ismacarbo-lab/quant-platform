@@ -84,6 +84,7 @@ Useful flags:
 | `--require-db` | Fail if PostgreSQL is unreachable. |
 | `--skip-compose` | Do not run `docker compose config`. |
 | `--skip-regression` | Do not run the policy regression matrix. |
+| `--skip-normalization-regression` | Do not run the normalization regression matrix. |
 | `--json` | Print the status report. |
 
 The checker never prints `DATABASE_URL` or passwords. It does not
@@ -93,6 +94,7 @@ Makefile companions:
 
 ```bash
 make policy-regression
+make normalization-regression
 make architecture-check
 make quality
 ```
@@ -140,6 +142,20 @@ If `policy_regression` fails:
 5. Re-run the matrix and the release check.
 
 See [POLICY_REGRESSION_MATRIX.md](../backtest/POLICY_REGRESSION_MATRIX.md).
+
+## How to review normalization-regression drift
+
+If `normalization_regression` fails:
+
+1. Run `make normalization-regression` or
+   `uv run python scripts/run-normalization-regression.py --json`.
+2. If the change is intentional, write actuals with `--update-expected`
+   (this **does not** rewrite `expected.json`).
+3. Review factors, warning codes, and bar counts. Reject returns/PnL.
+4. Copy hashes and counts into that case's `expected.json` by hand.
+5. Re-run the matrix and the release check.
+
+See [NORMALIZATION_REGRESSION_MATRIX.md](../research/NORMALIZATION_REGRESSION_MATRIX.md).
 
 ## How to confirm there is no trading or AI runtime
 

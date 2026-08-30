@@ -46,6 +46,9 @@ STEP_EXPERIMENT_USABILITY = "experiment_usability"
 STEP_RESEARCH_REPORT = "research_report"
 STEP_RELEASE_STATUS = "release_status"
 STEP_WRITE_MANIFEST = "write_manifest"
+STEP_NORMALIZATION = "normalization"
+NORMALIZED_DATASET_DIRNAME = "normalized_dataset"
+DEFAULT_NORMALIZATION_ADJUSTMENT_MODE = "split_only"
 
 EVIDENCE_STEPS: tuple[str, ...] = (
     STEP_VALIDATE_MODE,
@@ -107,6 +110,9 @@ class ResearchEvidenceBundleRequest:
     skip_compose: bool = True
     skip_regression: bool = True
     skip_release_db: bool = True
+    skip_normalization_regression: bool = True
+    include_normalized_dataset: bool = False
+    normalization_adjustment_mode: str = DEFAULT_NORMALIZATION_ADJUSTMENT_MODE
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "fixture_dir", Path(self.fixture_dir))
@@ -120,6 +126,12 @@ class ResearchEvidenceBundleRequest:
             object.__setattr__(self, "notes", stripped or None)
         if self.policy_config is not None:
             object.__setattr__(self, "policy_config", dict(self.policy_config))
+        object.__setattr__(
+            self,
+            "normalization_adjustment_mode",
+            self.normalization_adjustment_mode.strip()
+            or DEFAULT_NORMALIZATION_ADJUSTMENT_MODE,
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -195,6 +207,7 @@ class ResearchEvidenceBundleManifest:
     experiment_usable: bool | None = None
     release_ok: bool | None = None
     policy_name: str = DEFAULT_POLICY_NAME
+    normalized_dataset_hash: str | None = None
 
     def as_mapping(self, *, include_bundle_hash: bool = True) -> dict[str, object]:
         payload: dict[str, object] = {
@@ -231,6 +244,8 @@ class ResearchEvidenceBundleManifest:
             "warnings": [item.as_mapping() for item in self.warnings],
             "errors": [item.as_mapping() for item in self.errors],
         }
+        if self.normalized_dataset_hash is not None:
+            payload["normalized_dataset_hash"] = self.normalized_dataset_hash
         if include_bundle_hash:
             payload["bundle_hash"] = self.bundle_hash
         return payload
@@ -255,7 +270,7 @@ class ResearchEvidenceBundleResult:
         return self.manifest.as_mapping()
 
     def summary_mapping(self) -> dict[str, object]:
-        return {
+        payload: dict[str, object] = {
             "kind": EVIDENCE_BUNDLE_KIND,
             "format_version": EVIDENCE_BUNDLE_FORMAT_VERSION,
             "bundle_id": self.manifest.bundle_id,
@@ -287,6 +302,9 @@ class ResearchEvidenceBundleResult:
             "error_count": len(self.manifest.errors),
             "steps": [item.as_mapping() for item in self.manifest.steps],
         }
+        if self.manifest.normalized_dataset_hash is not None:
+            payload["normalized_dataset_hash"] = self.manifest.normalized_dataset_hash
+        return payload
 
 
 def default_evidence_artifacts() -> tuple[ResearchEvidenceBundleArtifact, ...]:

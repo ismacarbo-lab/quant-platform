@@ -27,6 +27,9 @@ from quant_platform.release.status import (
 
 _SCRIPTS = Path(__file__).resolve().parents[2] / "scripts"
 _FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "policy_regression"
+_NORM_FIXTURES = (
+    Path(__file__).resolve().parents[1] / "fixtures" / "normalization_regression"
+)
 _FAKE_HASH = "sha256:" + ("a" * 64)
 
 
@@ -97,6 +100,7 @@ def test_release_check_detects_incorrect_app_mode(
         skip_db=True,
         skip_compose=True,
         skip_regression=True,
+        skip_normalization_regression=True,
         skip_imports=True,
         research_mode=False,
     )
@@ -134,10 +138,34 @@ def test_release_check_detects_policy_regression_failure(
         skip_db=True,
         skip_compose=True,
         skip_imports=True,
+        skip_normalization_regression=True,
     )
     assert report.ok is False
     names = {item.name: item.status for item in report.checks if item.status == "error"}
     assert names.get("policy_regression") == "error"
+
+
+def test_release_check_detects_normalization_regression_failure(
+    research_settings: Settings, tmp_path: Path
+) -> None:
+    dest = tmp_path / "split_2_for_1"
+    shutil.copytree(_NORM_FIXTURES / "split_2_for_1", dest)
+    expected = json.loads((dest / "expected.json").read_text(encoding="utf-8"))
+    expected["expected_dataset_hash"] = _FAKE_HASH
+    (dest / "expected.json").write_text(
+        json.dumps(expected, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    report = run_research_release_checks(
+        settings=research_settings,
+        skip_db=True,
+        skip_compose=True,
+        skip_regression=True,
+        skip_imports=True,
+        normalization_fixtures_dir=tmp_path,
+    )
+    assert report.ok is False
+    names = {item.name: item.status for item in report.checks if item.status == "error"}
+    assert names.get("normalization_regression") == "error"
 
 
 def test_release_check_detects_forbidden_construct(
@@ -151,6 +179,7 @@ def test_release_check_detects_forbidden_construct(
         skip_db=True,
         skip_compose=True,
         skip_regression=True,
+        skip_normalization_regression=True,
         skip_imports=True,
     )
     assert report.ok is False

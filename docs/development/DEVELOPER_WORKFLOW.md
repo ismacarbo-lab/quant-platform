@@ -57,6 +57,7 @@ make quality
 | Postgres tests only | `uv run pytest -m postgres` / `make test-postgres` |
 | Compose file | `docker compose config` / `make compose-config` |
 | Policy regression | `uv run python scripts/run-policy-regression-matrix.py` / `make policy-regression` |
+| Normalization regression | `uv run python scripts/run-normalization-regression.py` / `make normalization-regression` |
 | Architecture guards | `make architecture-check` |
 | Research release check | `uv run python scripts/research-release-check.py` / `make research-release-check` |
 | Research status (no DB) | `uv run python scripts/research-status.py` / `make research-status` |
@@ -301,6 +302,10 @@ uv run python scripts/run-policy-regression-matrix.py --json
 uv run python scripts/run-policy-regression-matrix.py \
   --output-dir /tmp/policy-regression \
   --update-expected
+uv run python scripts/run-normalization-regression.py --json
+uv run python scripts/run-normalization-regression.py \
+  --output-dir /tmp/normalization-regression \
+  --update-expected
 
 uv run python scripts/build-research-evidence-bundle.py \
   --fixture-dir tests/fixtures/e2e_research_bundle \
@@ -320,6 +325,7 @@ See [docs/backtest/BACKTEST_ENGINE.md](../backtest/BACKTEST_ENGINE.md),
 [docs/backtest/BACKTEST_EXPERIMENT_USABILITY.md](../backtest/BACKTEST_EXPERIMENT_USABILITY.md),
 [docs/backtest/DATA_QUALITY_POLICIES.md](../backtest/DATA_QUALITY_POLICIES.md),
 [docs/backtest/POLICY_REGRESSION_MATRIX.md](../backtest/POLICY_REGRESSION_MATRIX.md),
+[docs/research/NORMALIZATION_REGRESSION_MATRIX.md](../research/NORMALIZATION_REGRESSION_MATRIX.md),
 [docs/release/RESEARCH_RELEASE_CANDIDATE.md](../release/RESEARCH_RELEASE_CANDIDATE.md),
 [docs/release/RESEARCH_EVIDENCE_BUNDLE.md](../release/RESEARCH_EVIDENCE_BUNDLE.md),
 [docs/release/COMMANDS.md](../release/COMMANDS.md),
@@ -327,6 +333,8 @@ and [docs/release/RESEARCH_HANDOFF.md](../release/RESEARCH_HANDOFF.md).
 
 Event JSON fixtures for tests live in `tests/fixtures/replay_events/`.
 Policy regression fixtures live in `tests/fixtures/policy_regression/`.
+Normalization regression fixtures live in
+`tests/fixtures/normalization_regression/`.
 End-to-end evidence fixtures live in `tests/fixtures/e2e_research_bundle/`.
 
 Stop (keeps the volume):

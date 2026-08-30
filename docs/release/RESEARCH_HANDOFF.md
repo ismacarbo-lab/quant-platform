@@ -109,6 +109,7 @@ experiments). There are no `orders`, `fills`, `trades`, `signals`,
 |----------|------|
 | `tests/fixtures/e2e_research_bundle/` | Small fictional CSV pack for the evidence bundle |
 | `tests/fixtures/policy_regression/` | Golden JSONL streams and `matrix.json` |
+| `tests/fixtures/normalization_regression/` | Golden CA normalization cases and `expected.json` |
 | `tests/fixtures/` (other CSV) | Sample bars, calendars, sessions, CA |
 | local `--output-dir` / `--base-dir` | Snapshot, replay, backtest, experiment, bundle files |
 

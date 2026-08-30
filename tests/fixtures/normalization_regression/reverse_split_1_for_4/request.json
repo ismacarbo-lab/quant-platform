@@ -1,0 +1,8 @@
+{
+  "as_of": "2024-01-20T00:00:00+00:00",
+  "start_time": "2024-01-01T00:00:00+00:00",
+  "end_time": "2024-01-05T00:00:00+00:00",
+  "source_name": "local_csv",
+  "adjustment_mode": "split_and_reverse_split",
+  "symbols": ["FICT"]
+}

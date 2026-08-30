@@ -76,6 +76,20 @@ uv run python scripts/verify-normalized-dataset.py \
 Does not rewrite silver `daily_bars`. See
 [CORPORATE_ACTION_NORMALIZATION.md](../research/CORPORATE_ACTION_NORMALIZATION.md).
 
+## Normalization regression
+
+```bash
+make normalization-regression
+uv run python scripts/run-normalization-regression.py --json
+uv run python scripts/run-normalization-regression.py \
+  --output-dir /tmp/normalization-regression \
+  --update-expected
+```
+
+In-memory; no PostgreSQL. Does not rewrite `expected.json`. See
+[NORMALIZATION_REGRESSION_MATRIX.md](../research/NORMALIZATION_REGRESSION_MATRIX.md).
+Included in `make research-release-check`. Not in `make quality`.
+
 ## Snapshot
 
 ```bash
@@ -169,9 +183,15 @@ uv run python scripts/build-research-evidence-bundle.py \
 uv run python scripts/verify-research-evidence-bundle.py \
   --bundle-dir /tmp/research-evidence-bundle \
   --json
+uv run python scripts/build-research-evidence-bundle.py \
+  --fixture-dir tests/fixtures/e2e_research_bundle \
+  --output-dir /tmp/research-evidence-bundle \
+  --deterministic-id \
+  --include-normalized-dataset
 ```
 
-Not in `make quality`. Needs PostgreSQL.
+Not in `make quality`. Needs PostgreSQL. `--include-normalized-dataset`
+is opt-in and does not compute returns.
 
 ## CI troubleshooting
 
@@ -183,6 +203,8 @@ Not in `make quality`. Needs PostgreSQL.
   and `QUANT_PLATFORM_REQUIRE_POSTGRES=1`.
 - If **policy regression** fails: run the matrix locally; review
   observations; update `matrix.json` by hand if the change is intended.
+- If **normalization regression** fails: run the matrix locally; review
+  factors and warnings; update `expected.json` by hand if intended.
 - If **setup-uv** fails: retry / pin the action; do not weaken gates.
 - Never paste passwords or connection URLs into issues or logs.
 

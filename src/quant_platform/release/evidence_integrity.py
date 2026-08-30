@@ -13,7 +13,11 @@ from quant_platform.release.evidence_bundle import hash_research_evidence_bundle
 from quant_platform.release.evidence_types import (
     EVIDENCE_MANIFEST_NAME,
     EVIDENCE_SUMMARY_NAME,
+    NORMALIZED_DATASET_DIRNAME,
     RELEASE_STATUS_NAME,
+)
+from quant_platform.research.normalization.integrity import (
+    verify_normalization_artifacts,
 )
 from quant_platform.research.snapshots import (
     is_sha256_digest,
@@ -33,6 +37,7 @@ _HASH_FIELDS = (
     "report_hash",
     "release_report_hash",
     "bundle_hash",
+    "normalized_dataset_hash",
 )
 
 _FORBIDDEN_METRIC_TOKENS = (
@@ -225,6 +230,8 @@ def verify_research_evidence_bundle(bundle_dir: Path | str) -> EvidenceIntegrity
         _check_step_counts(manifest_payload, issues)
         if summary_payload is not None:
             _check_step_counts(summary_payload, issues)
+        if manifest_payload.get("normalized_dataset_hash"):
+            _check_normalized_dataset(root, issues)
 
     error_count = sum(
         1 for item in issues if item.severity == EvidenceIntegritySeverity.ERROR
@@ -370,6 +377,29 @@ def _check_step_counts(
             _error(
                 EvidenceIntegrityCode.STEP_COUNT_MISMATCH,
                 "ok is true but errors are present",
+            )
+        )
+
+
+def _check_normalized_dataset(
+    root: Path,
+    issues: list[EvidenceIntegrityIssue],
+) -> None:
+    target = root / NORMALIZED_DATASET_DIRNAME
+    if not target.is_dir():
+        issues.append(
+            _error(
+                EvidenceIntegrityCode.MISSING_ARTIFACT,
+                "normalized_dataset directory is missing",
+            )
+        )
+        return
+    report = verify_normalization_artifacts(target)
+    if not report.ok:
+        issues.append(
+            _error(
+                EvidenceIntegrityCode.HASH_MISMATCH,
+                "normalized dataset artifacts failed verification",
             )
         )
 

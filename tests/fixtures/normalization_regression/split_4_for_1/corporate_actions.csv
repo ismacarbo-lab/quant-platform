@@ -1,0 +1,2 @@
+id,instrument_id,symbol,exchange_code,asset_class,action_type,effective_time,available_time,quantity_before,quantity_after,cash_amount,currency,old_value,new_value,note
+aaaaaaaa-0004-0001-0000-000000000001,11111111-1111-1111-1111-111111111111,FICT,XNYS,equity,split,2024-01-10T00:00:00+00:00,2024-01-01T20:00:00+00:00,1,4,,,,,fixture_split_4_for_1
