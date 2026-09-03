@@ -1,11 +1,12 @@
 # quant_platform
 
-**Research-only** quantitative platform (Phase 6.3). Research mode was
+**Research-only** quantitative platform (Phase 6.4). Research mode was
 frozen at `v0.1.0-research` on Alembic `0009_backtest_experiments`.
 Later research-only work added a metadata-only catalog of derived
 normalized datasets (`0010_normalized_dataset_catalog`; silver
-`daily_bars` unchanged). This phase syncs operational docs and release
-checks with that head. It is
+`daily_bars` unchanged). Evidence-bundle re-runs on a shared database
+can opt into verified fixture reuse; they do not delete or rewrite
+silver bars. It is
 **not** a trading system: no strategies,
 signals, orders, fills, portfolio, PnL, returns, brokers, paper trading,
 live trading, or AI runtime.
@@ -57,6 +58,9 @@ make research-status
 
 Optional with PostgreSQL: `uv run pytest -m postgres`, then
 `make research-evidence-bundle` and `make verify-research-evidence-bundle`.
+On a shared local database whose fixtures are already loaded, add
+`--allow-existing-fixture-data` (off by default; verifies existing rows
+first; does not rewrite `daily_bars`).
 
 Manual list: [docs/release/FINAL_RESEARCH_CHECKLIST.md](docs/release/FINAL_RESEARCH_CHECKLIST.md).
 
@@ -66,7 +70,8 @@ mean profitability or a license to trade.
 ## Boundaries
 
 Implemented: local PIT ingestion, datasets, quality, snapshots, replay,
-dry-run research policies, experiments, release checks, evidence bundle,
+dry-run research policies, experiments, release checks, evidence bundle
+(with optional verified fixture reuse on a shared database),
 derived split normalization (silver unchanged), a normalization
 regression matrix, and a metadata-only normalized-dataset catalog.
 

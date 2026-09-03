@@ -64,6 +64,7 @@ def test_status_report_serializes_without_secrets(
     assert report.report_hash == hash_release_status_report(report.as_mapping())
     assert report.final_freeze_ready is True
     assert report.evidence_bundle_available is True
+    assert report.evidence_bundle_fixture_reuse_supported is True
     assert report.alembic_head_expected == EXPECTED_ALEMBIC_HEAD
     disabled = set(report.capabilities.disabled)
     assert "paper_trading" in disabled

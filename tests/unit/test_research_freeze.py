@@ -129,6 +129,7 @@ def test_release_status_json_includes_freeze_fields(
     assert payload["format_version"] == 2
     assert payload["final_freeze_ready"] is True
     assert payload["evidence_bundle_available"] is True
+    assert payload["evidence_bundle_fixture_reuse_supported"] is True
     assert payload["alembic_head_expected"] == EXPECTED_ALEMBIC_HEAD
     disabled = payload["capabilities"]["disabled"]
     assert isinstance(disabled, list)

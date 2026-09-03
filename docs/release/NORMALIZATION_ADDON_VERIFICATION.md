@@ -101,8 +101,11 @@ catalog `normalized_dataset_id` registered, usability `usable=true`).
 - Catalog usability still needs the local artifact folder (R5b / R8).
 - Dividends remain informational; no returns/PnL engine.
 - Shared local PostgreSQL can make an operator evidence-bundle ingest
-  insert 0 new rows if fixtures were already loaded; isolated
-  `pytest -m postgres` remains the CI path.
+  insert 0 new rows if fixtures were already loaded. Isolated
+  `pytest -m postgres` remains the CI path. Phase 6.4 adds explicit
+  `--allow-existing-fixture-data` (off by default) which verifies
+  existing rows match the fixtures before reuse; it does not delete or
+  rewrite `daily_bars`.
 - Freeze-era reports (`REMOTE_RELEASE_VERIFICATION.md`,
   `POST_TAG_RELEASE_NOTES.md`) still describe `v0.1.0-research` at
   `0009_backtest_experiments`.

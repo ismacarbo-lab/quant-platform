@@ -223,11 +223,22 @@ uv run python scripts/build-research-evidence-bundle.py \
   --include-normalized-dataset \
   --register-normalized-dataset \
   --json
+uv run python scripts/build-research-evidence-bundle.py \
+  --fixture-dir tests/fixtures/e2e_research_bundle \
+  --output-dir /tmp/research-evidence-bundle \
+  --deterministic-id \
+  --allow-existing-fixture-data \
+  --json
 ```
 
 Not in `make quality`. Needs PostgreSQL. `--include-normalized-dataset`
 is opt-in and does not compute returns. `--register-normalized-dataset`
 stores catalog metadata only when that opt-in is also set.
+`--allow-existing-fixture-data` is off by default. Use it only to re-run
+the bundle on a shared database whose existing rows already match the
+fixtures. It verifies OHLCV, times, corporate actions, and sessions
+before reuse. It does not relax PIT constraints, delete rows, or rewrite
+`daily_bars`.
 
 ## CI troubleshooting
 

@@ -92,11 +92,26 @@ Useful flags:
 | `--include-normalized-dataset` | Opt-in derived CA view under `normalized_dataset/`. |
 | `--register-normalized-dataset` | Also register catalog metadata (requires the opt-in). |
 | `--normalization-adjustment-mode` | Mode for that derived view. Default: `split_only`. |
+| `--allow-existing-fixture-data` | If ingest inserts 0 bars, verify existing rows match the fixtures and reuse them. Off by default. |
 | `--json` | Print the evidence summary. |
 
 The builder fails if `APP_MODE` is not research, Alembic is not at the
 expected head, the policy is not registered, the release check has
 errors, or any coordinated step errors. It does not print `DATABASE_URL`.
+
+Default ingest is **strict**: 0 new silver bars is a failure. That keeps
+PIT unique constraints intact and does not hide real conflicts.
+
+`--allow-existing-fixture-data` is for a **shared local PostgreSQL** where
+the same fixtures were already ingested. It does **not** delete, truncate,
+or rewrite `daily_bars`. Before reuse it checks symbol, source, observation
+and available times, OHLCV, volume, corporate actions, and sessions. A
+mismatch fails the bundle. Use it only to re-run the evidence pack on data
+you already loaded; do not use it to ignore a failed ingest.
+
+The manifest records `fixture_data_mode` (`inserted` / `reused` / `failed`)
+and inserted vs reused counts. `bundle_hash` includes that mode and the
+counts; it still excludes wall-clock and absolute paths.
 
 The builder reuses existing APIs. It does not add a second ingest, replay,
 or backtest engine.
@@ -158,6 +173,7 @@ versioned.
 - `normalized_dataset_hash` only when the opt-in derived view is present
   (`normalized_dataset_id` is stored on the manifest when register is
   also on; it is not part of the digest)
+- `fixture_data_mode` and inserted/reused counts when present
 - step names and statuses
 - `ok` / `error_count`
 - package version, `app_mode`, Alembic head

@@ -411,9 +411,7 @@ def test_build_script_help_mentions_allow_existing(
     _assert_no_secrets(captured.out)
 
 
-def _write_payload_bundle(
-    root: Path, manifest: ResearchEvidenceBundleManifest
-) -> None:
+def _write_payload_bundle(root: Path, manifest: ResearchEvidenceBundleManifest) -> None:
     payload = manifest.as_mapping()
     summary = {
         "kind": payload["kind"],

@@ -28,6 +28,7 @@ Related: [CAPABILITY_MATRIX.md](CAPABILITY_MATRIX.md),
 | R11 | Release evidence does not measure profitability | A green bundle can be mistaken for an edge | Evidence docs; risk `evidence_not_profitability`; no returns fields | Never treat integrity hashes as Sharpe or PnL |
 | R12 | Accidental git at `/home/isma` | Commits can land outside this repo | Handoff and checklist: work only in `/home/isma/invest` | Keep the boundary; do not “fix” that foreign git from here |
 | R13 | Venture OS tree beside the repo | Mixing products would leak unrelated prompts into quant | Do not touch `AI_VENTURE_OS_PROMPTS/` | Keep separate forever unless a dedicated ADR says otherwise |
+| R14 | Shared local PostgreSQL already holds e2e fixtures | A second evidence-bundle ingest inserts 0 silver bars and looks like a failure | Strict default still fails; `--allow-existing-fixture-data` verifies equivalence then reuses; PIT constraints stay; no deletes or `daily_bars` rewrites | Keep verification-before-reuse; never silent conflict ignore |
 
 Severity for all rows above is **accepted for this freeze**. The
 mitigation is documentation plus tests, not a trading control.

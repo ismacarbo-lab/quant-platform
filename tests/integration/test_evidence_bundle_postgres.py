@@ -97,6 +97,7 @@ def test_build_research_evidence_bundle_end_to_end(
     assert manifest.release_ok is True
     assert manifest.alembic_head == EXPECTED_ALEMBIC_HEAD
     assert manifest.app_mode == "research"
+    assert manifest.fixture_data_mode == "inserted"
     blob = json.dumps(manifest.as_mapping(), sort_keys=True)
     assert "DATABASE_URL" not in blob
     assert "postgresql+psycopg://" not in blob
@@ -460,20 +461,25 @@ def _raw_daily_bar_state(
 
 def _rewrite_csv_field(path: Path, field: str, value: str) -> None:
     with path.open(newline="", encoding="utf-8") as handle:
-        rows = list(csv.DictReader(handle))
-        fieldnames = handle.name
-    with path.open(newline="", encoding="utf-8") as handle:
         reader = csv.DictReader(handle)
         names = list(reader.fieldnames or [])
+        rows = list(reader)
     if field not in names:
         raise AssertionError(f"missing column {field}")
-    if rows:
-        rows[0][field] = value
+    changed = False
+    for row in rows:
+        if (row.get(field) or "") == value:
+            continue
+        row[field] = value
         if field == "session_kind" and value == "holiday":
             if "open_time" in names:
-                rows[0]["open_time"] = ""
+                row["open_time"] = ""
             if "close_time" in names:
-                rows[0]["close_time"] = ""
+                row["close_time"] = ""
+        changed = True
+        break
+    if not changed:
+        raise AssertionError(f"could not change {field}")
     with path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=names)
         writer.writeheader()

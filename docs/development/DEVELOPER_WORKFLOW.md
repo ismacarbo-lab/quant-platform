@@ -63,6 +63,7 @@ make quality
 | Research release check | `uv run python scripts/research-release-check.py` / `make research-release-check` |
 | Research status (no DB) | `uv run python scripts/research-status.py` / `make research-status` |
 | Research evidence bundle (needs PostgreSQL; not in `make quality`) | `uv run python scripts/build-research-evidence-bundle.py …` / `make research-evidence-bundle` |
+| Evidence bundle on a shared DB (opt-in, verifies existing fixtures) | add `--allow-existing-fixture-data` (default off; no deletes) |
 | Verify evidence bundle | `uv run python scripts/verify-research-evidence-bundle.py --bundle-dir DIR` / `make verify-research-evidence-bundle` |
 | Build normalized dataset | `uv run python scripts/build-normalized-dataset.py …` |
 | Verify normalized dataset | `uv run python scripts/verify-normalized-dataset.py --run-dir DIR` |
@@ -326,6 +327,14 @@ uv run python scripts/build-research-evidence-bundle.py \
   --fixture-dir tests/fixtures/e2e_research_bundle \
   --output-dir /tmp/research-evidence-bundle \
   --deterministic-id \
+  --json
+# Shared local DB only, after a previous successful ingest of the same
+# fixtures. Verifies existing rows; does not rewrite daily_bars.
+uv run python scripts/build-research-evidence-bundle.py \
+  --fixture-dir tests/fixtures/e2e_research_bundle \
+  --output-dir /tmp/research-evidence-bundle \
+  --deterministic-id \
+  --allow-existing-fixture-data \
   --json
 uv run python scripts/verify-research-evidence-bundle.py \
   --bundle-dir /tmp/research-evidence-bundle

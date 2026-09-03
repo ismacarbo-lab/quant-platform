@@ -8,10 +8,10 @@ from __future__ import annotations
 
 import csv
 from collections import Counter
+from dataclasses import dataclass
 from datetime import UTC, date, datetime, time
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
-from typing import cast
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -41,6 +41,41 @@ _CORRECTIONS_NAME = "corrections.csv"
 
 _BarKey = tuple[str, str, str]
 _Ohlcv = tuple[Decimal, Decimal, Decimal, Decimal, Decimal | None]
+_CorporateActionKey = tuple[
+    str,
+    str,
+    str,
+    str,
+    Decimal | None,
+    Decimal | None,
+    Decimal | None,
+    str,
+    str,
+]
+
+
+@dataclass(frozen=True, slots=True)
+class _BarFixtureRow:
+    symbol: str
+    observation_time: str
+    available_time: str
+    ohlcv: _Ohlcv
+
+
+@dataclass(frozen=True, slots=True)
+class _CorporateActionFixtureRow:
+    symbol: str
+    key: _CorporateActionKey
+
+
+@dataclass(frozen=True, slots=True)
+class _SessionFixtureRow:
+    calendar_code: str
+    session_date: date
+    session_kind: str
+    is_open: bool
+    open_time: time | None
+    close_time: time | None
 
 
 def existing_fixture_daily_bars_present(
@@ -140,7 +175,7 @@ def verify_existing_daily_bars_match_fixture(
         )
         return 0
 
-    symbols = tuple(sorted({row["symbol"] for row in expected_rows}))
+    symbols = tuple(sorted({row.symbol for row in expected_rows}))
     db_rows = session.execute(
         select(
             Instrument.symbol,
@@ -183,9 +218,9 @@ def verify_existing_daily_bars_match_fixture(
     seen_keys: set[tuple[str, str, str]] = set()
     for expected in expected_rows:
         key = (
-            expected["symbol"],
-            expected["observation_time"],
-            expected["available_time"],
+            expected.symbol,
+            expected.observation_time,
+            expected.available_time,
         )
         seen_keys.add(key)
         found = originals.get(key)
@@ -197,7 +232,7 @@ def verify_existing_daily_bars_match_fixture(
                 )
             )
             continue
-        if not _ohlcv_equal(found, cast(_Ohlcv, expected["ohlcv"])):
+        if not _ohlcv_equal(found, expected.ohlcv):
             issues.append(
                 _error(
                     "bar_ohlcv_mismatch",
@@ -221,9 +256,9 @@ def verify_existing_daily_bars_match_fixture(
         correction_rows = _read_daily_bar_fixture_rows(correction_path)
         for expected in correction_rows:
             key = (
-                expected["symbol"],
-                expected["observation_time"],
-                expected["available_time"],
+                expected.symbol,
+                expected.observation_time,
+                expected.available_time,
             )
             found = corrections.get(key)
             if found is None:
@@ -234,7 +269,7 @@ def verify_existing_daily_bars_match_fixture(
                     )
                 )
                 continue
-            if not _ohlcv_equal(found, cast(_Ohlcv, expected["ohlcv"])):
+            if not _ohlcv_equal(found, expected.ohlcv):
                 issues.append(
                     _error(
                         "correction_ohlcv_mismatch",
@@ -255,8 +290,8 @@ def verify_existing_corporate_actions_match_fixture(
     del warnings
     path = Path(fixture_dir) / _CORPORATE_ACTIONS_NAME
     expected_rows = _read_corporate_action_fixture_rows(path)
-    expected_keys = Counter(row["key"] for row in expected_rows)
-    symbols = tuple(sorted({row["symbol"] for row in expected_rows}))
+    expected_keys = Counter(row.key for row in expected_rows)
+    symbols = tuple(sorted({row.symbol for row in expected_rows}))
     if not expected_rows:
         return 0
     db_rows = session.execute(
@@ -280,9 +315,9 @@ def verify_existing_corporate_actions_match_fixture(
             str(row[1]),
             _dt_key(row[2]),
             _dt_key(row[3]),
-            _decimal_key(row[4]),
-            _decimal_key(row[5]),
-            _decimal_key(row[6]),
+            _optional_decimal_value(row[4]),
+            _optional_decimal_value(row[5]),
+            _optional_decimal_value(row[6]),
             str(row[7] or ""),
             str(row[8] or ""),
         )
@@ -324,7 +359,7 @@ def verify_existing_sessions_match_fixture(
     expected_rows = _read_session_fixture_rows(path)
     if not expected_rows:
         return 0
-    calendar_codes = tuple(sorted({row["calendar_code"] for row in expected_rows}))
+    calendar_codes = tuple(sorted({row.calendar_code for row in expected_rows}))
     calendars = {
         row.code: row
         for row in session.scalars(
@@ -343,7 +378,7 @@ def verify_existing_sessions_match_fixture(
             )
             continue
         expected_for_calendar = [
-            row for row in expected_rows if row["calendar_code"] == calendar_code
+            row for row in expected_rows if row.calendar_code == calendar_code
         ]
         db_sessions = list(
             session.scalars(
@@ -353,7 +388,7 @@ def verify_existing_sessions_match_fixture(
         by_date = {item.session_date: item for item in db_sessions}
         seen: set[date] = set()
         for expected in expected_for_calendar:
-            session_date = cast(date, expected["session_date"])
+            session_date = expected.session_date
             seen.add(session_date)
             found = by_date.get(session_date)
             if found is None:
@@ -391,41 +426,45 @@ def fixture_csv_row_count(path: Path) -> int:
         return sum(1 for _ in csv.DictReader(handle))
 
 
-def _read_daily_bar_fixture_rows(path: Path) -> list[dict[str, object]]:
+def _read_daily_bar_fixture_rows(path: Path) -> list[_BarFixtureRow]:
     if not path.is_file():
         return []
-    rows: list[dict[str, object]] = []
+    rows: list[_BarFixtureRow] = []
     with path.open(newline="", encoding="utf-8") as handle:
         for raw in csv.DictReader(handle):
             symbol = (raw.get("symbol") or "").strip()
             observation = parse_observation_time(raw["date"])
-            available = parse_utc_datetime(raw["available_time"], field="available_time")
+            available = parse_utc_datetime(
+                raw["available_time"], field="available_time"
+            )
             volume_raw = (raw.get("volume") or "").strip()
             rows.append(
-                {
-                    "symbol": symbol,
-                    "observation_time": _dt_key(observation),
-                    "available_time": _dt_key(available),
-                    "ohlcv": (
+                _BarFixtureRow(
+                    symbol=symbol,
+                    observation_time=_dt_key(observation),
+                    available_time=_dt_key(available),
+                    ohlcv=(
                         _as_decimal(raw["open"]),
                         _as_decimal(raw["high"]),
                         _as_decimal(raw["low"]),
                         _as_decimal(raw["close"]),
                         _as_decimal(volume_raw) if volume_raw else None,
                     ),
-                }
+                )
             )
     return rows
 
 
-def _read_corporate_action_fixture_rows(path: Path) -> list[dict[str, object]]:
+def _read_corporate_action_fixture_rows(
+    path: Path,
+) -> list[_CorporateActionFixtureRow]:
     if not path.is_file():
         return []
-    rows: list[dict[str, object]] = []
+    rows: list[_CorporateActionFixtureRow] = []
     with path.open(newline="", encoding="utf-8") as handle:
         for raw in csv.DictReader(handle):
             symbol = (raw.get("symbol") or "").strip()
-            key = (
+            key: _CorporateActionKey = (
                 symbol,
                 (raw.get("action_type") or "").strip(),
                 _dt_key(
@@ -434,47 +473,47 @@ def _read_corporate_action_fixture_rows(path: Path) -> list[dict[str, object]]:
                 _dt_key(
                     parse_utc_datetime(raw["available_time"], field="available_time")
                 ),
-                _decimal_key(_optional_decimal(raw.get("quantity_before"))),
-                _decimal_key(_optional_decimal(raw.get("quantity_after"))),
-                _decimal_key(_optional_decimal(raw.get("cash_amount"))),
+                _optional_decimal(raw.get("quantity_before")),
+                _optional_decimal(raw.get("quantity_after")),
+                _optional_decimal(raw.get("cash_amount")),
                 (raw.get("old_value") or "").strip(),
                 (raw.get("new_value") or "").strip(),
             )
-            rows.append({"symbol": symbol, "key": key})
+            rows.append(_CorporateActionFixtureRow(symbol=symbol, key=key))
     return rows
 
 
-def _read_session_fixture_rows(path: Path) -> list[dict[str, object]]:
+def _read_session_fixture_rows(path: Path) -> list[_SessionFixtureRow]:
     if not path.is_file():
         return []
-    rows: list[dict[str, object]] = []
+    rows: list[_SessionFixtureRow] = []
     with path.open(newline="", encoding="utf-8") as handle:
         for raw in csv.DictReader(handle):
             kind = (raw.get("session_kind") or "").strip()
             rows.append(
-                {
-                    "calendar_code": (raw.get("calendar_code") or "").strip(),
-                    "session_date": date.fromisoformat(raw["session_date"].strip()),
-                    "session_kind": kind,
-                    "is_open": session_kind_is_open(kind),
-                    "open_time": _parse_time(raw.get("open_time")),
-                    "close_time": _parse_time(raw.get("close_time")),
-                }
+                _SessionFixtureRow(
+                    calendar_code=(raw.get("calendar_code") or "").strip(),
+                    session_date=date.fromisoformat(raw["session_date"].strip()),
+                    session_kind=kind,
+                    is_open=session_kind_is_open(kind),
+                    open_time=_parse_time(raw.get("open_time")),
+                    close_time=_parse_time(raw.get("close_time")),
+                )
             )
     return rows
 
 
 def _fixture_symbols(fixture_dir: Path) -> tuple[str, ...]:
     rows = _read_daily_bar_fixture_rows(Path(fixture_dir) / _DAILY_BARS_NAME)
-    return tuple(sorted({str(item["symbol"]) for item in rows}))
+    return tuple(sorted({item.symbol for item in rows}))
 
 
-def _session_equal(found: MarketSession, expected: dict[str, object]) -> bool:
+def _session_equal(found: MarketSession, expected: _SessionFixtureRow) -> bool:
     return (
-        found.session_kind == expected["session_kind"]
-        and found.is_open == expected["is_open"]
-        and found.open_time == expected["open_time"]
-        and found.close_time == expected["close_time"]
+        found.session_kind == expected.session_kind
+        and found.is_open == expected.is_open
+        and found.open_time == expected.open_time
+        and found.close_time == expected.close_time
     )
 
 
@@ -505,17 +544,17 @@ def _optional_decimal(value: str | None) -> Decimal | None:
     return _as_decimal(raw)
 
 
+def _optional_decimal_value(value: object) -> Decimal | None:
+    if value is None or str(value).strip() == "":
+        return None
+    return _as_decimal(value)
+
+
 def _as_decimal(value: object) -> Decimal:
     try:
         return Decimal(str(value).strip())
     except (InvalidOperation, AttributeError) as exc:
         raise ValueError(redact_secret_text(f"invalid decimal {value!r}")) from exc
-
-
-def _decimal_key(value: object) -> str:
-    if value is None or str(value).strip() == "":
-        return ""
-    return format(_as_decimal(value), "f")
 
 
 def _dt_key(value: object) -> str:
