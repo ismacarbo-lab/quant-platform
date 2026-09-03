@@ -1,4 +1,4 @@
-# Architecture — Phase 6.2
+# Architecture — Phase 6.3
 
 Status: research ingestion, an internal **dataset query API**, **dataset
 quality reports**, **local hashed snapshots**, a **PostgreSQL snapshot
@@ -284,6 +284,8 @@ normalized dataset on the evidence bundle (no schema change; still no
 orders or PnL).
 Phase 6.2 adds `normalized_datasets` (`0010_normalized_dataset_catalog`;
 catalog metadata only; no normalized bars; still no orders or PnL).
+Phase 6.3 syncs operational docs and release checks with that head
+(no schema change; still no orders or PnL).
 None of these add HTTP routes or gold/trading tables.
 
 ## AI usage boundary

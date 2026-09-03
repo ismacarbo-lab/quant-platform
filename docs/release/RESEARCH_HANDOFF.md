@@ -14,8 +14,10 @@ Related: [FINAL_RESEARCH_CHECKLIST.md](FINAL_RESEARCH_CHECKLIST.md),
 [POST_TAG_RELEASE_NOTES.md](POST_TAG_RELEASE_NOTES.md),
 [ADR 0003](../adr/0003-research-mode-freeze.md).
 
-**No Alembic revision for this phase.** Expected head remains
-`0009_backtest_experiments`.
+**No Alembic revision for this freeze phase.** The freeze tag
+`v0.1.0-research` was cut at `0009_backtest_experiments`. Current
+operational head is `0010_normalized_dataset_catalog` (Phase 6.2
+metadata-only catalog). See [COMMANDS.md](COMMANDS.md).
 
 ## Architecture now
 
@@ -96,7 +98,8 @@ Local Compose publishes `127.0.0.1:5434` because host 5432 and 5433 are
 already taken on this machine. CI uses `127.0.0.1:5432` inside the
 runner.
 
-Expected head: `0009_backtest_experiments`.
+Expected head: `0010_normalized_dataset_catalog`.
+The freeze tag `v0.1.0-research` was cut at `0009_backtest_experiments`.
 
 Public tables are research metadata only (ingestion, instruments,
 calendars, corporate actions, snapshots, replay runs, backtest runs,

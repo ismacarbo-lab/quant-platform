@@ -10,8 +10,9 @@ Related: [REMOTE_RELEASE_VERIFICATION.md](REMOTE_RELEASE_VERIFICATION.md),
 [COMMANDS.md](COMMANDS.md),
 [ADR 0003](../adr/0003-research-mode-freeze.md).
 
-**No Alembic revision for this phase.** Expected head remains
-`0009_backtest_experiments`.
+**No Alembic revision for this phase.** Historical notes for the freeze
+tag `v0.1.0-research`, which was cut at `0009_backtest_experiments`.
+Current operational head is `0010_normalized_dataset_catalog`.
 
 Do **not** create another tag from this document.
 

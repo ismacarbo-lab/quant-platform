@@ -17,8 +17,9 @@ Related: [POLICY_REGRESSION_MATRIX.md](../backtest/POLICY_REGRESSION_MATRIX.md),
 [CAPABILITY_MATRIX.md](CAPABILITY_MATRIX.md),
 [AI_USAGE_BOUNDARY.md](../ai/AI_USAGE_BOUNDARY.md).
 
-Phase 5.2 added no schema. Expected Alembic head after Phase 6.2 is
-`0010_normalized_dataset_catalog`.
+Phase 5.2 added no schema. Expected Alembic head after Phase 6.2/6.3 is
+`0010_normalized_dataset_catalog`. The freeze tag `v0.1.0-research` was
+cut at `0009_backtest_experiments`.
 
 ## What is ready
 

@@ -21,8 +21,9 @@ Related: [RESEARCH_RELEASE_CANDIDATE.md](RESEARCH_RELEASE_CANDIDATE.md),
 [DEVELOPER_WORKFLOW.md](../development/DEVELOPER_WORKFLOW.md),
 [RESEARCH_HANDOFF.md](RESEARCH_HANDOFF.md).
 
-Phase 5.3 added no schema. Expected Alembic head after Phase 6.2 is
-`0010_normalized_dataset_catalog`.
+Phase 5.3 added no schema. Expected Alembic head after Phase 6.2/6.3 is
+`0010_normalized_dataset_catalog`. The freeze tag `v0.1.0-research` was
+cut at `0009_backtest_experiments`.
 
 ## What the bundle demonstrates
 

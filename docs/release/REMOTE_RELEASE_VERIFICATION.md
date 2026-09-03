@@ -8,8 +8,10 @@ Related: [RESEARCH_HANDOFF.md](RESEARCH_HANDOFF.md),
 [COMMANDS.md](COMMANDS.md),
 [ADR 0003](../adr/0003-research-mode-freeze.md).
 
-**No Alembic revision for this phase.** Expected head remains
-`0009_backtest_experiments`.
+**No Alembic revision for this phase.** This document is the historical
+pre-tag verification of `v0.1.0-research`. Alembic head at that tag was
+`0009_backtest_experiments`. Current operational head is
+`0010_normalized_dataset_catalog`.
 
 This report was the pre-tag verification. The annotated tag
 `v0.1.0-research` was created afterward; see

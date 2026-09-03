@@ -58,6 +58,7 @@ make quality
 | Compose file | `docker compose config` / `make compose-config` |
 | Policy regression | `uv run python scripts/run-policy-regression-matrix.py` / `make policy-regression` |
 | Normalization regression | `uv run python scripts/run-normalization-regression.py` / `make normalization-regression` |
+| Normalization status (no DB) | `uv run python scripts/normalization-status.py` |
 | Architecture guards | `make architecture-check` |
 | Research release check | `uv run python scripts/research-release-check.py` / `make research-release-check` |
 | Research status (no DB) | `uv run python scripts/research-status.py` / `make research-status` |
@@ -91,7 +92,11 @@ Apply the ingestion schema:
 
 ```bash
 uv run alembic upgrade head
+uv run alembic current
 ```
+
+Expected head: `0010_normalized_dataset_catalog`.
+(`v0.1.0-research` was tagged at `0009_backtest_experiments`.)
 
 Load a local CSV (no vendors). Default is collect-errors:
 

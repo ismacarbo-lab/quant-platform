@@ -1,4 +1,4 @@
-.PHONY: lint format format-check typecheck test test-fast test-postgres check-db migrate compose-config quality policy-regression normalization-regression architecture-check research-release-check research-status research-evidence-bundle verify-research-evidence-bundle
+.PHONY: lint format format-check typecheck test test-fast test-postgres check-db migrate compose-config quality policy-regression normalization-regression architecture-check research-release-check research-status research-evidence-bundle verify-research-evidence-bundle normalization-status
 
 lint:
 	uv run ruff check .
@@ -35,6 +35,9 @@ policy-regression:
 
 normalization-regression:
 	uv run python scripts/run-normalization-regression.py
+
+normalization-status:
+	uv run python scripts/normalization-status.py
 
 architecture-check:
 	uv run pytest tests/unit/test_architecture_boundaries.py tests/unit/test_config.py tests/integration/test_local_infra.py

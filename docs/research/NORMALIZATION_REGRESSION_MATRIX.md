@@ -20,7 +20,8 @@ Related: [CORPORATE_ACTION_NORMALIZATION.md](CORPORATE_ACTION_NORMALIZATION.md),
 
 The matrix itself adds no schema. Expected Alembic head after Phase 6.2
 is `0010_normalized_dataset_catalog` (normalized-dataset catalog
-metadata only).
+metadata only). The freeze tag `v0.1.0-research` was cut at
+`0009_backtest_experiments`.
 
 ## What the matrix validates
 

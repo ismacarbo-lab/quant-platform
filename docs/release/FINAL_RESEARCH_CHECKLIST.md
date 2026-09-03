@@ -28,7 +28,8 @@ Related: [RESEARCH_HANDOFF.md](RESEARCH_HANDOFF.md),
 - [ ] `uv run python scripts/check-db.py` → `ping=ok`,
       `trading_tables=none`.
 - [ ] `uv run alembic current` / `upgrade head` →
-      `0009_backtest_experiments`.
+      `0010_normalized_dataset_catalog` (operational). The freeze tag
+      `v0.1.0-research` was cut at `0009_backtest_experiments`.
 - [ ] No SQLite database files used as the store.
 
 ## Fast quality
@@ -40,7 +41,7 @@ Related: [RESEARCH_HANDOFF.md](RESEARCH_HANDOFF.md),
       `trading_constructs=none`, `ai_runtime=none`.
 - [ ] `make research-status` → `final_freeze_ready=true`,
       `evidence_bundle_available=true`,
-      `alembic_head_expected=0009_backtest_experiments`.
+      `alembic_head_expected=0010_normalized_dataset_catalog`.
 
 ## PostgreSQL tests and evidence
 

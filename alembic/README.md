@@ -26,6 +26,8 @@ Phase 4.5 does not add a revision.
 Phase 6.2 revision `0010_normalized_dataset_catalog` adds
 `normalized_datasets` (derived-dataset catalog metadata only; not
 normalized bars, orders, or PnL).
+Current operational head: `0010_normalized_dataset_catalog`.
+The freeze tag `v0.1.0-research` was tagged at `0009_backtest_experiments`.
 None of these revisions create orders, trades, or broker tables.
 
 ```bash

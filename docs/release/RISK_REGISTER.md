@@ -4,6 +4,9 @@ Known limits of the frozen research stage. None of these are trading
 incidents; they are product and operations risks if someone treats this
 repo as a live system.
 
+Operational Alembic head is `0010_normalized_dataset_catalog`. The
+freeze tag `v0.1.0-research` was cut at `0009_backtest_experiments`.
+
 Related: [CAPABILITY_MATRIX.md](CAPABILITY_MATRIX.md),
 [RESEARCH_HANDOFF.md](RESEARCH_HANDOFF.md),
 [ADR 0003](../adr/0003-research-mode-freeze.md).
@@ -14,7 +17,7 @@ Related: [CAPABILITY_MATRIX.md](CAPABILITY_MATRIX.md),
 | R2 | No market-data vendors | Coverage is only as good as local CSV | Local fixtures; no download client; release risk `no_data_vendors` | Optional vendor **behind** an ADR; never silent internet from tests |
 | R3 | Fixtures are small | Evidence bundle is a smoke path, not a universe | Documented fictional `e2e_research_bundle` CSVs | Larger local fixtures; still not live market dumps by default |
 | R4 | Silver corporate actions are stored, not applied | Reading `daily_bars` as split-adjusted still misleads | CA store + audit policy; derived view is explicit and hashed | Keep silver immutable; do not fold factors into ingestion |
-| R5 | Normalization is split-only and local | Dividends, FX, and vendor CA feeds are absent; fixtures stay small | Phase 6.0 derived view; `dividend_not_adjusted`; Phase 6.1 golden matrix; no vendor client | Later dividend methodology only behind an ADR |
+| R5 | Normalization is split-only and local | Dividends, FX, and vendor CA feeds are absent; fixtures stay small | Phase 6.0 derived view; dividends stay informational only (`dividend_not_adjusted`); Phase 6.1 golden matrix; no vendor client | Later dividend methodology only behind an ADR |
 | R5a | Normalization goldens are manual | Hash drift can fail CI until a human copies `expected.json` | `--update-expected` writes actuals; goldens are hand-copied | Same discipline; do not auto-rewrite goldens |
 | R5b | Normalized catalog is metadata-only | Operators may expect bars in PostgreSQL or treat a catalog row as a trading book | Table stores hashes/counts only; usability needs local artifacts; no returns/PnL | Keep silver immutable; do not add normalized-bar tables |
 | R6 | No portfolio or PnL | Nobody can compute returns from this stack | Disabled capabilities; usability gates are integrity-only | Portfolio/PnL only after strategy + risk ADRs |

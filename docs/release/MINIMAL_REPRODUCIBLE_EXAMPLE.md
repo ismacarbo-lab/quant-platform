@@ -29,7 +29,8 @@ uv run alembic upgrade head
 uv run alembic current
 ```
 
-Expect `0009_backtest_experiments`.
+Expect `0010_normalized_dataset_catalog`.
+(`v0.1.0-research` was tagged at `0009_backtest_experiments`.)
 
 ## 3. Build the evidence bundle
 

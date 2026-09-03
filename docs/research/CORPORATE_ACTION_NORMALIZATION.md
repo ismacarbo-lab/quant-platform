@@ -13,7 +13,8 @@ Related: [CORPORATE_ACTIONS.md](../data/CORPORATE_ACTIONS.md),
 
 Phase 6.0 added no schema. Phase 6.2 adds catalog metadata in
 `normalized_datasets` (`0010_normalized_dataset_catalog`). Expected head
-is `0010_normalized_dataset_catalog`. Silver `daily_bars` stay untouched.
+is `0010_normalized_dataset_catalog`. The freeze tag `v0.1.0-research`
+was cut at `0009_backtest_experiments`. Silver `daily_bars` stay untouched.
 
 ## What it normalizes
 

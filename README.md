@@ -1,8 +1,11 @@
 # quant_platform
 
-**Research-only** quantitative platform (Phase 6.2). Research mode was
-frozen at `v0.1.0-research`; this phase adds a metadata-only catalog of
-derived normalized datasets (silver `daily_bars` unchanged). It is
+**Research-only** quantitative platform (Phase 6.3). Research mode was
+frozen at `v0.1.0-research` on Alembic `0009_backtest_experiments`.
+Later research-only work added a metadata-only catalog of derived
+normalized datasets (`0010_normalized_dataset_catalog`; silver
+`daily_bars` unchanged). This phase syncs operational docs and release
+checks with that head. It is
 **not** a trading system: no strategies,
 signals, orders, fills, portfolio, PnL, returns, brokers, paper trading,
 live trading, or AI runtime.
@@ -345,6 +348,8 @@ Corporate-action normalization regression matrix (hashes, not PnL):
 [docs/research/NORMALIZATION_REGRESSION_MATRIX.md](docs/research/NORMALIZATION_REGRESSION_MATRIX.md).
 Normalized dataset catalog (PostgreSQL metadata, not bar storage):
 [docs/research/NORMALIZED_DATASET_CATALOG.md](docs/research/NORMALIZED_DATASET_CATALOG.md).
+Normalization add-on verification (Alembic 0010, no trading):
+[docs/release/NORMALIZATION_ADDON_VERIFICATION.md](docs/release/NORMALIZATION_ADDON_VERIFICATION.md).
 Research-mode release candidate (what is ready, what is not):
 [docs/release/RESEARCH_RELEASE_CANDIDATE.md](docs/release/RESEARCH_RELEASE_CANDIDATE.md).
 End-to-end research evidence bundle (manual, local fixtures only):

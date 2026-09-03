@@ -49,6 +49,7 @@ uv run alembic upgrade head
 ```
 
 Expected head: `0010_normalized_dataset_catalog`.
+(`v0.1.0-research` was tagged at `0009_backtest_experiments`.)
 
 ## Load sample data
 
@@ -113,6 +114,14 @@ uv run python scripts/run-normalization-regression.py \
 In-memory; no PostgreSQL. Does not rewrite `expected.json`. See
 [NORMALIZATION_REGRESSION_MATRIX.md](../research/NORMALIZATION_REGRESSION_MATRIX.md).
 Included in `make research-release-check`. Not in `make quality`.
+
+```bash
+uv run python scripts/normalization-status.py
+uv run python scripts/normalization-status.py --json
+```
+
+Lightweight; no PostgreSQL unless `--check-db`. See
+[NORMALIZATION_ADDON_VERIFICATION.md](NORMALIZATION_ADDON_VERIFICATION.md).
 
 ## Snapshot
 
@@ -212,7 +221,8 @@ uv run python scripts/build-research-evidence-bundle.py \
   --output-dir /tmp/research-evidence-bundle \
   --deterministic-id \
   --include-normalized-dataset \
-  --register-normalized-dataset
+  --register-normalized-dataset \
+  --json
 ```
 
 Not in `make quality`. Needs PostgreSQL. `--include-normalized-dataset`

@@ -8,7 +8,8 @@ normalized OHLCV rows, raw OHLCV rows, or full event lists.
 Package: `quant_platform.research.normalization.catalog` (plus
 `catalog_types`).
 Table: `normalized_datasets`. Alembic revision
-`0010_normalized_dataset_catalog`.
+`0010_normalized_dataset_catalog` (current operational head).
+The freeze tag `v0.1.0-research` was cut at `0009_backtest_experiments`.
 
 Related: [CORPORATE_ACTION_NORMALIZATION.md](CORPORATE_ACTION_NORMALIZATION.md),
 [NORMALIZATION_REGRESSION_MATRIX.md](NORMALIZATION_REGRESSION_MATRIX.md),

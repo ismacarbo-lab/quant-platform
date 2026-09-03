@@ -48,8 +48,10 @@ In scope (already built; keep working):
 - research release checks and the local evidence bundle
 - `GET /health`
 
-Alembic head remains `0009_backtest_experiments` unless a later phase
-needs a table that is still research-only.
+Alembic head at the freeze tag `v0.1.0-research` was
+`0009_backtest_experiments`. A later research-only phase may add a
+table; Phase 6.2 added `0010_normalized_dataset_catalog` (metadata-only).
+The operational head is `0010_normalized_dataset_catalog`.
 
 ## No-go zones
 
@@ -77,8 +79,9 @@ means artifacts are intact, not that an idea should be traded.
 
 - Release status may report `final_freeze_ready=true` when freeze docs
   exist, evidence-bundle docs/module exist, `APP_MODE` is research, and
-  Alembic scripts pin `0009_backtest_experiments`. That flag is **not**
-  a go-live.
+  Alembic scripts pin the expected head (`0010_normalized_dataset_catalog`
+  after Phase 6.2; the freeze tag `v0.1.0-research` pinned
+  `0009_backtest_experiments`). That flag is **not** a go-live.
 - `evidence_bundle_available` is a docs/module presence check. It does
   not build or trade.
 - Architecture tests, forbidden packages, and disabled capabilities stay
