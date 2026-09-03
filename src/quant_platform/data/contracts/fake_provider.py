@@ -28,6 +28,11 @@ _SOURCE_NAME = "offline_fixture"
 _INGESTION = datetime(2024, 1, 4, 12, 0, tzinfo=UTC)
 
 
+def load_offline_vendor_payload_batch(path: Path | str) -> VendorPayloadBatch:
+    """Load a local JSON batch. Does not validate and does not use the network."""
+    return _load_fixture_batch(Path(path))
+
+
 class FakeVendorPayloadProvider:
     """Synthetic research payloads. Does not download or open sockets."""
 

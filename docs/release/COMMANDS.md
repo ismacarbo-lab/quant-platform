@@ -114,6 +114,29 @@ uv run pytest tests/unit/test_data_source_contracts.py
 See [DATA_SOURCE_CONTRACTS.md](../data/DATA_SOURCE_CONTRACTS.md) and
 [ADR 0004](../adr/0004-vendor-agnostic-data-source-contract.md).
 
+## Data-contract conformance
+
+Offline reports against the vendor-agnostic contract. No HTTP, no
+credentials, no real vendor, no PostgreSQL, no trading, no PnL/returns.
+
+```bash
+make data-contract-conformance
+uv run python scripts/run-data-contract-conformance.py --json
+uv run python scripts/run-data-contract-conformance.py \
+  --fixture-dir tests/fixtures/data_contract_conformance/valid_batch \
+  --output-dir /tmp/data-contract-conformance \
+  --json
+make data-contract-conformance-regression
+uv run python scripts/run-data-contract-conformance-regression.py --json
+uv run python scripts/run-data-contract-conformance-regression.py \
+  --output-dir /tmp/data-contract-conformance-regression \
+  --update-expected
+```
+
+Does not rewrite `expected.json`. See
+[DATA_CONTRACT_CONFORMANCE.md](../data/DATA_CONTRACT_CONFORMANCE.md).
+Included in `make research-release-check`. Not in `make quality`.
+
 ## Normalization regression
 
 ```bash
@@ -213,8 +236,9 @@ uv run python scripts/research-release-check.py --json
 ```
 
 Status prints `final_freeze_ready`, `evidence_bundle_available`,
-`alembic_head_expected`, and disabled capabilities. It does not ping
-PostgreSQL.
+`data_contract_conformance_supported`, `vendor_runtime`,
+`external_market_data_vendors`, `alembic_head_expected`, and disabled
+capabilities. It does not ping PostgreSQL.
 
 ## Evidence bundle
 

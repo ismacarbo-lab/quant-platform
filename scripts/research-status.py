@@ -53,6 +53,18 @@ def main(argv: list[str] | None = None) -> int:
         "evidence_bundle_fixture_reuse_supported="
         + str(report.evidence_bundle_fixture_reuse_supported).lower()
     )
+    print(
+        "data_contract_conformance_supported="
+        + str(report.data_contract_conformance_supported).lower()
+    )
+    vendor_runtime = "detected" if report.vendor_runtime_detected else "none"
+    print(f"vendor_runtime={vendor_runtime}")
+    vendors = (
+        "enabled"
+        if "external_market_data_vendors" in report.capabilities.enabled
+        else "disabled"
+    )
+    print(f"external_market_data_vendors={vendors}")
     policy_names = ", ".join(report.registered_policy_names)
     print(f"policies={report.registered_policy_count} ({policy_names})")
     print(f"regression_cases={report.regression_case_count}")

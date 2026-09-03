@@ -64,9 +64,11 @@ def run_research_release_checks(
     skip_compose: bool = False,
     skip_regression: bool = False,
     skip_normalization_regression: bool = False,
+    skip_data_contract_conformance: bool = False,
     skip_imports: bool = False,
     research_mode: bool | None = None,
     normalization_fixtures_dir: Path | str | None = None,
+    conformance_fixtures_dir: Path | str | None = None,
 ) -> ReleaseStatusReport:
     """Run research release-candidate checks. Never prints secrets."""
     root = Path(repo_root) if repo_root is not None else repository_root()
@@ -103,6 +105,17 @@ def run_research_release_checks(
             else default_normalization_regression_dir()
         )
         checks.append(_check_normalization_regression(fixtures))
+    if not skip_data_contract_conformance:
+        from quant_platform.data.contracts.conformance_regression import (
+            default_data_contract_conformance_dir,
+        )
+
+        conformance_root = (
+            Path(conformance_fixtures_dir)
+            if conformance_fixtures_dir is not None
+            else default_data_contract_conformance_dir()
+        )
+        checks.append(_check_data_contract_conformance(conformance_root))
     if not skip_compose:
         checks.append(_check_compose_config(root))
     database_checked = False
@@ -347,6 +360,33 @@ def _check_normalization_regression(fixtures_dir: Path) -> ReleaseCheckItem:
         f"normalization regression failed: {report.failed_count} cases, "
         f"{report.error_count} errors",
         code="normalization_regression_failed",
+    )
+
+
+def _check_data_contract_conformance(fixtures_dir: Path) -> ReleaseCheckItem:
+    from quant_platform.data.contracts.conformance_regression import (
+        run_data_contract_conformance_regression,
+    )
+    from quant_platform.data.contracts.errors import VendorContractError
+
+    try:
+        report = run_data_contract_conformance_regression(fixtures_dir)
+    except (VendorContractError, OSError) as exc:
+        return _error(
+            "data_contract_conformance",
+            f"data-contract conformance matrix could not run: {type(exc).__name__}",
+            code="data_contract_conformance_error",
+        )
+    if report.ok:
+        return _ok(
+            "data_contract_conformance",
+            f"{report.passed_count}/{report.case_count} regression cases passed",
+        )
+    return _error(
+        "data_contract_conformance",
+        f"data-contract conformance failed: {report.failed_count} cases, "
+        f"{report.error_count} errors",
+        code="data_contract_conformance_failed",
     )
 
 

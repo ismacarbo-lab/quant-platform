@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from collections.abc import Mapping
 from datetime import UTC, date, datetime
 from decimal import ROUND_HALF_EVEN, Decimal
@@ -21,6 +22,7 @@ from quant_platform.data.payload import redact_payload_secrets
 
 VENDOR_PAYLOAD_HASH_KIND = "vendor_payload_batch"
 VENDOR_PAYLOAD_HASH_FORMAT_VERSION = 1
+_SHA256_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
 _DECIMAL_QUANT = Decimal("0.00000001")
 _WALL_CLOCK_KEYS = frozenset(
     {
@@ -43,6 +45,20 @@ _PATH_KEYS = frozenset(
         "artifact_path",
     }
 )
+
+
+def jsonable_vendor_payload(value: object) -> object:
+    """JSON-safe mapping for artifacts. Datetimes become canonical UTC strings."""
+    return _jsonable(value)
+
+
+def sha256_canonical_mapping(value: object) -> str:
+    """SHA-256 of canonical JSON. Format ``sha256:<64 hex>``."""
+    return _sha256_canonical(value)
+
+
+def is_sha256_digest(value: str) -> bool:
+    return bool(_SHA256_PATTERN.fullmatch(value))
 
 
 def hash_vendor_payload_batch(batch: VendorPayloadBatch) -> str:

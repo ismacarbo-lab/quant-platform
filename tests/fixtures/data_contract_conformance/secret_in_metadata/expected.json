@@ -1,0 +1,10 @@
+{
+  "expected_ok": false,
+  "expected_validation_ok": false,
+  "expected_forbidden_terms_ok": true,
+  "expected_offline_only_ok": true,
+  "expected_issue_count": 1,
+  "expected_issue_codes": ["secret_in_metadata"],
+  "expected_conformance_hash": "sha256:ad02ca1c92f39f628166f83744cd4053d3bc358b5686077262831a66740b51b8",
+  "expected_batch_hash": "sha256:04ddfc785ee6e7e34fa63bcd7a1fdb4e75092a1a274729d57d4ead7dfa62ce4c"
+}

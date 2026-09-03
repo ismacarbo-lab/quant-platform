@@ -1,4 +1,4 @@
-# Architecture — Phase 7.0
+# Architecture — Phase 7.1
 
 Status: research ingestion, an internal **dataset query API**, **dataset
 quality reports**, **local hashed snapshots**, a **PostgreSQL snapshot
@@ -22,7 +22,8 @@ and a **normalization regression matrix** plus an opt-in normalized
 dataset on the evidence bundle, and a **PostgreSQL metadata catalog**
 for those derived datasets (no normalized bars in the database), and an
 **offline vendor-agnostic data source contract** (no real vendor client,
-no internet, no credentials).
+no internet, no credentials), and **offline data-contract conformance
+reports** (golden regression; still no vendor HTTP).
 No LLM runtime, strategies, brokers, or execution.
 
 ## Modular monolith
@@ -34,7 +35,7 @@ until a measured operational need appears.
 ```
 src/quant_platform/
   core/         configuration, UTC clock, identifiers
-  data/         local CSV ingest, PIT daily bars, repositories, vendor-agnostic contracts (offline)
+  data/         local CSV ingest, PIT daily bars, repositories, vendor-agnostic contracts and conformance (offline)
   research/     PIT datasets, quality reports, snapshots, catalog, integrity, CA normalization, normalization regression, normalized-dataset catalog
   simulation/   dataset replay, run catalog, backtest readiness gate (no strategies)
   backtest/     dry-run engine, research policies, catalog, integrity, regression matrix (no orders)
@@ -50,7 +51,7 @@ Documented future areas (no empty implementation packages in Phase 0):
 |------|----------------|---------|
 | `core` | Shared primitives, settings | implemented |
 | `domain` | Canonical types and invariants | documented |
-| `data` | Ingest, bronze/silver/gold, PIT | bronze, silver, identity, calendars, CA store, offline vendor-agnostic contracts |
+| `data` | Ingest, bronze/silver/gold, PIT | bronze, silver, identity, calendars, CA store, offline vendor-agnostic contracts and conformance |
 | `storage` | Persistence adapters | engine/session only |
 | `research` | Dataset queries, experiment runners | PIT datasets, quality reports, snapshots, catalog, integrity, derived CA normalization, normalization regression, normalized-dataset catalog; no notebooks |
 | `simulation` | Dataset replay timeline | events, boundaries, stream hash, audit, run artifacts + catalog, readiness gate; no strategies |
@@ -167,6 +168,7 @@ research dataset API **requires** `as_of`. See
 [NORMALIZATION_REGRESSION_MATRIX.md](../research/NORMALIZATION_REGRESSION_MATRIX.md),
 and [ADR 0003](../adr/0003-research-mode-freeze.md),
 [DATA_SOURCE_CONTRACTS.md](../data/DATA_SOURCE_CONTRACTS.md),
+[DATA_CONTRACT_CONFORMANCE.md](../data/DATA_CONTRACT_CONFORMANCE.md),
 and [ADR 0004](../adr/0004-vendor-agnostic-data-source-contract.md).
 
 ### Point-in-time timestamps
@@ -293,6 +295,9 @@ Phase 6.3 syncs operational docs and release checks with that head
 Phase 7.0 adds an offline vendor-agnostic data source contract
 (no schema change, no HTTP vendor client, no credentials; still no
 orders or PnL).
+Phase 7.1 adds offline data-contract conformance reports and a golden
+regression matrix (no schema change, no vendor HTTP; still no orders or
+PnL).
 None of these add HTTP routes or gold/trading tables.
 
 ## AI usage boundary

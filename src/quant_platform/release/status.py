@@ -24,6 +24,10 @@ from quant_platform.release.constants import (
     RELEASE_STATUS_HASH_FORMAT_VERSION,
     RELEASE_STATUS_HASH_KIND,
 )
+from quant_platform.release.guards import (
+    detect_contracts_networking,
+    detect_real_vendor_clients,
+)
 from quant_platform.release.types import (
     ReleaseCapabilitySummary,
     ReleaseCheckItem,
@@ -105,6 +109,13 @@ DOCUMENTED_RELEASE_RISKS: tuple[ReleaseRiskItem, ...] = (
         ),
     ),
     ReleaseRiskItem(
+        code="conformance_regression_manual_goldens",
+        message=(
+            "Data-contract conformance goldens must be copied into "
+            "expected.json by hand after review."
+        ),
+    ),
+    ReleaseRiskItem(
         code="evidence_not_profitability",
         message=(
             "The evidence bundle proves the research pipeline ran; "
@@ -155,6 +166,10 @@ def hash_release_status_report(
         "database_checked": payload.get("database_checked"),
         "final_freeze_ready": payload.get("final_freeze_ready"),
         "evidence_bundle_available": payload.get("evidence_bundle_available"),
+        "data_contract_conformance_supported": payload.get(
+            "data_contract_conformance_supported"
+        ),
+        "vendor_runtime_detected": payload.get("vendor_runtime_detected"),
         "capabilities": payload.get("capabilities"),
         "registered_policy_names": payload.get("registered_policy_names"),
         "regression_case_count": payload.get("regression_case_count"),
@@ -222,6 +237,8 @@ def build_release_status(
         final_freeze_ready=freeze_ready,
         evidence_bundle_available=bundle_available,
         evidence_bundle_fixture_reuse_supported=True,
+        data_contract_conformance_supported=True,
+        vendor_runtime_detected=_vendor_runtime_detected(root),
         checks=ranked_checks,
         risks=DOCUMENTED_RELEASE_RISKS,
         error_count=error_count,
@@ -264,6 +281,13 @@ def final_freeze_ready(
         and freeze_docs_available(root)
         and bundle_ok
         and tuple(alembic_heads) == (EXPECTED_ALEMBIC_HEAD,)
+    )
+
+
+def _vendor_runtime_detected(repo_root: Path) -> bool:
+    package = repo_root / "src" / "quant_platform"
+    return bool(
+        detect_real_vendor_clients(package) or detect_contracts_networking(package)
     )
 
 

@@ -18,7 +18,8 @@ Capabilities: [docs/release/CAPABILITY_MATRIX.md](docs/release/CAPABILITY_MATRIX
 Freeze ADR: [docs/adr/0003-research-mode-freeze.md](docs/adr/0003-research-mode-freeze.md).
 Vendor-agnostic data contracts:
 [docs/adr/0004-vendor-agnostic-data-source-contract.md](docs/adr/0004-vendor-agnostic-data-source-contract.md),
-[docs/data/DATA_SOURCE_CONTRACTS.md](docs/data/DATA_SOURCE_CONTRACTS.md).
+[docs/data/DATA_SOURCE_CONTRACTS.md](docs/data/DATA_SOURCE_CONTRACTS.md),
+[docs/data/DATA_CONTRACT_CONFORMANCE.md](docs/data/DATA_CONTRACT_CONFORMANCE.md).
 
 `APP_MODE` accepts only `research`. `paper` and `live` fail validation.
 The only HTTP route is `GET /health`.
@@ -56,6 +57,7 @@ Canonical commands: [docs/release/COMMANDS.md](docs/release/COMMANDS.md).
 make quality
 make policy-regression
 make normalization-regression
+make data-contract-conformance-regression
 make research-release-check
 make research-status
 ```
@@ -77,8 +79,9 @@ Implemented: local PIT ingestion, datasets, quality, snapshots, replay,
 dry-run research policies, experiments, release checks, evidence bundle
 (with optional verified fixture reuse on a shared database),
 derived split normalization (silver unchanged), a normalization
-regression matrix, a metadata-only normalized-dataset catalog, and an
-offline vendor-agnostic data source contract (no real vendor client).
+regression matrix, a metadata-only normalized-dataset catalog, an
+offline vendor-agnostic data source contract (no real vendor client),
+and offline data-contract conformance reports.
 
 Prohibited: strategy, signal, portfolio, PnL, orders, brokers,
 paper/live, external vendors, AI runtime.
@@ -152,13 +155,16 @@ It is **not** a trading system.
 - Validate **offline** vendor-agnostic payloads (daily bars, corporate
   actions, sessions) with a fake in-memory provider. No HTTP, no
   credentials, no real vendor client.
+- Pin those payloads with offline conformance reports and a golden
+  regression matrix (hashes and issue codes only; still no vendor HTTP).
 
 ## What is not implemented
 
 - Strategies and BUY/SELL signals
 - Machine learning or LLM runtime
 - Real backtester (PnL, portfolio, orders); only a NoOp dry-run exists
-- Market-data download or vendor APIs (only an offline contract exists)
+- Market-data download or vendor APIs (only an offline contract and
+  conformance reports exist)
 - Broker connectivity
 - Paper trading
 - Live trading or order routing

@@ -964,6 +964,7 @@ def build_research_evidence_bundle(
             skip_compose=request.skip_compose,
             skip_regression=request.skip_regression,
             skip_normalization_regression=request.skip_normalization_regression,
+            skip_data_contract_conformance=request.skip_data_contract_conformance,
             research_mode=mode,
         )
         release_status = without_local_paths(release_report.as_mapping())

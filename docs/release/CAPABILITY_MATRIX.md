@@ -12,7 +12,8 @@ Related: [RESEARCH_HANDOFF.md](RESEARCH_HANDOFF.md),
 [RISK_REGISTER.md](RISK_REGISTER.md),
 [ADR 0003](../adr/0003-research-mode-freeze.md),
 [ADR 0004](../adr/0004-vendor-agnostic-data-source-contract.md),
-[DATA_SOURCE_CONTRACTS.md](../data/DATA_SOURCE_CONTRACTS.md).
+[DATA_SOURCE_CONTRACTS.md](../data/DATA_SOURCE_CONTRACTS.md),
+[DATA_CONTRACT_CONFORMANCE.md](../data/DATA_CONTRACT_CONFORMANCE.md).
 
 ## Implemented
 
@@ -46,6 +47,7 @@ Related: [RESEARCH_HANDOFF.md](RESEARCH_HANDOFF.md),
 | Evidence bundle | Fixture → release local pack | Not a performance report |
 | Health endpoint | `GET /health` | Not a data or trade API |
 | Vendor-agnostic data contracts | Offline payload types, validation, hash, fake provider | Not a vendor download; not credentials; not internet |
+| Data-contract conformance | Offline reports, relative artifacts, golden regression | Not a vendor client; not returns/PnL; not trading |
 
 ## Intentionally disabled
 

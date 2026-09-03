@@ -15,6 +15,7 @@ Related: [POLICY_REGRESSION_MATRIX.md](../backtest/POLICY_REGRESSION_MATRIX.md),
 [RESEARCH_EVIDENCE_BUNDLE.md](RESEARCH_EVIDENCE_BUNDLE.md),
 [RESEARCH_HANDOFF.md](RESEARCH_HANDOFF.md),
 [CAPABILITY_MATRIX.md](CAPABILITY_MATRIX.md),
+[DATA_CONTRACT_CONFORMANCE.md](../data/DATA_CONTRACT_CONFORMANCE.md),
 [AI_USAGE_BOUNDARY.md](../ai/AI_USAGE_BOUNDARY.md).
 
 Phase 5.2 added no schema. Expected Alembic head after Phase 6.2/6.3 is
@@ -34,6 +35,8 @@ The research stack can:
 - hash and verify policy output, backtest artifacts, and experiments
 - pin policy outputs with a golden regression matrix
 - register derived normalized-dataset metadata (hashes and counts only)
+- validate offline vendor-agnostic payloads and pin them with
+  conformance reports (no vendor HTTP)
 
 `APP_MODE` still accepts only `research`. `GET /health` is still the only
 HTTP route.
@@ -87,6 +90,7 @@ Useful flags:
 | `--skip-compose` | Do not run `docker compose config`. |
 | `--skip-regression` | Do not run the policy regression matrix. |
 | `--skip-normalization-regression` | Do not run the normalization regression matrix. |
+| `--skip-data-contract-conformance` | Do not run the data-contract conformance matrix. |
 | `--json` | Print the status report. |
 
 The checker never prints `DATABASE_URL` or passwords. It does not
@@ -97,6 +101,7 @@ Makefile companions:
 ```bash
 make policy-regression
 make normalization-regression
+make data-contract-conformance-regression
 make architecture-check
 make quality
 ```
@@ -125,6 +130,8 @@ The JSON object is `kind=research_release_status`. Important fields:
 | `regression_case_count` | Golden matrix cases. |
 | `trading_constructs_detected` | Must be false. |
 | `ai_runtime_detected` | Must be false. |
+| `data_contract_conformance_supported` | Offline conformance reports exist. |
+| `vendor_runtime_detected` | Must be false. |
 | `capabilities.enabled` / `.disabled` | What this candidate will and will not do. |
 | `risks` | Known gaps; not runtime failures. |
 | `report_hash` | SHA-256 of the report body. No wall-clock. |
@@ -158,6 +165,20 @@ If `normalization_regression` fails:
 5. Re-run the matrix and the release check.
 
 See [NORMALIZATION_REGRESSION_MATRIX.md](../research/NORMALIZATION_REGRESSION_MATRIX.md).
+
+## How to review data-contract-conformance drift
+
+If `data_contract_conformance` fails:
+
+1. Run `make data-contract-conformance-regression` or
+   `uv run python scripts/run-data-contract-conformance-regression.py --json`.
+2. If the change is intentional, write actuals with `--update-expected`
+   (this **does not** rewrite `expected.json`).
+3. Review issue codes and hashes. Reject returns/PnL and vendor HTTP.
+4. Copy hashes and counts into that case's `expected.json` by hand.
+5. Re-run the matrix and the release check.
+
+See [DATA_CONTRACT_CONFORMANCE.md](../data/DATA_CONTRACT_CONFORMANCE.md).
 
 ## How to confirm there is no trading or AI runtime
 
@@ -196,6 +217,8 @@ Do not skip ahead to paper trading, live trading, or an LLM runtime.
 - No execution.
 - Policy regression goldens require human review; the runner will not
   rewrite them.
+- Normalization and data-contract conformance goldens require the same
+  hand-copy discipline.
 - PostgreSQL is mandatory for catalogued runs; SQLite is rejected.
 - Replay/backtest artifacts need a local `--base-dir` / `--output-dir`.
 - Compose publishes `127.0.0.1:5434` on this machine because 5432/5433

@@ -4,7 +4,8 @@ Vendor-agnostic payload contract for **future** market-data adapters.
 This is not a download client.
 
 Related: [ADR 0004](../adr/0004-vendor-agnostic-data-source-contract.md),
-[DATA_INGESTION.md](DATA_INGESTION.md).
+[DATA_INGESTION.md](DATA_INGESTION.md),
+[DATA_CONTRACT_CONFORMANCE.md](DATA_CONTRACT_CONFORMANCE.md).
 
 `APP_MODE` remains **research**. There is no trading, no PnL/returns, and
 no brokers in this layer. There are **no** real vendors, **no** internet
@@ -184,3 +185,15 @@ Use `FakeVendorPayloadProvider` or local JSON fixtures only.
 Release checks fail if a real vendor module appears under
 `quant_platform` or if the contracts package grows networking imports.
 `external_market_data_vendors` remains a **disabled** capability.
+
+## Conformance reports
+
+Phase 7.1 adds offline conformance reports and a golden regression
+matrix. See [DATA_CONTRACT_CONFORMANCE.md](DATA_CONTRACT_CONFORMANCE.md).
+
+```bash
+make data-contract-conformance
+make data-contract-conformance-regression
+```
+
+No HTTP. No vendors. No PostgreSQL. No returns/PnL.

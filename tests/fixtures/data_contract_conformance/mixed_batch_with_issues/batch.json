@@ -1,0 +1,72 @@
+{
+  "source_name": "offline_fixture",
+  "contract": {
+    "source_name": "offline_fixture",
+    "source_kind": "offline_fixture",
+    "capabilities": ["daily_bars", "corporate_actions", "market_sessions"],
+    "requires_network": false,
+    "requires_credentials": false,
+    "pit_required": true,
+    "capture_raw_payload": true
+  },
+  "daily_bars": [
+    {
+      "symbol": "ACME",
+      "source_name": "offline_fixture",
+      "observation_time": "2024-01-02T00:00:00Z",
+      "available_time": "2024-01-03T00:00:00Z",
+      "ingestion_time": "2024-01-04T12:00:00Z",
+      "open": "10.00",
+      "high": "11.00",
+      "low": "9.50",
+      "close": "10.50",
+      "volume": "1000",
+      "raw_payload": {"symbol": "ACME"},
+      "metadata": {"fixture_id": "mixed-ok-bar"}
+    },
+    {
+      "symbol": "ACME",
+      "source_name": "offline_fixture",
+      "observation_time": "2024-01-03T00:00:00Z",
+      "available_time": "2024-01-03T00:00:00Z",
+      "ingestion_time": "2024-01-04T12:00:00Z",
+      "open": "10.50",
+      "high": "11.50",
+      "low": "10.00",
+      "close": "11.00",
+      "volume": "900",
+      "raw_payload": {"symbol": "ACME"},
+      "metadata": {"fixture_id": "mixed-lookahead-bar"}
+    }
+  ],
+  "corporate_actions": [
+    {
+      "symbol": "ACME",
+      "source_name": "offline_fixture",
+      "action_type": "split",
+      "effective_time": "2024-01-03T00:00:00Z",
+      "available_time": "2024-01-02T18:00:00Z",
+      "observation_time": "2024-01-02T18:00:00Z",
+      "ingestion_time": "2024-01-04T12:00:00Z",
+      "quantity_before": "1",
+      "quantity_after": "2",
+      "raw_payload": {"action_type": "split"},
+      "metadata": {"fixture_id": "mixed-split"}
+    }
+  ],
+  "market_sessions": [
+    {
+      "source_name": "offline_fixture",
+      "calendar_code": "TEST",
+      "session_date": "2024-01-02",
+      "observation_time": "2024-01-02T00:00:00Z",
+      "available_time": "2024-01-02T21:00:00Z",
+      "ingestion_time": "2024-01-04T12:00:00Z",
+      "session_kind": "open",
+      "is_open": true,
+      "symbol": "ACME",
+      "raw_payload": {"session_kind": "open"},
+      "metadata": {"fixture_id": "mixed-session"}
+    }
+  ]
+}

@@ -50,6 +50,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Do not run the normalization regression matrix.",
     )
     parser.add_argument(
+        "--skip-data-contract-conformance",
+        action="store_true",
+        help="Do not run the data-contract conformance regression matrix.",
+    )
+    parser.add_argument(
         "--matrix-path",
         type=Path,
         default=None,
@@ -60,6 +65,12 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         default=None,
         help="Override the normalization regression fixtures directory.",
+    )
+    parser.add_argument(
+        "--conformance-fixtures-dir",
+        type=Path,
+        default=None,
+        help="Override the data-contract conformance fixtures directory.",
     )
     args = parser.parse_args(argv)
     try:
@@ -72,7 +83,9 @@ def main(argv: list[str] | None = None) -> int:
             skip_compose=bool(args.skip_compose),
             skip_regression=bool(args.skip_regression),
             skip_normalization_regression=bool(args.skip_normalization_regression),
+            skip_data_contract_conformance=bool(args.skip_data_contract_conformance),
             normalization_fixtures_dir=args.normalization_fixtures_dir,
+            conformance_fixtures_dir=args.conformance_fixtures_dir,
         )
     except Exception as exc:
         print(redact_secret_text(str(exc)), file=sys.stderr)

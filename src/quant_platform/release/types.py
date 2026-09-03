@@ -70,6 +70,8 @@ class ReleaseStatusReport:
     final_freeze_ready: bool
     evidence_bundle_available: bool
     evidence_bundle_fixture_reuse_supported: bool
+    data_contract_conformance_supported: bool
+    vendor_runtime_detected: bool
     checks: tuple[ReleaseCheckItem, ...]
     risks: tuple[ReleaseRiskItem, ...]
     error_count: int
@@ -92,6 +94,10 @@ class ReleaseStatusReport:
             "evidence_bundle_fixture_reuse_supported": (
                 self.evidence_bundle_fixture_reuse_supported
             ),
+            "data_contract_conformance_supported": (
+                self.data_contract_conformance_supported
+            ),
+            "vendor_runtime_detected": self.vendor_runtime_detected,
             "capabilities": self.capabilities.as_mapping(),
             "registered_policy_names": list(self.registered_policy_names),
             "registered_policy_count": self.registered_policy_count,
