@@ -69,6 +69,7 @@ class ReleaseStatusReport:
     ai_runtime_detected: bool
     final_freeze_ready: bool
     evidence_bundle_available: bool
+    evidence_bundle_fixture_reuse_supported: bool
     checks: tuple[ReleaseCheckItem, ...]
     risks: tuple[ReleaseRiskItem, ...]
     error_count: int
@@ -88,6 +89,9 @@ class ReleaseStatusReport:
             "database_checked": self.database_checked,
             "final_freeze_ready": self.final_freeze_ready,
             "evidence_bundle_available": self.evidence_bundle_available,
+            "evidence_bundle_fixture_reuse_supported": (
+                self.evidence_bundle_fixture_reuse_supported
+            ),
             "capabilities": self.capabilities.as_mapping(),
             "registered_policy_names": list(self.registered_policy_names),
             "registered_policy_count": self.registered_policy_count,

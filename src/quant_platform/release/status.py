@@ -204,6 +204,7 @@ def build_release_status(
         ai_runtime_detected=ai_runtime_detected,
         final_freeze_ready=freeze_ready,
         evidence_bundle_available=bundle_available,
+        evidence_bundle_fixture_reuse_supported=True,
         checks=ranked_checks,
         risks=DOCUMENTED_RELEASE_RISKS,
         error_count=error_count,

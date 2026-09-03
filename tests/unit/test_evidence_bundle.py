@@ -20,10 +20,13 @@ from quant_platform.release.evidence_types import (
     EVIDENCE_SUMMARY_NAME,
     RELEASE_STATUS_NAME,
     EvidenceBundleError,
+    EvidenceFixtureDataMode,
     ResearchEvidenceBundleArtifact,
     ResearchEvidenceBundleIssue,
     ResearchEvidenceBundleManifest,
+    ResearchEvidenceBundleRequest,
     ResearchEvidenceBundleStep,
+    empty_fixture_reuse_report,
 )
 from quant_platform.simulation.constructs import detect_trading_constructs
 
@@ -276,3 +279,173 @@ def test_no_trading_constructs_in_research_package() -> None:
     assert "fill" not in blob
     assert "portfolio" not in blob
     assert "pnl" not in blob
+
+
+def test_request_default_disallows_fixture_reuse(tmp_path: Path) -> None:
+    request = ResearchEvidenceBundleRequest(
+        fixture_dir=tmp_path / "fixtures",
+        output_dir=tmp_path / "bundle",
+    )
+    assert request.allow_existing_fixture_data is False
+
+
+def test_manifest_serializes_fixture_data_mode() -> None:
+    reuse = empty_fixture_reuse_report(
+        mode=EvidenceFixtureDataMode.REUSED.value,
+        reused_bar_count=2,
+        reused_corporate_action_count=1,
+        reused_session_count=4,
+    )
+    payload = _manifest(
+        fixture_data_mode=EvidenceFixtureDataMode.REUSED.value,
+        fixture_reuse=reuse,
+    ).as_mapping()
+    blob = json.dumps(payload, sort_keys=True)
+    _assert_no_secrets(blob)
+    assert payload["fixture_data_mode"] == "reused"
+    assert payload["fixture_reuse"]["reused_bar_count"] == 2
+    assert "/home/" not in blob
+    assert "pnl" not in blob.lower()
+    assert "returns" not in blob.lower()
+    assert "strategy" not in blob.lower()
+
+
+def test_bundle_hash_changes_when_fixture_data_mode_changes() -> None:
+    inserted = empty_fixture_reuse_report(
+        mode=EvidenceFixtureDataMode.INSERTED.value,
+        inserted_bar_count=2,
+    )
+    reused = empty_fixture_reuse_report(
+        mode=EvidenceFixtureDataMode.REUSED.value,
+        reused_bar_count=2,
+    )
+    left = hash_research_evidence_bundle(
+        _manifest(
+            fixture_data_mode=EvidenceFixtureDataMode.INSERTED.value,
+            fixture_reuse=inserted,
+        )
+    )
+    right = hash_research_evidence_bundle(
+        _manifest(
+            fixture_data_mode=EvidenceFixtureDataMode.REUSED.value,
+            fixture_reuse=reused,
+        )
+    )
+    assert left != right
+    assert left.startswith("sha256:")
+
+
+def test_evidence_integrity_accepts_inserted_and_reused(tmp_path: Path) -> None:
+    for mode in (
+        EvidenceFixtureDataMode.INSERTED.value,
+        EvidenceFixtureDataMode.REUSED.value,
+    ):
+        root = tmp_path / mode
+        reuse = empty_fixture_reuse_report(mode=mode, inserted_bar_count=1)
+        draft = _manifest(fixture_data_mode=mode, fixture_reuse=reuse)
+        digest = hash_research_evidence_bundle(draft)
+        manifest = replace(draft, bundle_hash=digest)
+        _write_payload_bundle(root, manifest)
+        report = verify_research_evidence_bundle(root)
+        assert report.ok is True, report.issues
+
+
+def test_evidence_integrity_rejects_invalid_fixture_data_mode(tmp_path: Path) -> None:
+    root = tmp_path / "bundle"
+    manifest = _write_valid_bundle(root)
+    payload = manifest.as_mapping()
+    payload["fixture_data_mode"] = "upsert"
+    payload["bundle_hash"] = hash_research_evidence_bundle(payload)
+    (root / EVIDENCE_MANIFEST_NAME).write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    report = verify_research_evidence_bundle(root)
+    assert report.ok is False
+    codes = {item.code for item in report.issues}
+    assert EvidenceIntegrityCode.INVALID_FIXTURE_DATA_MODE.value in codes
+
+
+def test_evidence_integrity_rejects_failed_mode_when_ok(tmp_path: Path) -> None:
+    root = tmp_path / "bundle"
+    reuse = empty_fixture_reuse_report(mode=EvidenceFixtureDataMode.FAILED.value)
+    draft = _manifest(
+        ok=True,
+        fixture_data_mode=EvidenceFixtureDataMode.FAILED.value,
+        fixture_reuse=reuse,
+    )
+    digest = hash_research_evidence_bundle(draft)
+    _write_payload_bundle(root, replace(draft, bundle_hash=digest))
+    report = verify_research_evidence_bundle(root)
+    assert report.ok is False
+    codes = {item.code for item in report.issues}
+    assert EvidenceIntegrityCode.FIXTURE_DATA_FAILED.value in codes
+
+
+def test_evidence_integrity_rejects_negative_reuse_count(tmp_path: Path) -> None:
+    root = tmp_path / "bundle"
+    reuse = empty_fixture_reuse_report(
+        mode=EvidenceFixtureDataMode.REUSED.value,
+        reused_bar_count=-1,
+    )
+    draft = _manifest(
+        fixture_data_mode=EvidenceFixtureDataMode.REUSED.value,
+        fixture_reuse=reuse,
+    )
+    digest = hash_research_evidence_bundle(draft)
+    _write_payload_bundle(root, replace(draft, bundle_hash=digest))
+    report = verify_research_evidence_bundle(root)
+    assert report.ok is False
+    codes = {item.code for item in report.issues}
+    assert EvidenceIntegrityCode.NEGATIVE_REUSE_COUNT.value in codes
+
+
+def test_build_script_help_mentions_allow_existing(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    runner = _load_script("build-research-evidence-bundle.py")
+    with pytest.raises(SystemExit) as exc:
+        runner.main(["--help"])
+    assert exc.value.code == 0
+    captured = capsys.readouterr()
+    assert "--allow-existing-fixture-data" in captured.out
+    _assert_no_secrets(captured.out)
+
+
+def _write_payload_bundle(
+    root: Path, manifest: ResearchEvidenceBundleManifest
+) -> None:
+    payload = manifest.as_mapping()
+    summary = {
+        "kind": payload["kind"],
+        "format_version": payload["format_version"],
+        "bundle_id": payload["bundle_id"],
+        "created_at": payload["created_at"],
+        "package_version": payload["package_version"],
+        "git_commit": payload["git_commit"],
+        "app_mode": payload["app_mode"],
+        "alembic_head": payload["alembic_head"],
+        "policy_name": payload["policy_name"],
+        "snapshot_hash": payload["snapshot_hash"],
+        "stream_hash": payload["stream_hash"],
+        "backtest_hash": payload["backtest_hash"],
+        "experiment_hash": payload["experiment_hash"],
+        "report_hash": payload["report_hash"],
+        "release_report_hash": payload["release_report_hash"],
+        "ok": payload["ok"],
+        "bundle_hash": payload["bundle_hash"],
+        "step_count": payload["step_count"],
+        "error_count": payload["error_count"],
+        "steps": payload["steps"],
+        "artifacts": payload["artifacts"],
+        "errors": payload["errors"],
+        "fixture_data_mode": payload.get("fixture_data_mode"),
+        "fixture_reuse": payload.get("fixture_reuse"),
+    }
+    root.mkdir(parents=True, exist_ok=True)
+    (root / EVIDENCE_MANIFEST_NAME).write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    (root / EVIDENCE_SUMMARY_NAME).write_text(
+        json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    (root / RELEASE_STATUS_NAME).write_text("{}\n", encoding="utf-8")

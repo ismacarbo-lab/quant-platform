@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from enum import StrEnum
 from pathlib import Path
 
 from quant_platform.backtest.types import DATA_QUALITY_POLICY_NAME
@@ -33,6 +34,7 @@ STEP_VALIDATE_ALEMBIC = "validate_alembic_head"
 STEP_VALIDATE_POLICY = "validate_policy"
 STEP_LOAD_FIXTURES = "load_fixtures"
 STEP_INGEST = "ingest_daily_bars"
+STEP_FIXTURE_DATA = "fixture_data"
 STEP_CORRECTIONS = "apply_corrections"
 STEP_QUALITY = "dataset_quality"
 STEP_SNAPSHOT = "dataset_snapshot"
@@ -56,6 +58,7 @@ EVIDENCE_STEPS: tuple[str, ...] = (
     STEP_VALIDATE_POLICY,
     STEP_LOAD_FIXTURES,
     STEP_INGEST,
+    STEP_FIXTURE_DATA,
     STEP_CORRECTIONS,
     STEP_QUALITY,
     STEP_SNAPSHOT,
@@ -75,6 +78,14 @@ STEP_STATUS_OK = "ok"
 STEP_STATUS_ERROR = "error"
 STEP_STATUS_SKIPPED = "skipped"
 
+ALLOWED_FIXTURE_DATA_MODES = frozenset({"inserted", "reused", "failed"})
+
+
+class EvidenceFixtureDataMode(StrEnum):
+    INSERTED = "inserted"
+    REUSED = "reused"
+    FAILED = "failed"
+
 
 class EvidenceBundleError(Exception):
     """Evidence-bundle coordination failed. Not a trading error."""
@@ -92,6 +103,71 @@ def _relative_path(path: str) -> str:
             code="absolute_path",
         )
     return cleaned
+
+
+@dataclass(frozen=True, slots=True)
+class EvidenceFixtureReuseIssue:
+    severity: str
+    code: str
+    message: str
+
+    def as_mapping(self) -> dict[str, object]:
+        return {
+            "severity": self.severity,
+            "code": self.code,
+            "message": self.message,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class EvidenceFixtureReuseReport:
+    mode: str
+    inserted_bar_count: int
+    reused_bar_count: int
+    inserted_corporate_action_count: int
+    reused_corporate_action_count: int
+    inserted_session_count: int
+    reused_session_count: int
+    issues: tuple[EvidenceFixtureReuseIssue, ...]
+    warnings: tuple[EvidenceFixtureReuseIssue, ...]
+
+    def as_mapping(self) -> dict[str, object]:
+        return {
+            "mode": self.mode,
+            "inserted_bar_count": self.inserted_bar_count,
+            "reused_bar_count": self.reused_bar_count,
+            "inserted_corporate_action_count": self.inserted_corporate_action_count,
+            "reused_corporate_action_count": self.reused_corporate_action_count,
+            "inserted_session_count": self.inserted_session_count,
+            "reused_session_count": self.reused_session_count,
+            "issues": [item.as_mapping() for item in self.issues],
+            "warnings": [item.as_mapping() for item in self.warnings],
+        }
+
+
+def empty_fixture_reuse_report(
+    *,
+    mode: str,
+    inserted_bar_count: int = 0,
+    reused_bar_count: int = 0,
+    inserted_corporate_action_count: int = 0,
+    reused_corporate_action_count: int = 0,
+    inserted_session_count: int = 0,
+    reused_session_count: int = 0,
+    issues: tuple[EvidenceFixtureReuseIssue, ...] = (),
+    warnings: tuple[EvidenceFixtureReuseIssue, ...] = (),
+) -> EvidenceFixtureReuseReport:
+    return EvidenceFixtureReuseReport(
+        mode=mode,
+        inserted_bar_count=inserted_bar_count,
+        reused_bar_count=reused_bar_count,
+        inserted_corporate_action_count=inserted_corporate_action_count,
+        reused_corporate_action_count=reused_corporate_action_count,
+        inserted_session_count=inserted_session_count,
+        reused_session_count=reused_session_count,
+        issues=issues,
+        warnings=warnings,
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -114,6 +190,7 @@ class ResearchEvidenceBundleRequest:
     include_normalized_dataset: bool = False
     register_normalized_dataset: bool = False
     normalization_adjustment_mode: str = DEFAULT_NORMALIZATION_ADJUSTMENT_MODE
+    allow_existing_fixture_data: bool = False
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "fixture_dir", Path(self.fixture_dir))
@@ -210,6 +287,8 @@ class ResearchEvidenceBundleManifest:
     policy_name: str = DEFAULT_POLICY_NAME
     normalized_dataset_hash: str | None = None
     normalized_dataset_id: str | None = None
+    fixture_data_mode: str | None = None
+    fixture_reuse: EvidenceFixtureReuseReport | None = None
 
     def as_mapping(self, *, include_bundle_hash: bool = True) -> dict[str, object]:
         payload: dict[str, object] = {
@@ -250,6 +329,10 @@ class ResearchEvidenceBundleManifest:
             payload["normalized_dataset_hash"] = self.normalized_dataset_hash
         if self.normalized_dataset_id is not None:
             payload["normalized_dataset_id"] = self.normalized_dataset_id
+        if self.fixture_data_mode is not None:
+            payload["fixture_data_mode"] = self.fixture_data_mode
+        if self.fixture_reuse is not None:
+            payload["fixture_reuse"] = self.fixture_reuse.as_mapping()
         if include_bundle_hash:
             payload["bundle_hash"] = self.bundle_hash
         return payload
@@ -310,6 +393,10 @@ class ResearchEvidenceBundleResult:
             payload["normalized_dataset_hash"] = self.manifest.normalized_dataset_hash
         if self.manifest.normalized_dataset_id is not None:
             payload["normalized_dataset_id"] = self.manifest.normalized_dataset_id
+        if self.manifest.fixture_data_mode is not None:
+            payload["fixture_data_mode"] = self.manifest.fixture_data_mode
+        if self.manifest.fixture_reuse is not None:
+            payload["fixture_reuse"] = self.manifest.fixture_reuse.as_mapping()
         return payload
 
 

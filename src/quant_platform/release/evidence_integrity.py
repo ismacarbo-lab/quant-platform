@@ -11,6 +11,7 @@ from pathlib import Path
 from quant_platform.backtest.observations import contains_operative_language
 from quant_platform.release.evidence_bundle import hash_research_evidence_bundle
 from quant_platform.release.evidence_types import (
+    ALLOWED_FIXTURE_DATA_MODES,
     EVIDENCE_MANIFEST_NAME,
     EVIDENCE_SUMMARY_NAME,
     NORMALIZED_DATASET_DIRNAME,
@@ -71,6 +72,9 @@ class EvidenceIntegrityCode(StrEnum):
     FORBIDDEN_METRIC = "forbidden_metric"
     OPERATIVE_LANGUAGE = "operative_language"
     TRADING_CONSTRUCT = "trading_construct"
+    INVALID_FIXTURE_DATA_MODE = "invalid_fixture_data_mode"
+    NEGATIVE_REUSE_COUNT = "negative_reuse_count"
+    FIXTURE_DATA_FAILED = "fixture_data_failed"
 
 
 @dataclass(frozen=True, slots=True)
@@ -230,6 +234,9 @@ def verify_research_evidence_bundle(bundle_dir: Path | str) -> EvidenceIntegrity
         _check_step_counts(manifest_payload, issues)
         if summary_payload is not None:
             _check_step_counts(summary_payload, issues)
+        _check_fixture_data(manifest_payload, issues)
+        if summary_payload is not None:
+            _check_fixture_data(summary_payload, issues)
         if manifest_payload.get("normalized_dataset_hash"):
             _check_normalized_dataset(root, issues)
 
@@ -402,6 +409,58 @@ def _check_normalized_dataset(
                 "normalized dataset artifacts failed verification",
             )
         )
+
+
+def _check_fixture_data(
+    payload: Mapping[str, object], issues: list[EvidenceIntegrityIssue]
+) -> None:
+    mode = payload.get("fixture_data_mode")
+    if mode is None or mode == "":
+        return
+    if not isinstance(mode, str) or mode not in ALLOWED_FIXTURE_DATA_MODES:
+        issues.append(
+            _error(
+                EvidenceIntegrityCode.INVALID_FIXTURE_DATA_MODE,
+                "fixture_data_mode must be inserted, reused, or failed",
+            )
+        )
+        return
+    if mode == "failed" and payload.get("ok") is True:
+        issues.append(
+            _error(
+                EvidenceIntegrityCode.FIXTURE_DATA_FAILED,
+                "fixture_data_mode is failed but the bundle is marked ok",
+            )
+        )
+    reuse = payload.get("fixture_reuse")
+    if reuse is None:
+        return
+    if not isinstance(reuse, Mapping):
+        issues.append(
+            _error(
+                EvidenceIntegrityCode.INVALID_FIXTURE_DATA_MODE,
+                "fixture_reuse must be an object",
+            )
+        )
+        return
+    for field in (
+        "inserted_bar_count",
+        "reused_bar_count",
+        "inserted_corporate_action_count",
+        "reused_corporate_action_count",
+        "inserted_session_count",
+        "reused_session_count",
+    ):
+        value = reuse.get(field)
+        if value is None:
+            continue
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            issues.append(
+                _error(
+                    EvidenceIntegrityCode.NEGATIVE_REUSE_COUNT,
+                    f"{field} must be a non-negative integer",
+                )
+            )
 
 
 def _optional_hash(value: object, issues: list[EvidenceIntegrityIssue]) -> str | None:

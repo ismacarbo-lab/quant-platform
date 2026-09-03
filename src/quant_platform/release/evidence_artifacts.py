@@ -24,7 +24,11 @@ def write_research_evidence_artifacts(
     *,
     release_status: Mapping[str, object] | None = None,
 ) -> Path:
-    """Write evidence_manifest.json, evidence_summary.json, release_status.json."""
+    """Write evidence_manifest.json, evidence_summary.json, release_status.json.
+
+    Manifest and summary include fixture_data_mode and fixture_reuse counts
+    when the builder set them. Paths stay relative; no secrets.
+    """
     target = Path(result.output_dir)
     target.mkdir(parents=True, exist_ok=True)
     manifest_payload = result.manifest.as_mapping()

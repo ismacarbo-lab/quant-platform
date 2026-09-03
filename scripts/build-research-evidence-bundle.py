@@ -79,6 +79,15 @@ def main(argv: list[str] | None = None) -> int:
             "--include-normalized-dataset is also set. Metadata only."
         ),
     )
+    parser.add_argument(
+        "--allow-existing-fixture-data",
+        action="store_true",
+        help=(
+            "If ingest inserts 0 bars, verify existing rows match the "
+            "fixtures and reuse them. Default is strict (fail). Does not "
+            "delete, truncate, or rewrite daily_bars."
+        ),
+    )
     parser.add_argument("--json", action="store_true", dest="as_json")
     args = parser.parse_args(argv)
 
@@ -116,6 +125,7 @@ def main(argv: list[str] | None = None) -> int:
             include_normalized_dataset=bool(args.include_normalized_dataset),
             register_normalized_dataset=bool(args.register_normalized_dataset),
             normalization_adjustment_mode=args.normalization_adjustment_mode,
+            allow_existing_fixture_data=bool(args.allow_existing_fixture_data),
         )
         result = build_research_evidence_bundle(session, request)
         if result.ok:
@@ -145,9 +155,16 @@ def main(argv: list[str] | None = None) -> int:
         print(f"replay_id={result.manifest.replay_id or ''}")
         print(f"backtest_id={result.manifest.backtest_id or ''}")
         print(f"experiment_id={result.manifest.experiment_id or ''}")
+        print(f"fixture_data_mode={result.manifest.fixture_data_mode or ''}")
+        reuse = result.manifest.fixture_reuse
+        if reuse is not None:
+            print(f"inserted_bar_count={reuse.inserted_bar_count}")
+            print(f"reused_bar_count={reuse.reused_bar_count}")
         print(f"errors={len(result.manifest.errors)}")
         for issue in result.manifest.errors:
             print(f"error\t{issue.code}\t{issue.message}")
+        for issue in result.manifest.warnings:
+            print(f"warning\t{issue.code}\t{issue.message}")
     return 0 if result.ok else 1
 
 

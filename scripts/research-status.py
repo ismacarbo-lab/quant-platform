@@ -49,6 +49,10 @@ def main(argv: list[str] | None = None) -> int:
     print(f"alembic_head_expected={report.alembic_head_expected}")
     print(f"final_freeze_ready={str(report.final_freeze_ready).lower()}")
     print(f"evidence_bundle_available={str(report.evidence_bundle_available).lower()}")
+    print(
+        "evidence_bundle_fixture_reuse_supported="
+        + str(report.evidence_bundle_fixture_reuse_supported).lower()
+    )
     policy_names = ", ".join(report.registered_policy_names)
     print(f"policies={report.registered_policy_count} ({policy_names})")
     print(f"regression_cases={report.regression_case_count}")

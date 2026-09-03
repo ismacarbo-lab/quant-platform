@@ -90,6 +90,11 @@ from quant_platform.release.evidence_artifacts import (
     write_evidence_json,
     write_research_evidence_artifacts,
 )
+from quant_platform.release.evidence_fixture_reuse import (
+    check_existing_evidence_fixture_data,
+    existing_fixture_daily_bars_present,
+    fixture_csv_row_count,
+)
 from quant_platform.release.evidence_types import (
     BACKTEST_DIRNAME,
     DEFAULT_EXPERIMENT_NAME,
@@ -108,6 +113,7 @@ from quant_platform.release.evidence_types import (
     STEP_CORRECTIONS,
     STEP_EXPERIMENT,
     STEP_EXPERIMENT_USABILITY,
+    STEP_FIXTURE_DATA,
     STEP_INGEST,
     STEP_LOAD_FIXTURES,
     STEP_NORMALIZATION,
@@ -125,6 +131,8 @@ from quant_platform.release.evidence_types import (
     STEP_VALIDATE_POLICY,
     STEP_WRITE_MANIFEST,
     EvidenceBundleError,
+    EvidenceFixtureDataMode,
+    EvidenceFixtureReuseReport,
     ResearchEvidenceBundleArtifact,
     ResearchEvidenceBundleIssue,
     ResearchEvidenceBundleManifest,
@@ -132,6 +140,7 @@ from quant_platform.release.evidence_types import (
     ResearchEvidenceBundleResult,
     ResearchEvidenceBundleStep,
     default_evidence_artifacts,
+    empty_fixture_reuse_report,
 )
 from quant_platform.release.status import (
     alembic_script_heads,
@@ -265,6 +274,21 @@ def hash_research_evidence_bundle(
     normalized_hash = payload.get("normalized_dataset_hash")
     if normalized_hash:
         digest["normalized_dataset_hash"] = normalized_hash
+    fixture_mode = payload.get("fixture_data_mode")
+    if fixture_mode:
+        digest["fixture_data_mode"] = fixture_mode
+    reuse = payload.get("fixture_reuse")
+    if isinstance(reuse, Mapping):
+        digest["fixture_reuse"] = {
+            "inserted_bar_count": reuse.get("inserted_bar_count"),
+            "reused_bar_count": reuse.get("reused_bar_count"),
+            "inserted_corporate_action_count": reuse.get(
+                "inserted_corporate_action_count"
+            ),
+            "reused_corporate_action_count": reuse.get("reused_corporate_action_count"),
+            "inserted_session_count": reuse.get("inserted_session_count"),
+            "reused_session_count": reuse.get("reused_session_count"),
+        }
     blob = canonical_json(digest)
     if manifest_contains_secrets(blob):
         raise EvidenceBundleError(
@@ -324,6 +348,8 @@ def build_research_evidence_bundle(
     release_status: dict[str, object] | None = None
     policy_name = request.policy_name or "data_quality"
     failed = False
+    fixture_data_mode: str | None = None
+    fixture_reuse: EvidenceFixtureReuseReport | None = None
 
     def _ok(name: str, detail: str | None = None) -> None:
         steps.append(
@@ -393,33 +419,93 @@ def build_research_evidence_bundle(
         _ok(STEP_VALIDATE_POLICY, policy_name)
 
         spec = _load_fixture_spec(request)
-        _load_reference_tables(session, spec, request.fixture_dir)
-        _ok(STEP_LOAD_FIXTURES, "local CSV fixtures")
-
         source_name = request.source_name or spec.source_name
+        reuse_candidate = existing_fixture_daily_bars_present(
+            session, request.fixture_dir, source_name=source_name
+        )
+        skip_reference_writes = bool(
+            request.allow_existing_fixture_data and reuse_candidate
+        )
+        if skip_reference_writes:
+            _ok(STEP_LOAD_FIXTURES, "existing local CSV fixtures")
+        else:
+            _load_reference_tables(session, spec, request.fixture_dir)
+            _ok(STEP_LOAD_FIXTURES, "local CSV fixtures")
+
         source, ingest, run = _ingest_bars(session, request, spec, source_name)
-        if ingest.aborted or ingest.inserted_bars == 0:
+        if ingest.aborted:
+            fixture_data_mode = EvidenceFixtureDataMode.FAILED.value
+            fixture_reuse = empty_fixture_reuse_report(
+                mode=EvidenceFixtureDataMode.FAILED.value
+            )
             _fail(
                 STEP_INGEST,
                 "ingest_failed",
                 "daily bar ingest did not insert research bars",
             )
-        if ingest.rejected_count:
+        if ingest.inserted_bars > 0:
+            fixture_data_mode = EvidenceFixtureDataMode.INSERTED.value
+            fixture_reuse = empty_fixture_reuse_report(
+                mode=EvidenceFixtureDataMode.INSERTED.value,
+                inserted_bar_count=ingest.inserted_bars,
+                inserted_corporate_action_count=fixture_csv_row_count(
+                    request.fixture_dir / "corporate_actions.csv"
+                ),
+                inserted_session_count=fixture_csv_row_count(
+                    request.fixture_dir / "sessions.csv"
+                ),
+            )
+            if ingest.rejected_count:
+                _warn(
+                    STEP_INGEST,
+                    "ingest_rejected_rows",
+                    f"ingest rejected {ingest.rejected_count} rows",
+                )
+            session.flush()
+            _ok(STEP_INGEST, f"inserted_bars={ingest.inserted_bars}")
+            _ok(STEP_FIXTURE_DATA, EvidenceFixtureDataMode.INSERTED.value)
+        elif request.allow_existing_fixture_data:
+            reuse_report = check_existing_evidence_fixture_data(
+                session, request.fixture_dir, source_name=source_name
+            )
+            if reuse_report.mode != EvidenceFixtureDataMode.REUSED.value:
+                fixture_data_mode = EvidenceFixtureDataMode.FAILED.value
+                fixture_reuse = reuse_report
+                detail = "existing fixture data does not match"
+                if reuse_report.issues:
+                    detail = reuse_report.issues[0].message
+                _fail(STEP_INGEST, "fixture_reuse_mismatch", detail)
+            fixture_data_mode = EvidenceFixtureDataMode.REUSED.value
+            fixture_reuse = reuse_report
             _warn(
                 STEP_INGEST,
-                "ingest_rejected_rows",
-                f"ingest rejected {ingest.rejected_count} rows",
+                "fixture_data_reused",
+                "existing fixture data matched and was reused; no rows inserted",
             )
-        session.flush()
-        _ok(STEP_INGEST, f"inserted_bars={ingest.inserted_bars}")
+            session.flush()
+            _ok(STEP_INGEST, f"reused_bars={reuse_report.reused_bar_count}")
+            _ok(STEP_FIXTURE_DATA, EvidenceFixtureDataMode.REUSED.value)
+        else:
+            fixture_data_mode = EvidenceFixtureDataMode.FAILED.value
+            fixture_reuse = empty_fixture_reuse_report(
+                mode=EvidenceFixtureDataMode.FAILED.value
+            )
+            _fail(
+                STEP_INGEST,
+                "ingest_failed",
+                "daily bar ingest did not insert research bars",
+            )
 
-        correction_count = _apply_corrections(
-            session,
-            request.fixture_dir / "corrections.csv",
-            spec=spec,
-            source_id=source.id,
-            ingestion_run_id=run.id,
-        )
+        if fixture_data_mode == EvidenceFixtureDataMode.REUSED.value:
+            correction_count = 0
+        else:
+            correction_count = _apply_corrections(
+                session,
+                request.fixture_dir / "corrections.csv",
+                spec=spec,
+                source_id=source.id,
+                ingestion_run_id=run.id,
+            )
         session.flush()
         _ok(STEP_CORRECTIONS, f"corrections={correction_count}")
 
@@ -961,6 +1047,8 @@ def build_research_evidence_bundle(
         release_report_hash=release_report_hash,
         normalized_dataset_hash=normalized_dataset_hash,
         normalized_dataset_id=normalized_dataset_id,
+        fixture_data_mode=fixture_data_mode,
+        fixture_reuse=fixture_reuse,
         steps=tuple(steps),
         artifacts=_dedupe_artifacts(artifacts),
         warnings=tuple(warnings),
@@ -1237,6 +1325,18 @@ def _apply_corrections(
                     "correction_original_missing",
                     f"no original bar found for {symbol}",
                 )
+            already = next(
+                (
+                    item
+                    for item in bars
+                    if item.observation_time == observation
+                    and item.available_time == available
+                    and item.is_correction
+                ),
+                None,
+            )
+            if already is not None:
+                continue
             insert_daily_bar_correction(
                 session,
                 superseded=original,
