@@ -441,3 +441,22 @@ def test_data_contract_remote_verification_doc() -> None:
     assert "DATABASE_URL=" not in raw
     assert "postgresql+psycopg://quant:" not in text
     assert "quant_dev_only_not_for_production" not in text
+
+
+def test_data_contract_post_tag_release_notes() -> None:
+    spec = _ROOT / "docs" / "release" / "DATA_CONTRACT_POST_TAG_RELEASE_NOTES.md"
+    assert spec.is_file()
+    raw = spec.read_text(encoding="utf-8")
+    text = " ".join(raw.replace("*", " ").lower().split())
+    assert "v0.3.0-research-data-contracts" in raw
+    assert "4dd805f9acb72ea03e812db2b39bf072b5ddd3a1" in raw
+    assert "0010_normalized_dataset_catalog" in raw
+    assert "vendor_runtime=none" in text
+    assert "external_market_data_vendors=disabled" in text
+    assert "no vendors reales" in text
+    assert "no internet" in text
+    assert "no trading" in text
+    assert "no pnl/returns" in text
+    assert "DATABASE_URL=" not in raw
+    assert "postgresql+psycopg://quant:" not in text
+    assert "quant_dev_only_not_for_production" not in text
