@@ -26,6 +26,8 @@ from quant_platform.release.constants import (
 )
 from quant_platform.release.guards import (
     detect_ai_runtime,
+    detect_contracts_networking,
+    detect_real_vendor_clients,
     forbidden_dependencies_declared,
     forbidden_runtime_packages_present,
 )
@@ -89,6 +91,7 @@ def run_research_release_checks(
     checks.append(ai_item)
     checks.append(_check_forbidden_packages(pkg))
     checks.append(_check_forbidden_dependencies(root / "pyproject.toml"))
+    checks.append(_check_vendor_runtime(pkg))
     if not skip_imports:
         checks.append(_check_smoke_imports())
     if not skip_regression:
@@ -263,6 +266,27 @@ def _check_forbidden_dependencies(pyproject_path: Path) -> ReleaseCheckItem:
     return _ok(
         "architecture_dependencies",
         "no trading, vendor, or AI runtime dependencies",
+    )
+
+
+def _check_vendor_runtime(package_root: Path) -> ReleaseCheckItem:
+    clients = detect_real_vendor_clients(package_root)
+    networking = detect_contracts_networking(package_root)
+    if clients:
+        return _error(
+            "vendor_runtime",
+            f"real vendor clients present: {', '.join(clients)}",
+            code="real_vendor_client",
+        )
+    if networking:
+        return _error(
+            "vendor_runtime",
+            f"vendor contracts must stay offline: {', '.join(networking)}",
+            code="contracts_networking",
+        )
+    return _ok(
+        "vendor_runtime",
+        "no real vendor clients or contract networking",
     )
 
 

@@ -1,12 +1,13 @@
 # quant_platform
 
-**Research-only** quantitative platform (Phase 6.4). Research mode was
-frozen at `v0.1.0-research` on Alembic `0009_backtest_experiments`.
-Later research-only work added a metadata-only catalog of derived
-normalized datasets (`0010_normalized_dataset_catalog`; silver
-`daily_bars` unchanged). Evidence-bundle re-runs on a shared database
-can opt into verified fixture reuse; they do not delete or rewrite
-silver bars. It is
+**Research-only** quantitative platform. Research mode was frozen at
+`v0.1.0-research` on Alembic `0009_backtest_experiments`. Later
+research-only work added a metadata-only catalog of derived normalized
+datasets (`0010_normalized_dataset_catalog`; silver `daily_bars`
+unchanged) and an **offline vendor-agnostic data source contract** (no
+real vendor, no internet, no credentials). Evidence-bundle re-runs on a
+shared database can opt into verified fixture reuse; they do not delete
+or rewrite silver bars. It is
 **not** a trading system: no strategies,
 signals, orders, fills, portfolio, PnL, returns, brokers, paper trading,
 live trading, or AI runtime.
@@ -15,6 +16,9 @@ Handoff: [docs/release/RESEARCH_HANDOFF.md](docs/release/RESEARCH_HANDOFF.md).
 Evidence bundle: [docs/release/RESEARCH_EVIDENCE_BUNDLE.md](docs/release/RESEARCH_EVIDENCE_BUNDLE.md).
 Capabilities: [docs/release/CAPABILITY_MATRIX.md](docs/release/CAPABILITY_MATRIX.md).
 Freeze ADR: [docs/adr/0003-research-mode-freeze.md](docs/adr/0003-research-mode-freeze.md).
+Vendor-agnostic data contracts:
+[docs/adr/0004-vendor-agnostic-data-source-contract.md](docs/adr/0004-vendor-agnostic-data-source-contract.md),
+[docs/data/DATA_SOURCE_CONTRACTS.md](docs/data/DATA_SOURCE_CONTRACTS.md).
 
 `APP_MODE` accepts only `research`. `paper` and `live` fail validation.
 The only HTTP route is `GET /health`.
@@ -73,7 +77,8 @@ Implemented: local PIT ingestion, datasets, quality, snapshots, replay,
 dry-run research policies, experiments, release checks, evidence bundle
 (with optional verified fixture reuse on a shared database),
 derived split normalization (silver unchanged), a normalization
-regression matrix, and a metadata-only normalized-dataset catalog.
+regression matrix, a metadata-only normalized-dataset catalog, and an
+offline vendor-agnostic data source contract (no real vendor client).
 
 Prohibited: strategy, signal, portfolio, PnL, orders, brokers,
 paper/live, external vendors, AI runtime.
@@ -144,13 +149,16 @@ It is **not** a trading system.
   and optionally attach it to a research evidence bundle.
 - Register normalized-dataset metadata in PostgreSQL (hashes, counts,
   relative artifacts). Bars stay in local files; silver is not rewritten.
+- Validate **offline** vendor-agnostic payloads (daily bars, corporate
+  actions, sessions) with a fake in-memory provider. No HTTP, no
+  credentials, no real vendor client.
 
 ## What is not implemented
 
 - Strategies and BUY/SELL signals
 - Machine learning or LLM runtime
 - Real backtester (PnL, portfolio, orders); only a NoOp dry-run exists
-- Market-data download or vendor APIs
+- Market-data download or vendor APIs (only an offline contract exists)
 - Broker connectivity
 - Paper trading
 - Live trading or order routing

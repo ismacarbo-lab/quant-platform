@@ -2,13 +2,31 @@
 
 from __future__ import annotations
 
+import ast
 import tomllib
 from collections.abc import Mapping
 from pathlib import Path
 
+from quant_platform.data.contracts.types import FORBIDDEN_VENDOR_IDENTITY_NAMES
 from quant_platform.release.constants import (
     FORBIDDEN_DEPENDENCY_NAMES,
     FORBIDDEN_RUNTIME_PACKAGES,
+)
+
+FORBIDDEN_HTTP_IMPORT_ROOTS = frozenset(
+    {
+        "aiohttp",
+        "httpx",
+        "requests",
+        "urllib3",
+    }
+)
+FORBIDDEN_HTTP_IMPORT_FULL = frozenset(
+    {
+        "http.client",
+        "socket",
+        "urllib.request",
+    }
 )
 
 
@@ -56,6 +74,59 @@ def settings_ai_vendor_fields(
     for needle in ("openai", "anthropic", "langchain", "cursor", "rag"):
         hits.extend(sorted(name for name in names if needle in name))
     return tuple(hits)
+
+
+def detect_real_vendor_clients(package_root: Path | str) -> tuple[str, ...]:
+    """Return real-vendor module paths found under the package root."""
+    root = Path(package_root)
+    if not root.is_dir():
+        return ()
+    findings: list[str] = []
+    for name in sorted(FORBIDDEN_VENDOR_IDENTITY_NAMES):
+        candidates = (
+            root / name,
+            root / f"{name}.py",
+            root / "data" / name,
+            root / "data" / f"{name}.py",
+            root / "data" / "vendors" / name,
+            root / "data" / "vendors" / f"{name}.py",
+            root / "data" / "contracts" / f"{name}.py",
+        )
+        if any(path.is_dir() or path.is_file() for path in candidates):
+            findings.append(f"package:{name}")
+    return tuple(findings)
+
+
+def detect_contracts_networking(package_root: Path | str) -> tuple[str, ...]:
+    """Return forbidden HTTP/socket imports in data/contracts. Offline only."""
+    contracts = Path(package_root) / "data" / "contracts"
+    if not contracts.is_dir():
+        return ()
+    findings: list[str] = []
+    for path in sorted(contracts.glob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            modules: list[str] = []
+            if isinstance(node, ast.Import):
+                modules = [alias.name for alias in node.names]
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                if node.module == "urllib":
+                    modules.extend(
+                        f"urllib.{alias.name}" if alias.name != "*" else "urllib"
+                        for alias in node.names
+                    )
+                else:
+                    modules.append(node.module)
+            for module in modules:
+                imported_root = module.split(".", 1)[0]
+                if (
+                    imported_root in FORBIDDEN_HTTP_IMPORT_ROOTS
+                    or module in FORBIDDEN_HTTP_IMPORT_FULL
+                    or imported_root in FORBIDDEN_VENDOR_IDENTITY_NAMES
+                    or module in FORBIDDEN_VENDOR_IDENTITY_NAMES
+                ):
+                    findings.append(f"{path.name}:{module}")
+    return tuple(dict.fromkeys(findings))
 
 
 def detect_ai_runtime(

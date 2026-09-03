@@ -46,6 +46,7 @@ ENABLED_CAPABILITIES: tuple[str, ...] = (
     "corporate_action_normalization",
     "normalization_research_layer",
     "normalized_dataset_catalog",
+    "vendor_agnostic_data_contracts",
     "health_endpoint",
 )
 
@@ -148,5 +149,6 @@ SMOKE_IMPORT_MODULES: tuple[str, ...] = (
     "quant_platform.release.evidence_bundle",
     "quant_platform.release.status",
     "quant_platform.research.normalization",
+    "quant_platform.data.contracts",
     "quant_platform.storage.database",
 )

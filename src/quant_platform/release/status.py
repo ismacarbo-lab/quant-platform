@@ -39,7 +39,24 @@ from quant_platform.research.snapshots import (
 DOCUMENTED_RELEASE_RISKS: tuple[ReleaseRiskItem, ...] = (
     ReleaseRiskItem(
         code="no_data_vendors",
-        message="Market data is local CSV only; there is no vendor download client.",
+        message=(
+            "Market data is local CSV plus an offline vendor-agnostic "
+            "contract; there is no vendor download client."
+        ),
+    ),
+    ReleaseRiskItem(
+        code="vendor_contracts_offline_only",
+        message=(
+            "Vendor-agnostic contracts exist for future adapters; "
+            "tests stay offline and credentials stay out of the repo."
+        ),
+    ),
+    ReleaseRiskItem(
+        code="vendor_rate_limits_unimplemented",
+        message=(
+            "Rate limits and vendor licensing are future integration "
+            "risks, not implemented controls."
+        ),
     ),
     ReleaseRiskItem(
         code="no_advanced_normalization",

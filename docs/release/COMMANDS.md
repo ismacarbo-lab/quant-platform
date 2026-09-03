@@ -57,7 +57,8 @@ Expected head: `0010_normalized_dataset_catalog`.
 uv run python scripts/load-daily-bars.py tests/fixtures/daily_bars_sample.csv
 ```
 
-No vendors. Local CSV only.
+No vendors. Local CSV only. Offline payload contracts:
+[DATA_SOURCE_CONTRACTS.md](../data/DATA_SOURCE_CONTRACTS.md).
 
 ## Normalized daily bars (derived)
 
@@ -100,6 +101,18 @@ See
 [CORPORATE_ACTION_NORMALIZATION.md](../research/CORPORATE_ACTION_NORMALIZATION.md)
 and
 [NORMALIZED_DATASET_CATALOG.md](../research/NORMALIZED_DATASET_CATALOG.md).
+
+## Vendor-agnostic data contracts
+
+Offline types, validation, and `FakeVendorPayloadProvider` only. No
+HTTP, no credentials, no real vendor client, no trading, no PnL/returns.
+
+```bash
+uv run pytest tests/unit/test_data_source_contracts.py
+```
+
+See [DATA_SOURCE_CONTRACTS.md](../data/DATA_SOURCE_CONTRACTS.md) and
+[ADR 0004](../adr/0004-vendor-agnostic-data-source-contract.md).
 
 ## Normalization regression
 

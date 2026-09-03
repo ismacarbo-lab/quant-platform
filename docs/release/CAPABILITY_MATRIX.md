@@ -10,7 +10,9 @@ Operational Alembic head is `0010_normalized_dataset_catalog`
 
 Related: [RESEARCH_HANDOFF.md](RESEARCH_HANDOFF.md),
 [RISK_REGISTER.md](RISK_REGISTER.md),
-[ADR 0003](../adr/0003-research-mode-freeze.md).
+[ADR 0003](../adr/0003-research-mode-freeze.md),
+[ADR 0004](../adr/0004-vendor-agnostic-data-source-contract.md),
+[DATA_SOURCE_CONTRACTS.md](../data/DATA_SOURCE_CONTRACTS.md).
 
 ## Implemented
 
@@ -43,6 +45,7 @@ Related: [RESEARCH_HANDOFF.md](RESEARCH_HANDOFF.md),
 | Release checks / status | Guardrails, Alembic pin | Not a trading launch |
 | Evidence bundle | Fixture → release local pack | Not a performance report |
 | Health endpoint | `GET /health` | Not a data or trade API |
+| Vendor-agnostic data contracts | Offline payload types, validation, hash, fake provider | Not a vendor download; not credentials; not internet |
 
 ## Intentionally disabled
 
@@ -92,12 +95,16 @@ Do not add without a new ADR and a later phase spec:
 Only after an explicit ADR. Still research-first unless that ADR says
 otherwise:
 
-1. Richer **local** datasets (still no vendor client).
-2. Dividend or FX restatement as another **derived** view (still not a
+1. A real vendor **adapter behind this contract** (PIT, raw capture,
+   hashed idempotence, secrets out of repo). Not a silent internet
+   call from tests.
+2. Richer **local** datasets (still no vendor client until that adapter
+   ADR).
+3. Dividend or FX restatement as another **derived** view (still not a
    strategy).
-3. A strategy **interface** with no brokers, no orders, and no PnL
+4. A strategy **interface** with no brokers, no orders, and no PnL
    until those layers exist.
-4. Optional, default-off research assistant (see
+5. Optional, default-off research assistant (see
    [ADR 0002](../adr/0002-ai-usage-boundary.md)) — never a trading brain.
 
 Do not skip from this freeze to paper or live.

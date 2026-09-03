@@ -69,6 +69,7 @@ make quality
 | Verify normalized dataset | `uv run python scripts/verify-normalized-dataset.py --run-dir DIR` |
 | List/check/compare normalized catalog | `scripts/list-normalized-datasets.py`, `check-normalized-dataset-usability.py`, `compare-normalized-datasets.py` |
 | Canonical command list | [COMMANDS.md](../release/COMMANDS.md) |
+| Vendor-agnostic data contracts (offline) | [DATA_SOURCE_CONTRACTS.md](../data/DATA_SOURCE_CONTRACTS.md) |
 | Freeze handoff | [RESEARCH_HANDOFF.md](../release/RESEARCH_HANDOFF.md) |
 
 Unit tests and `tests/integration/test_local_infra.py` do **not** need Docker.
@@ -112,6 +113,15 @@ and `--validate-calendar` (rejects closed sessions). Row errors live in
 [INSTRUMENT_MASTER.md](../data/INSTRUMENT_MASTER.md),
 [MARKET_CALENDARS.md](../data/MARKET_CALENDARS.md), and
 [CORPORATE_ACTIONS.md](../data/CORPORATE_ACTIONS.md).
+
+Vendor-agnostic payload contracts (offline fake provider only; no HTTP,
+no credentials, no real vendor):
+[DATA_SOURCE_CONTRACTS.md](../data/DATA_SOURCE_CONTRACTS.md) and
+[ADR 0004](../adr/0004-vendor-agnostic-data-source-contract.md).
+
+```bash
+uv run pytest tests/unit/test_data_source_contracts.py
+```
 
 Export a point-in-time daily dataset (`--as-of` required):
 

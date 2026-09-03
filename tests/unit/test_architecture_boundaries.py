@@ -7,12 +7,15 @@ from pathlib import Path
 from quant_platform.core.config import Settings
 from quant_platform.release.constants import (
     DISABLED_CAPABILITIES,
+    ENABLED_CAPABILITIES,
     FORBIDDEN_DEPENDENCY_NAMES,
     FORBIDDEN_RUNTIME_PACKAGES,
 )
 from quant_platform.release.guards import (
     declared_requirement_names,
     detect_ai_runtime,
+    detect_contracts_networking,
+    detect_real_vendor_clients,
     forbidden_dependencies_declared,
     forbidden_runtime_packages_present,
     settings_ai_vendor_fields,
@@ -74,3 +77,10 @@ def test_disabled_capabilities_cover_trading_and_ai() -> None:
         "order_execution",
     ):
         assert name in disabled
+
+
+def test_vendor_agnostic_contracts_enabled_real_vendors_disabled() -> None:
+    assert "vendor_agnostic_data_contracts" in ENABLED_CAPABILITIES
+    assert "external_market_data_vendors" in DISABLED_CAPABILITIES
+    assert detect_real_vendor_clients(PACKAGE_ROOT) == ()
+    assert detect_contracts_networking(PACKAGE_ROOT) == ()

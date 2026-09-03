@@ -25,6 +25,8 @@ Details:
 - [Instrument master](INSTRUMENT_MASTER.md)
 - [Market calendars](MARKET_CALENDARS.md)
 - [Corporate actions](CORPORATE_ACTIONS.md)
+- [Vendor-agnostic data source contracts](DATA_SOURCE_CONTRACTS.md)
+  (offline types only; no vendor APIs)
 
 ## Bronze vs silver
 

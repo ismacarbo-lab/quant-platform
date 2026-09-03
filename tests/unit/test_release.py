@@ -16,6 +16,7 @@ from quant_platform.core.config import Settings
 from quant_platform.release.checks import run_research_release_checks
 from quant_platform.release.constants import (
     DISABLED_CAPABILITIES,
+    ENABLED_CAPABILITIES,
     EXPECTED_ALEMBIC_HEAD,
 )
 from quant_platform.release.status import (
@@ -71,6 +72,8 @@ def test_status_report_serializes_without_secrets(
     assert "live_trading" in disabled
     assert "brokers" in disabled
     assert "ai_runtime" in disabled
+    assert "external_market_data_vendors" in disabled
+    assert "vendor_agnostic_data_contracts" in ENABLED_CAPABILITIES
 
 
 def test_expected_alembic_head_matches_scripts() -> None:
@@ -187,6 +190,25 @@ def test_release_check_detects_forbidden_construct(
     assert report.trading_constructs_detected is True
     codes = {item.code for item in report.checks if item.status == "error"}
     assert "trading_construct_detected" in codes or "forbidden_package" in codes
+
+
+def test_release_check_detects_real_vendor_client(
+    research_settings: Settings, tmp_path: Path
+) -> None:
+    (tmp_path / "data" / "vendors").mkdir(parents=True)
+    (tmp_path / "data" / "vendors" / "polygon.py").write_text("", encoding="utf-8")
+    report = run_research_release_checks(
+        settings=research_settings,
+        package_root=tmp_path,
+        skip_db=True,
+        skip_compose=True,
+        skip_regression=True,
+        skip_normalization_regression=True,
+        skip_imports=True,
+    )
+    assert report.ok is False
+    codes = {item.code for item in report.checks if item.status == "error"}
+    assert "real_vendor_client" in codes
 
 
 def test_release_check_json_script_has_no_database_url(
