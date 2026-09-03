@@ -48,7 +48,7 @@ uv run alembic current
 uv run alembic upgrade head
 ```
 
-Expected head: `0009_backtest_experiments`.
+Expected head: `0010_normalized_dataset_catalog`.
 
 ## Load sample data
 
@@ -73,8 +73,32 @@ uv run python scripts/verify-normalized-dataset.py \
   --run-dir /tmp/normalized-fixt
 ```
 
-Does not rewrite silver `daily_bars`. See
-[CORPORATE_ACTION_NORMALIZATION.md](../research/CORPORATE_ACTION_NORMALIZATION.md).
+Does not rewrite silver `daily_bars`. Catalog metadata (optional):
+
+```bash
+uv run python scripts/build-normalized-dataset.py \
+  --source-name local_csv \
+  --symbol FIXT \
+  --start 2024-01-01T00:00:00Z \
+  --end 2024-01-05T00:00:00Z \
+  --as-of 2024-01-20T00:00:00Z \
+  --output-dir /tmp/normalized-fixt \
+  --register \
+  --deterministic-id
+uv run python scripts/list-normalized-datasets.py --usable-only --json
+uv run python scripts/check-normalized-dataset-usability.py \
+  --normalized-dataset-id ID \
+  --base-dir /tmp/normalized-fixt
+uv run python scripts/compare-normalized-datasets.py --left ID_A --right ID_B
+uv run python scripts/verify-normalized-dataset.py \
+  --normalized-dataset-id ID \
+  --base-dir /tmp/normalized-fixt
+```
+
+See
+[CORPORATE_ACTION_NORMALIZATION.md](../research/CORPORATE_ACTION_NORMALIZATION.md)
+and
+[NORMALIZED_DATASET_CATALOG.md](../research/NORMALIZED_DATASET_CATALOG.md).
 
 ## Normalization regression
 
@@ -187,11 +211,13 @@ uv run python scripts/build-research-evidence-bundle.py \
   --fixture-dir tests/fixtures/e2e_research_bundle \
   --output-dir /tmp/research-evidence-bundle \
   --deterministic-id \
-  --include-normalized-dataset
+  --include-normalized-dataset \
+  --register-normalized-dataset
 ```
 
 Not in `make quality`. Needs PostgreSQL. `--include-normalized-dataset`
-is opt-in and does not compute returns.
+is opt-in and does not compute returns. `--register-normalized-dataset`
+stores catalog metadata only when that opt-in is also set.
 
 ## CI troubleshooting
 

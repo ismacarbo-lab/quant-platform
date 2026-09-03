@@ -71,6 +71,14 @@ def main(argv: list[str] | None = None) -> int:
         default="split_only",
         help="Adjustment mode when --include-normalized-dataset is set.",
     )
+    parser.add_argument(
+        "--register-normalized-dataset",
+        action="store_true",
+        help=(
+            "Register normalized-dataset catalog metadata when "
+            "--include-normalized-dataset is also set. Metadata only."
+        ),
+    )
     parser.add_argument("--json", action="store_true", dest="as_json")
     args = parser.parse_args(argv)
 
@@ -106,6 +114,7 @@ def main(argv: list[str] | None = None) -> int:
             deterministic_id=bool(args.deterministic_id),
             resolve_git=not bool(args.deterministic_id),
             include_normalized_dataset=bool(args.include_normalized_dataset),
+            register_normalized_dataset=bool(args.register_normalized_dataset),
             normalization_adjustment_mode=args.normalization_adjustment_mode,
         )
         result = build_research_evidence_bundle(session, request)

@@ -24,6 +24,10 @@ from quant_platform.release.evidence_types import (
     NORMALIZED_DATASET_DIRNAME,
     ResearchEvidenceBundleRequest,
 )
+from quant_platform.research.normalization import (
+    evaluate_normalized_dataset_usability,
+    get_normalized_dataset_by_id,
+)
 from quant_platform.research.normalization.integrity import (
     verify_normalization_artifacts,
 )
@@ -137,6 +141,7 @@ def test_evidence_bundle_include_normalized_dataset(
     assert result.ok is True
     assert result.manifest.normalized_dataset_hash
     assert result.manifest.normalized_dataset_hash.startswith("sha256:")
+    assert result.manifest.normalized_dataset_id is None
     step_names = [item.name for item in result.manifest.steps]
     assert "normalization" in step_names
     norm_dir = result.output_dir / NORMALIZED_DATASET_DIRNAME
@@ -164,6 +169,33 @@ def test_evidence_bundle_include_normalized_dataset(
         assert name not in _TRADING_TABLES.intersection(tables)
 
 
+def test_evidence_bundle_register_normalized_dataset_includes_id(
+    db_session: Session, tmp_path: Path
+) -> None:
+    request = _request(
+        tmp_path,
+        include_normalized_dataset=True,
+        register_normalized_dataset=True,
+    )
+    result = build_research_evidence_bundle(db_session, request)
+    assert result.ok is True
+    assert result.manifest.normalized_dataset_hash
+    assert result.manifest.normalized_dataset_id
+    payload = result.manifest.as_mapping()
+    assert payload.get("normalized_dataset_id") == result.manifest.normalized_dataset_id
+    row = get_normalized_dataset_by_id(
+        db_session, result.manifest.normalized_dataset_id
+    )
+    assert row is not None
+    assert row.source_type == "snapshot"
+    usability = evaluate_normalized_dataset_usability(
+        db_session,
+        result.manifest.normalized_dataset_id,
+        result.output_dir / NORMALIZED_DATASET_DIRNAME,
+    )
+    assert usability.usable is True
+
+
 def test_evidence_bundle_default_omits_normalized_dataset(
     db_session: Session, tmp_path: Path
 ) -> None:
@@ -171,6 +203,7 @@ def test_evidence_bundle_default_omits_normalized_dataset(
     result = build_research_evidence_bundle(db_session, request)
     assert result.ok is True
     assert result.manifest.normalized_dataset_hash is None
+    assert result.manifest.normalized_dataset_id is None
     step_names = [item.name for item in result.manifest.steps]
     assert "normalization" not in step_names
     assert not (result.output_dir / NORMALIZED_DATASET_DIRNAME).exists()

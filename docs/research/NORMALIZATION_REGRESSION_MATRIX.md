@@ -14,11 +14,13 @@ Package: `quant_platform.research.normalization.regression`,
 Fixtures: `tests/fixtures/normalization_regression/`.
 
 Related: [CORPORATE_ACTION_NORMALIZATION.md](CORPORATE_ACTION_NORMALIZATION.md),
+[NORMALIZED_DATASET_CATALOG.md](NORMALIZED_DATASET_CATALOG.md),
 [POLICY_REGRESSION_MATRIX.md](../backtest/POLICY_REGRESSION_MATRIX.md),
 [RESEARCH_EVIDENCE_BUNDLE.md](../release/RESEARCH_EVIDENCE_BUNDLE.md).
 
-**No Alembic revision for this phase.** Expected head remains
-`0009_backtest_experiments`.
+The matrix itself adds no schema. Expected Alembic head after Phase 6.2
+is `0010_normalized_dataset_catalog` (normalized-dataset catalog
+metadata only).
 
 ## What the matrix validates
 

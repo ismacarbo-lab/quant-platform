@@ -15,6 +15,9 @@ class NormalizationErrorCode(StrEnum):
     INVALID_RATIO = "invalid_split_ratio"
     SECRET_LIKE_VALUE = "secret_like_value"  # noqa: S105
     ARTIFACT_INVALID = "artifact_invalid"
+    CATALOG_INVALID = "catalog_invalid"
+    CATALOG_CONFLICT = "catalog_conflict"
+    CATALOG_MISSING = "catalog_missing"
 
 
 class NormalizationError(ValueError):

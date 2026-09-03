@@ -20,6 +20,7 @@ def test_base_registers_ingestion_tables_not_trading() -> None:
     assert "simulation_replay_runs" in names
     assert "backtest_runs" in names
     assert "backtest_experiments" in names
+    assert "normalized_datasets" in names
     assert names.isdisjoint({"orders", "trades", "fills", "signals", "strategies"})
     assert {DailyBar.__tablename__, DataSource.__tablename__} <= names
     assert Instrument.__tablename__ in names

@@ -17,8 +17,8 @@ Related: [POLICY_REGRESSION_MATRIX.md](../backtest/POLICY_REGRESSION_MATRIX.md),
 [CAPABILITY_MATRIX.md](CAPABILITY_MATRIX.md),
 [AI_USAGE_BOUNDARY.md](../ai/AI_USAGE_BOUNDARY.md).
 
-**No Alembic revision for this phase.** Expected head remains
-`0009_backtest_experiments`.
+Phase 5.2 added no schema. Expected Alembic head after Phase 6.2 is
+`0010_normalized_dataset_catalog`.
 
 ## What is ready
 
@@ -32,6 +32,7 @@ The research stack can:
 - observe that stream with registered `ResearchPolicy` implementations
 - hash and verify policy output, backtest artifacts, and experiments
 - pin policy outputs with a golden regression matrix
+- register derived normalized-dataset metadata (hashes and counts only)
 
 `APP_MODE` still accepts only `research`. `GET /health` is still the only
 HTTP route.
@@ -118,7 +119,7 @@ The JSON object is `kind=research_release_status`. Important fields:
 |-------|---------|
 | `ok` | No error-level checks. Warnings may still appear. |
 | `app_mode` | Must be `research`. |
-| `alembic_head_expected` | Script head this candidate pins (`0009_backtest_experiments`). |
+| `alembic_head_expected` | Script head this candidate pins (`0010_normalized_dataset_catalog`). |
 | `registered_policy_count` | Built-in research policies only. |
 | `regression_case_count` | Golden matrix cases. |
 | `trading_constructs_detected` | Must be false. |

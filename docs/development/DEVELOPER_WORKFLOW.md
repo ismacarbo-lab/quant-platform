@@ -65,6 +65,7 @@ make quality
 | Verify evidence bundle | `uv run python scripts/verify-research-evidence-bundle.py --bundle-dir DIR` / `make verify-research-evidence-bundle` |
 | Build normalized dataset | `uv run python scripts/build-normalized-dataset.py …` |
 | Verify normalized dataset | `uv run python scripts/verify-normalized-dataset.py --run-dir DIR` |
+| List/check/compare normalized catalog | `scripts/list-normalized-datasets.py`, `check-normalized-dataset-usability.py`, `compare-normalized-datasets.py` |
 | Canonical command list | [COMMANDS.md](../release/COMMANDS.md) |
 | Freeze handoff | [RESEARCH_HANDOFF.md](../release/RESEARCH_HANDOFF.md) |
 
@@ -128,12 +129,20 @@ uv run python scripts/build-normalized-dataset.py \
   --start 2024-01-01T00:00:00Z \
   --end 2024-01-05T00:00:00Z \
   --as-of 2024-01-20T00:00:00Z \
-  --output-dir /tmp/normalized-fixt
+  --output-dir /tmp/normalized-fixt \
+  --register \
+  --deterministic-id
 uv run python scripts/verify-normalized-dataset.py \
   --run-dir /tmp/normalized-fixt
+uv run python scripts/list-normalized-datasets.py --usable-only --json
+uv run python scripts/check-normalized-dataset-usability.py \
+  --normalized-dataset-id ID \
+  --base-dir /tmp/normalized-fixt
+uv run python scripts/compare-normalized-datasets.py --left ID_A --right ID_B
 ```
 
-See [CORPORATE_ACTION_NORMALIZATION.md](../research/CORPORATE_ACTION_NORMALIZATION.md).
+See [CORPORATE_ACTION_NORMALIZATION.md](../research/CORPORATE_ACTION_NORMALIZATION.md)
+and [NORMALIZED_DATASET_CATALOG.md](../research/NORMALIZED_DATASET_CATALOG.md).
 
 Diagnose coverage, calendar gaps, PIT corrections, and related ingestion
 errors (`--as-of` required):
@@ -306,6 +315,7 @@ uv run python scripts/run-normalization-regression.py --json
 uv run python scripts/run-normalization-regression.py \
   --output-dir /tmp/normalization-regression \
   --update-expected
+uv run python scripts/list-normalized-datasets.py --usable-only --json
 
 uv run python scripts/build-research-evidence-bundle.py \
   --fixture-dir tests/fixtures/e2e_research_bundle \
@@ -326,6 +336,7 @@ See [docs/backtest/BACKTEST_ENGINE.md](../backtest/BACKTEST_ENGINE.md),
 [docs/backtest/DATA_QUALITY_POLICIES.md](../backtest/DATA_QUALITY_POLICIES.md),
 [docs/backtest/POLICY_REGRESSION_MATRIX.md](../backtest/POLICY_REGRESSION_MATRIX.md),
 [docs/research/NORMALIZATION_REGRESSION_MATRIX.md](../research/NORMALIZATION_REGRESSION_MATRIX.md),
+[docs/research/NORMALIZED_DATASET_CATALOG.md](../research/NORMALIZED_DATASET_CATALOG.md),
 [docs/release/RESEARCH_RELEASE_CANDIDATE.md](../release/RESEARCH_RELEASE_CANDIDATE.md),
 [docs/release/RESEARCH_EVIDENCE_BUNDLE.md](../release/RESEARCH_EVIDENCE_BUNDLE.md),
 [docs/release/COMMANDS.md](../release/COMMANDS.md),

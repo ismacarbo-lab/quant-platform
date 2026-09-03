@@ -1,8 +1,8 @@
 # quant_platform
 
-**Research-only** quantitative platform (Phase 6.1). Research mode was
-frozen at `v0.1.0-research`; this phase adds a normalization regression
-matrix and an opt-in normalized dataset on the evidence bundle. It is
+**Research-only** quantitative platform (Phase 6.2). Research mode was
+frozen at `v0.1.0-research`; this phase adds a metadata-only catalog of
+derived normalized datasets (silver `daily_bars` unchanged). It is
 **not** a trading system: no strategies,
 signals, orders, fills, portfolio, PnL, returns, brokers, paper trading,
 live trading, or AI runtime.
@@ -64,8 +64,8 @@ mean profitability or a license to trade.
 
 Implemented: local PIT ingestion, datasets, quality, snapshots, replay,
 dry-run research policies, experiments, release checks, evidence bundle,
-derived split normalization (silver unchanged), and a normalization
-regression matrix.
+derived split normalization (silver unchanged), a normalization
+regression matrix, and a metadata-only normalized-dataset catalog.
 
 Prohibited: strategy, signal, portfolio, PnL, orders, brokers,
 paper/live, external vendors, AI runtime.
@@ -83,8 +83,9 @@ corporate actions (silver unadjusted; optional derived split view),
 dataset API, quality reports, snapshots, catalog, replay, dry-run
 backtest (`ResearchPolicy` observers, no orders), experiments, policy
 regression, release checks, a local **research evidence bundle**, and
-Phase 6.0 corporate-action normalization artifacts plus a Phase 6.1
-normalization regression matrix.
+Phase 6.0 corporate-action normalization artifacts, a Phase 6.1
+normalization regression matrix, and a Phase 6.2 metadata-only
+normalized-dataset catalog.
 It is **not** a trading system.
 
 ## Current purpose
@@ -133,6 +134,8 @@ It is **not** a trading system.
   silver `daily_bars` unchanged; no performance metrics).
 - Pin that derived view with a golden normalization regression matrix
   and optionally attach it to a research evidence bundle.
+- Register normalized-dataset metadata in PostgreSQL (hashes, counts,
+  relative artifacts). Bars stay in local files; silver is not rewritten.
 
 ## What is not implemented
 
@@ -263,9 +266,11 @@ postgresql+psycopg://quant:quant_dev_only_not_for_production@127.0.0.1:5434/quan
 ```
 
 There are still **no** trading tables (orders, fills, signals, strategies).
-Alembic revisions `0001_ingestion` … `0009_backtest_experiments` create
-research ingestion, instrument-master, snapshot-catalog, replay-run,
-dry-run backtest, and backtest-experiment metadata tables only.
+Alembic revisions `0001_ingestion` … `0010_normalized_dataset_catalog`
+create research ingestion, instrument-master, snapshot-catalog,
+replay-run, dry-run backtest, backtest-experiment, and
+normalized-dataset catalog metadata tables only. There is no table of
+normalized bars.
 
 ## Migrations
 
@@ -338,6 +343,8 @@ Research-policy regression matrix (golden hashes, not PnL):
 [docs/backtest/POLICY_REGRESSION_MATRIX.md](docs/backtest/POLICY_REGRESSION_MATRIX.md).
 Corporate-action normalization regression matrix (hashes, not PnL):
 [docs/research/NORMALIZATION_REGRESSION_MATRIX.md](docs/research/NORMALIZATION_REGRESSION_MATRIX.md).
+Normalized dataset catalog (PostgreSQL metadata, not bar storage):
+[docs/research/NORMALIZED_DATASET_CATALOG.md](docs/research/NORMALIZED_DATASET_CATALOG.md).
 Research-mode release candidate (what is ready, what is not):
 [docs/release/RESEARCH_RELEASE_CANDIDATE.md](docs/release/RESEARCH_RELEASE_CANDIDATE.md).
 End-to-end research evidence bundle (manual, local fixtures only):

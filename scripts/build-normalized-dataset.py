@@ -15,6 +15,8 @@ from quant_platform.research.normalization import (
     NormalizationError,
     build_normalization_request,
     build_normalized_daily_bars_dataset,
+    build_normalized_dataset_registration,
+    register_normalized_dataset,
     write_normalized_dataset_artifacts,
 )
 from quant_platform.research.normalization.types import DEFAULT_ADJUSTMENT_MODE
@@ -53,6 +55,20 @@ def main(argv: list[str] | None = None) -> int:
         help="none | split_only | split_and_reverse_split | informational",
     )
     parser.add_argument("--output-dir", required=True, type=Path)
+    parser.add_argument(
+        "--register",
+        action="store_true",
+        help="Store catalog metadata in PostgreSQL. Does not store OHLCV rows.",
+    )
+    parser.add_argument("--notes", default=None)
+    parser.add_argument("--normalized-dataset-id", default=None)
+    parser.add_argument(
+        "--deterministic-id",
+        action="store_true",
+        help="Derive normalized_dataset_id from dataset_hash, mode, and as_of.",
+    )
+    parser.add_argument("--source-snapshot-id", default=None)
+    parser.add_argument("--source-replay-id", default=None)
     parser.add_argument("--json", action="store_true", dest="as_json")
     args = parser.parse_args(argv)
 
@@ -87,13 +103,31 @@ def main(argv: list[str] | None = None) -> int:
     engine = create_db_engine(settings, connect_timeout_seconds=5)
     factory = create_session_factory(engine)
     session = factory()
+    catalog_id: str | None = None
+    catalog_action: str | None = None
     try:
         dataset = build_normalized_daily_bars_dataset(session, request)
         manifest = write_normalized_dataset_artifacts(dataset, args.output_dir)
+        if args.register:
+            entry = build_normalized_dataset_registration(
+                dataset,
+                manifest,
+                normalized_dataset_id=args.normalized_dataset_id,
+                deterministic_id=bool(args.deterministic_id),
+                source_snapshot_id=args.source_snapshot_id,
+                source_replay_id=args.source_replay_id,
+                notes=args.notes,
+            )
+            registration = register_normalized_dataset(session, entry)
+            session.commit()
+            catalog_id = registration.entry.normalized_dataset_id
+            catalog_action = registration.action
     except NormalizationError as exc:
+        session.rollback()
         print(f"error: {exc} ({exc.code})", file=sys.stderr)
         return 1
     except Exception as exc:
+        session.rollback()
         print(f"error: {redact_secret_text(str(exc))}", file=sys.stderr)
         return 1
     finally:
@@ -111,6 +145,9 @@ def main(argv: list[str] | None = None) -> int:
         "output_dir": str(args.output_dir),
         "manifest_kind": manifest.kind,
     }
+    if catalog_id is not None:
+        payload["normalized_dataset_id"] = catalog_id
+        payload["catalog"] = catalog_action
     blob = json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=True)
     if "DATABASE_URL" in blob or "postgresql+psycopg://" in blob:
         print("error: normalization output leaked a database URL", file=sys.stderr)
@@ -125,6 +162,9 @@ def main(argv: list[str] | None = None) -> int:
     print(f"applied_action_count={dataset.report.applied_action_count}")
     print(f"issue_count={dataset.report.issue_count}")
     print(f"output_dir={args.output_dir}")
+    if catalog_id is not None:
+        print(f"normalized_dataset_id={catalog_id}")
+        print(f"catalog={catalog_action}")
     return 0 if dataset.report.ok else 1
 
 

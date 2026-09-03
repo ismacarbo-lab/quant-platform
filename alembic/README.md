@@ -23,6 +23,9 @@ Phase 4.4 revision `0009_backtest_experiments` adds
 `backtest_experiments` (experiment metadata only; not event rows,
 orders, or PnL).
 Phase 4.5 does not add a revision.
+Phase 6.2 revision `0010_normalized_dataset_catalog` adds
+`normalized_datasets` (derived-dataset catalog metadata only; not
+normalized bars, orders, or PnL).
 None of these revisions create orders, trades, or broker tables.
 
 ```bash

@@ -21,6 +21,7 @@ Related: [RESEARCH_HANDOFF.md](RESEARCH_HANDOFF.md),
 | Corporate action store | Facts stored; silver OHLCV unchanged | Not a vendor CA feed |
 | CA normalization | Derived split / reverse-split view | Not a strategy; not dividend-adjusted; not performance |
 | Normalization research layer | In-memory golden matrix + opt-in evidence artifacts | Not returns, PnL, or a walk-forward |
+| Normalized dataset catalog | PostgreSQL metadata for derived views | Not normalized bars in the DB; not returns |
 | Dataset API | `as_of` required | Not a trading book |
 | Dataset quality | Coverage, calendar, PIT, ingest notes | Not a score of edge |
 | Snapshots | Local hashed CSV + quality + manifest | Not cloud object storage |

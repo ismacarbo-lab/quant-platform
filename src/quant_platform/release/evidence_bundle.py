@@ -142,6 +142,11 @@ from quant_platform.research.errors import DatasetValidationError
 from quant_platform.research.normalization.artifacts import (
     write_normalized_dataset_artifacts,
 )
+from quant_platform.research.normalization.catalog import (
+    build_normalized_dataset_registration,
+    evaluate_normalized_dataset_usability,
+    register_normalized_dataset,
+)
 from quant_platform.research.normalization.datasets import (
     build_normalized_daily_bars_dataset,
 )
@@ -310,6 +315,7 @@ def build_research_evidence_bundle(
     report_hash: str | None = None
     release_report_hash: str | None = None
     normalized_dataset_hash: str | None = None
+    normalized_dataset_id: str | None = None
     replay_ready: bool | None = None
     backtest_usable: bool | None = None
     experiment_usable: bool | None = None
@@ -496,6 +502,14 @@ def build_research_evidence_bundle(
         session.flush()
         _ok(STEP_CATALOG, snapshot_id)
 
+        if (
+            request.register_normalized_dataset
+            and not request.include_normalized_dataset
+        ):
+            raise EvidenceBundleError(
+                "register_normalized_dataset requires include_normalized_dataset",
+                code="catalog_invalid",
+            )
         if request.include_normalized_dataset:
             try:
                 norm_request = build_normalization_request(
@@ -511,12 +525,9 @@ def build_research_evidence_bundle(
                     calendar_code=spec.calendar_code,
                 )
                 normalized = build_normalized_daily_bars_dataset(session, norm_request)
-                write_normalized_dataset_artifacts(
-                    normalized, output_dir / NORMALIZED_DATASET_DIRNAME
-                )
-                integrity = verify_normalization_artifacts(
-                    output_dir / NORMALIZED_DATASET_DIRNAME
-                )
+                norm_dir = output_dir / NORMALIZED_DATASET_DIRNAME
+                norm_manifest = write_normalized_dataset_artifacts(normalized, norm_dir)
+                integrity = verify_normalization_artifacts(norm_dir)
                 if not integrity.ok:
                     _fail(
                         STEP_NORMALIZATION,
@@ -524,6 +535,30 @@ def build_research_evidence_bundle(
                         "normalized dataset artifacts failed verification",
                     )
                 normalized_dataset_hash = normalized.dataset_hash
+                if request.register_normalized_dataset:
+                    catalog_entry = build_normalized_dataset_registration(
+                        normalized,
+                        norm_manifest,
+                        deterministic_id=request.deterministic_id,
+                        source_type="snapshot",
+                        source_snapshot_id=snapshot_id,
+                        notes=request.notes,
+                        created_at=stamp,
+                    )
+                    registration = register_normalized_dataset(session, catalog_entry)
+                    session.flush()
+                    catalog_usability = evaluate_normalized_dataset_usability(
+                        session,
+                        registration.entry.normalized_dataset_id,
+                        norm_dir,
+                    )
+                    if not catalog_usability.usable:
+                        _fail(
+                            STEP_NORMALIZATION,
+                            "catalog_not_usable",
+                            "normalized dataset catalog row is not usable",
+                        )
+                    normalized_dataset_id = registration.entry.normalized_dataset_id
                 artifacts.extend(
                     (
                         ResearchEvidenceBundleArtifact(
@@ -925,6 +960,7 @@ def build_research_evidence_bundle(
         report_hash=report_hash,
         release_report_hash=release_report_hash,
         normalized_dataset_hash=normalized_dataset_hash,
+        normalized_dataset_id=normalized_dataset_id,
         steps=tuple(steps),
         artifacts=_dedupe_artifacts(artifacts),
         warnings=tuple(warnings),

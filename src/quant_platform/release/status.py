@@ -83,7 +83,8 @@ DOCUMENTED_RELEASE_RISKS: tuple[ReleaseRiskItem, ...] = (
     ReleaseRiskItem(
         code="local_artifact_base_dir",
         message=(
-            "Replay and backtest artifacts stay on a local base-dir, not cloud storage."
+            "Replay, backtest, and normalized-dataset artifacts stay on a "
+            "local base-dir, not cloud storage."
         ),
     ),
     ReleaseRiskItem(

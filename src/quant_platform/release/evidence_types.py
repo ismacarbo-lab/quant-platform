@@ -112,6 +112,7 @@ class ResearchEvidenceBundleRequest:
     skip_release_db: bool = True
     skip_normalization_regression: bool = True
     include_normalized_dataset: bool = False
+    register_normalized_dataset: bool = False
     normalization_adjustment_mode: str = DEFAULT_NORMALIZATION_ADJUSTMENT_MODE
 
     def __post_init__(self) -> None:
@@ -208,6 +209,7 @@ class ResearchEvidenceBundleManifest:
     release_ok: bool | None = None
     policy_name: str = DEFAULT_POLICY_NAME
     normalized_dataset_hash: str | None = None
+    normalized_dataset_id: str | None = None
 
     def as_mapping(self, *, include_bundle_hash: bool = True) -> dict[str, object]:
         payload: dict[str, object] = {
@@ -246,6 +248,8 @@ class ResearchEvidenceBundleManifest:
         }
         if self.normalized_dataset_hash is not None:
             payload["normalized_dataset_hash"] = self.normalized_dataset_hash
+        if self.normalized_dataset_id is not None:
+            payload["normalized_dataset_id"] = self.normalized_dataset_id
         if include_bundle_hash:
             payload["bundle_hash"] = self.bundle_hash
         return payload
@@ -304,6 +308,8 @@ class ResearchEvidenceBundleResult:
         }
         if self.manifest.normalized_dataset_hash is not None:
             payload["normalized_dataset_hash"] = self.manifest.normalized_dataset_hash
+        if self.manifest.normalized_dataset_id is not None:
+            payload["normalized_dataset_id"] = self.manifest.normalized_dataset_id
         return payload
 
 

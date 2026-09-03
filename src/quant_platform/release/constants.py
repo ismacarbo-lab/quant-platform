@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-EXPECTED_ALEMBIC_HEAD = "0009_backtest_experiments"
+EXPECTED_ALEMBIC_HEAD = "0010_normalized_dataset_catalog"
 
 RELEASE_STATUS_KIND = "research_release_status"
 RELEASE_STATUS_FORMAT_VERSION = 2
@@ -45,6 +45,7 @@ ENABLED_CAPABILITIES: tuple[str, ...] = (
     "research_evidence_bundle",
     "corporate_action_normalization",
     "normalization_research_layer",
+    "normalized_dataset_catalog",
     "health_endpoint",
 )
 
@@ -133,6 +134,7 @@ EXPECTED_PUBLIC_TABLES = frozenset(
         "instruments",
         "market_calendars",
         "market_sessions",
+        "normalized_datasets",
         "raw_ingestion_records",
         "simulation_replay_runs",
     }

@@ -21,8 +21,8 @@ Related: [RESEARCH_RELEASE_CANDIDATE.md](RESEARCH_RELEASE_CANDIDATE.md),
 [DEVELOPER_WORKFLOW.md](../development/DEVELOPER_WORKFLOW.md),
 [RESEARCH_HANDOFF.md](RESEARCH_HANDOFF.md).
 
-**No Alembic revision for this phase.** Expected head remains
-`0009_backtest_experiments`.
+Phase 5.3 added no schema. Expected Alembic head after Phase 6.2 is
+`0010_normalized_dataset_catalog`.
 
 ## What the bundle demonstrates
 
@@ -63,7 +63,7 @@ opt-in path still does not compute returns or PnL.
 ## How to build it
 
 PostgreSQL must be reachable. `APP_MODE` must be `research`. Alembic must
-be at `0009_backtest_experiments`.
+be at `0010_normalized_dataset_catalog`.
 
 ```bash
 docker compose up -d postgres
@@ -89,6 +89,7 @@ Useful flags:
 | `--policy-config-json` | Optional JSON object for that policy. |
 | `--deterministic-id` | Derive replay/backtest/experiment/bundle ids from hashes. |
 | `--include-normalized-dataset` | Opt-in derived CA view under `normalized_dataset/`. |
+| `--register-normalized-dataset` | Also register catalog metadata (requires the opt-in). |
 | `--normalization-adjustment-mode` | Mode for that derived view. Default: `split_only`. |
 | `--json` | Print the evidence summary. |
 
@@ -154,6 +155,8 @@ versioned.
 - research report hash
 - release report hash
 - `normalized_dataset_hash` only when the opt-in derived view is present
+  (`normalized_dataset_id` is stored on the manifest when register is
+  also on; it is not part of the digest)
 - step names and statuses
 - `ok` / `error_count`
 - package version, `app_mode`, Alembic head

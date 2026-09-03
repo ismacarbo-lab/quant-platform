@@ -8,10 +8,12 @@ Package: `quant_platform.research.normalization`.
 
 Related: [CORPORATE_ACTIONS.md](../data/CORPORATE_ACTIONS.md),
 [RESEARCH_DATASETS.md](RESEARCH_DATASETS.md),
-[NORMALIZATION_REGRESSION_MATRIX.md](NORMALIZATION_REGRESSION_MATRIX.md).
+[NORMALIZATION_REGRESSION_MATRIX.md](NORMALIZATION_REGRESSION_MATRIX.md),
+[NORMALIZED_DATASET_CATALOG.md](NORMALIZED_DATASET_CATALOG.md).
 
-**No Alembic revision for this phase.** Expected head remains
-`0009_backtest_experiments`.
+Phase 6.0 added no schema. Phase 6.2 adds catalog metadata in
+`normalized_datasets` (`0010_normalized_dataset_catalog`). Expected head
+is `0010_normalized_dataset_catalog`. Silver `daily_bars` stay untouched.
 
 ## What it normalizes
 
@@ -117,6 +119,9 @@ reviewing actuals. See
 
 The evidence bundle can attach this derived view only when
 `--include-normalized-dataset` is set. Default bundles stay unchanged.
+`--register-normalized-dataset` also writes catalog metadata (no OHLCV
+rows). See
+[NORMALIZED_DATASET_CATALOG.md](NORMALIZED_DATASET_CATALOG.md).
 
 ## Why this is not a strategy
 

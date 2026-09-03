@@ -710,3 +710,80 @@ class BacktestExperimentRecord(Base):
     registered_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utc_now
     )
+
+
+class NormalizedDatasetRecord(Base):
+    """Catalog metadata for a derived normalized dataset. Not bar storage."""
+
+    __tablename__ = "normalized_datasets"
+    __table_args__ = (
+        UniqueConstraint(
+            "normalized_dataset_id", name="uq_normalized_datasets_normalized_dataset_id"
+        ),
+        UniqueConstraint("manifest_hash", name="uq_normalized_datasets_manifest_hash"),
+        CheckConstraint(
+            "symbol_count >= 0", name="ck_normalized_datasets_symbol_count"
+        ),
+        CheckConstraint("bar_count >= 0", name="ck_normalized_datasets_bar_count"),
+        CheckConstraint(
+            "adjusted_bar_count >= 0", name="ck_normalized_datasets_adjusted_bar_count"
+        ),
+        CheckConstraint(
+            "applied_action_count >= 0",
+            name="ck_normalized_datasets_applied_action_count",
+        ),
+        CheckConstraint(
+            "warning_count >= 0", name="ck_normalized_datasets_warning_count"
+        ),
+        CheckConstraint("error_count >= 0", name="ck_normalized_datasets_error_count"),
+        CheckConstraint(
+            "source_type IN ("
+            "'local_artifacts', 'snapshot', 'replay', 'research_dataset')",
+            name="ck_normalized_datasets_source_type",
+        ),
+        Index("ix_normalized_datasets_dataset_hash", "dataset_hash"),
+        Index("ix_normalized_datasets_raw_dataset_hash", "raw_dataset_hash"),
+        Index("ix_normalized_datasets_adjustment_mode", "adjustment_mode"),
+        Index("ix_normalized_datasets_as_of", "as_of"),
+        Index("ix_normalized_datasets_source_snapshot_id", "source_snapshot_id"),
+        Index("ix_normalized_datasets_source_replay_id", "source_replay_id"),
+        Index("ix_normalized_datasets_is_usable", "is_usable"),
+        Index("ix_normalized_datasets_created_at", "created_at"),
+    )
+
+    id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), primary_key=True, default=uuid4
+    )
+    normalized_dataset_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    dataset_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    raw_dataset_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
+    source_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    source_snapshot_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    source_replay_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    adjustment_mode: Mapped[str] = mapped_column(String(64), nullable=False)
+    as_of: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    start_time: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    symbol_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    bar_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    adjusted_bar_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    applied_action_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    warning_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    error_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    is_reproducible: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    is_usable: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    artifacts: Mapped[list[dict[str, object]]] = mapped_column(JSONB, nullable=False)
+    request: Mapped[dict[str, object]] = mapped_column(JSONB, nullable=False)
+    report_summary: Mapped[dict[str, object]] = mapped_column(JSONB, nullable=False)
+    manifest_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    package_version: Mapped[str] = mapped_column(String(32), nullable=False)
+    git_commit: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    registered_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )

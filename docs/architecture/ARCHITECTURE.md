@@ -1,4 +1,4 @@
-# Architecture — Phase 6.1
+# Architecture — Phase 6.2
 
 Status: research ingestion, an internal **dataset query API**, **dataset
 quality reports**, **local hashed snapshots**, a **PostgreSQL snapshot
@@ -19,7 +19,8 @@ candidate** (status and guardrails), a **local research evidence
 bundle**, a **research-mode freeze** (handoff, checklists), and a
 **derived corporate-action normalization** view (silver bars unchanged)
 and a **normalization regression matrix** plus an opt-in normalized
-dataset on the evidence bundle.
+dataset on the evidence bundle, and a **PostgreSQL metadata catalog**
+for those derived datasets (no normalized bars in the database).
 No LLM runtime, strategies, brokers, or execution.
 
 ## Modular monolith
@@ -32,7 +33,7 @@ until a measured operational need appears.
 src/quant_platform/
   core/         configuration, UTC clock, identifiers
   data/         local CSV ingest, PIT daily bars, repositories
-  research/     PIT datasets, quality reports, snapshots, catalog, integrity, CA normalization, normalization regression
+  research/     PIT datasets, quality reports, snapshots, catalog, integrity, CA normalization, normalization regression, normalized-dataset catalog
   simulation/   dataset replay, run catalog, backtest readiness gate (no strategies)
   backtest/     dry-run engine, research policies, catalog, integrity, regression matrix (no orders)
   release/      research release-candidate status, checks, and evidence bundle (no trading)
@@ -49,7 +50,7 @@ Documented future areas (no empty implementation packages in Phase 0):
 | `domain` | Canonical types and invariants | documented |
 | `data` | Ingest, bronze/silver/gold, PIT | bronze, silver, identity, calendars, CA store |
 | `storage` | Persistence adapters | engine/session only |
-| `research` | Dataset queries, experiment runners | PIT datasets, quality reports, snapshots, catalog, integrity, derived CA normalization, normalization regression; no notebooks |
+| `research` | Dataset queries, experiment runners | PIT datasets, quality reports, snapshots, catalog, integrity, derived CA normalization, normalization regression, normalized-dataset catalog; no notebooks |
 | `simulation` | Dataset replay timeline | events, boundaries, stream hash, audit, run artifacts + catalog, readiness gate; no strategies |
 | `backtesting` | Simulation engine | Phase 5.4 package `backtest/` plus `release/`: dry-run, research policy, regression matrix, experiments, usability, release checks, evidence bundle, freeze docs; no orders/PnL |
 | `strategies` | Signal generation | not implemented |
@@ -281,6 +282,8 @@ change; silver `daily_bars` unchanged; still no orders or PnL).
 Phase 6.1 adds a normalization regression matrix and an opt-in
 normalized dataset on the evidence bundle (no schema change; still no
 orders or PnL).
+Phase 6.2 adds `normalized_datasets` (`0010_normalized_dataset_catalog`;
+catalog metadata only; no normalized bars; still no orders or PnL).
 None of these add HTTP routes or gold/trading tables.
 
 ## AI usage boundary
