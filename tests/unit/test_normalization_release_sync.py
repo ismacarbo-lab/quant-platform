@@ -119,6 +119,21 @@ def test_release_docs_have_no_live_database_url() -> None:
         assert "DATABASE_URL=" not in text, path.name
 
 
+def test_normalization_remote_verification_doc() -> None:
+    relative = "docs/release/NORMALIZATION_REMOTE_RELEASE_VERIFICATION.md"
+    raw = _read(relative)
+    text = " ".join(raw.replace("*", " ").lower().split())
+    assert _OPERATIONAL_HEAD in raw
+    assert "v0.2.0-research-normalization" in raw
+    assert "normalized_datasets" in raw
+    assert "metadata-only" in text
+    assert "no trading" in text
+    assert "pnl" in text
+    assert "returns" in text
+    assert "postgresql+psycopg://quant:" not in text
+    assert "DATABASE_URL=" not in raw
+
+
 def test_normalization_status_script_help_and_json(
     monkeypatch: pytest.MonkeyPatch,
     research_settings: Settings,
