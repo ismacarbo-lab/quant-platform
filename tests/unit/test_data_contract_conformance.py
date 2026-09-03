@@ -424,3 +424,20 @@ def test_conformance_docs_exist_without_database_url() -> None:
     assert "not a trading" in lowered or "not trading" in lowered
     assert "pnl" in lowered
     assert "returns" in lowered
+
+
+def test_data_contract_remote_verification_doc() -> None:
+    spec = _ROOT / "docs" / "release" / "DATA_CONTRACT_REMOTE_RELEASE_VERIFICATION.md"
+    assert spec.is_file()
+    raw = spec.read_text(encoding="utf-8")
+    text = " ".join(raw.replace("*", " ").lower().split())
+    assert "v0.3.0-research-data-contracts" in raw
+    assert "0010_normalized_dataset_catalog" in raw
+    assert "vendor-agnostic" in text
+    assert "no vendors reales" in text
+    assert "no internet" in text
+    assert "no trading" in text
+    assert "no pnl/returns" in text
+    assert "DATABASE_URL=" not in raw
+    assert "postgresql+psycopg://quant:" not in text
+    assert "quant_dev_only_not_for_production" not in text
