@@ -341,3 +341,27 @@ def test_no_real_vendors_or_network_imports() -> None:
     assert "import requests" not in lowered
     assert "import httpx" not in lowered
     assert "import aiohttp" not in lowered
+
+
+def test_intake_remote_verification_doc() -> None:
+    spec = (
+        _ROOT
+        / "docs"
+        / "release"
+        / "CONTRACT_PAYLOAD_INTAKE_REMOTE_RELEASE_VERIFICATION.md"
+    )
+    assert spec.is_file()
+    raw = spec.read_text(encoding="utf-8")
+    text = " ".join(raw.replace("*", " ").lower().split())
+    assert "v0.5.0-research-intake-bridge" in raw
+    assert "0010_normalized_dataset_catalog" in raw
+    assert "dry-run" in text
+    assert "--write-db" in raw
+    assert "vendor-agnostic" in text
+    assert "no vendors reales" in text
+    assert "no internet" in text
+    assert "no trading" in text
+    assert "no pnl/returns" in text
+    assert "DATABASE_URL=" not in raw
+    assert "postgresql+psycopg://quant:" not in text
+    assert "quant_dev_only_not_for_production" not in text
