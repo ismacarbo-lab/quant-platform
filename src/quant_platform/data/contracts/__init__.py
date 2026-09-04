@@ -37,6 +37,35 @@ from quant_platform.data.contracts.fake_provider import (
     load_offline_vendor_payload_batch,
 )
 from quant_platform.data.contracts.hashing import hash_vendor_payload_batch
+from quant_platform.data.contracts.intake import (
+    build_contract_payload_intake_plan,
+    build_contract_payload_intake_report,
+    build_contract_payload_intake_request,
+    execute_contract_payload_intake,
+    hash_contract_payload_intake_plan,
+    hash_contract_payload_intake_report,
+    relabel_contract_payload_batch,
+)
+from quant_platform.data.contracts.intake_artifacts import (
+    write_contract_payload_intake_artifacts,
+)
+from quant_platform.data.contracts.intake_integrity import (
+    verify_contract_payload_intake_artifacts,
+)
+from quant_platform.data.contracts.intake_regression import (
+    default_contract_payload_intake_dir,
+    run_contract_payload_intake_regression,
+)
+from quant_platform.data.contracts.intake_types import (
+    ContractPayloadIntakeArtifact,
+    ContractPayloadIntakeIntegrityReport,
+    ContractPayloadIntakeIssue,
+    ContractPayloadIntakeItem,
+    ContractPayloadIntakeManifest,
+    ContractPayloadIntakePlan,
+    ContractPayloadIntakeReport,
+    ContractPayloadIntakeRequest,
+)
 from quant_platform.data.contracts.schema_compatibility import (
     check_schema_compatibility_against_baseline,
     compare_contract_schema_bundles,
@@ -81,6 +110,14 @@ from quant_platform.data.contracts.validation import (
 
 __all__ = [
     "FORBIDDEN_VENDOR_IDENTITY_NAMES",
+    "ContractPayloadIntakeArtifact",
+    "ContractPayloadIntakeIntegrityReport",
+    "ContractPayloadIntakeIssue",
+    "ContractPayloadIntakeItem",
+    "ContractPayloadIntakeManifest",
+    "ContractPayloadIntakePlan",
+    "ContractPayloadIntakeReport",
+    "ContractPayloadIntakeRequest",
     "ContractSchemaArtifactManifest",
     "ContractSchemaBundle",
     "ContractSchemaCompatibilityIssue",
@@ -107,11 +144,15 @@ __all__ = [
     "VendorPayloadValidationIssue",
     "VendorPayloadValidationReport",
     "assert_offline_contract_package",
+    "build_contract_payload_intake_plan",
+    "build_contract_payload_intake_report",
+    "build_contract_payload_intake_request",
     "build_contract_schema_bundle",
     "build_data_contract_conformance_report",
     "build_data_contract_conformance_request",
     "check_schema_compatibility_against_baseline",
     "compare_contract_schema_bundles",
+    "default_contract_payload_intake_dir",
     "default_data_contract_conformance_dir",
     "default_data_contract_schema_dir",
     "default_offline_contract",
@@ -119,19 +160,26 @@ __all__ = [
     "default_synthetic_batch",
     "detect_contract_forbidden_terms",
     "evaluate_schema_compatibility",
+    "execute_contract_payload_intake",
+    "hash_contract_payload_intake_plan",
+    "hash_contract_payload_intake_report",
     "hash_contract_schema_bundle",
     "hash_data_contract_conformance_report",
     "hash_schema_compatibility_report",
     "hash_vendor_payload_batch",
     "load_contract_schema_bundle",
     "load_offline_vendor_payload_batch",
+    "relabel_contract_payload_batch",
+    "run_contract_payload_intake_regression",
     "run_data_contract_conformance_regression",
     "summarize_vendor_payload_batch",
     "validate_corporate_action_payload",
     "validate_daily_bar_payload",
     "validate_market_session_payload",
     "validate_vendor_payload_batch",
+    "verify_contract_payload_intake_artifacts",
     "verify_data_contract_conformance_artifacts",
+    "write_contract_payload_intake_artifacts",
     "write_contract_schema_bundle",
     "write_data_contract_conformance_artifacts",
 ]

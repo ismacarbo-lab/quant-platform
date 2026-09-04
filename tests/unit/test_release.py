@@ -34,6 +34,9 @@ _NORM_FIXTURES = (
 _CONFORMANCE_FIXTURES = (
     Path(__file__).resolve().parents[1] / "fixtures" / "data_contract_conformance"
 )
+_INTAKE_FIXTURES = (
+    Path(__file__).resolve().parents[1] / "fixtures" / "contract_payload_intake"
+)
 _FAKE_HASH = "sha256:" + ("a" * 64)
 
 
@@ -79,8 +82,11 @@ def test_status_report_serializes_without_secrets(
     assert "vendor_agnostic_data_contracts" in ENABLED_CAPABILITIES
     assert "data_contract_conformance" in ENABLED_CAPABILITIES
     assert "data_contract_schema_baseline" in ENABLED_CAPABILITIES
+    assert "contract_payload_intake_offline" in ENABLED_CAPABILITIES
     assert report.data_contract_conformance_supported is True
     assert report.data_contract_schema_baseline_supported is True
+    assert report.contract_payload_intake_supported is True
+    assert report.contract_payload_intake_default == "dry_run"
     assert report.data_contract_schema_compatibility_status == "compatible"
     assert report.vendor_runtime_detected is False
 
@@ -116,6 +122,7 @@ def test_release_check_detects_incorrect_app_mode(
         skip_normalization_regression=True,
         skip_data_contract_conformance=True,
         skip_data_contract_schema_compatibility=True,
+        skip_contract_payload_intake=True,
         skip_imports=True,
         research_mode=False,
     )
@@ -156,6 +163,7 @@ def test_release_check_detects_policy_regression_failure(
         skip_normalization_regression=True,
         skip_data_contract_conformance=True,
         skip_data_contract_schema_compatibility=True,
+        skip_contract_payload_intake=True,
     )
     assert report.ok is False
     names = {item.name: item.status for item in report.checks if item.status == "error"}
@@ -180,6 +188,7 @@ def test_release_check_detects_normalization_regression_failure(
         skip_imports=True,
         skip_data_contract_conformance=True,
         skip_data_contract_schema_compatibility=True,
+        skip_contract_payload_intake=True,
         normalization_fixtures_dir=tmp_path,
     )
     assert report.ok is False
@@ -205,11 +214,38 @@ def test_release_check_detects_data_contract_conformance_failure(
         skip_imports=True,
         skip_normalization_regression=True,
         skip_data_contract_schema_compatibility=True,
+        skip_contract_payload_intake=True,
         conformance_fixtures_dir=tmp_path,
     )
     assert report.ok is False
     names = {item.name: item.status for item in report.checks if item.status == "error"}
     assert names.get("data_contract_conformance") == "error"
+
+
+def test_release_check_detects_contract_payload_intake_failure(
+    research_settings: Settings, tmp_path: Path
+) -> None:
+    dest = tmp_path / "valid_dry_run"
+    shutil.copytree(_INTAKE_FIXTURES / "valid_dry_run", dest)
+    expected = json.loads((dest / "expected.json").read_text(encoding="utf-8"))
+    expected["expected_intake_hash"] = _FAKE_HASH
+    (dest / "expected.json").write_text(
+        json.dumps(expected, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    report = run_research_release_checks(
+        settings=research_settings,
+        skip_db=True,
+        skip_compose=True,
+        skip_regression=True,
+        skip_imports=True,
+        skip_normalization_regression=True,
+        skip_data_contract_conformance=True,
+        skip_data_contract_schema_compatibility=True,
+        intake_fixtures_dir=tmp_path,
+    )
+    assert report.ok is False
+    names = {item.name: item.status for item in report.checks if item.status == "error"}
+    assert names.get("contract_payload_intake") == "error"
 
 
 def test_release_check_detects_data_contract_schema_incompatibility(
@@ -241,6 +277,7 @@ def test_release_check_detects_data_contract_schema_incompatibility(
         skip_imports=True,
         skip_normalization_regression=True,
         skip_data_contract_conformance=True,
+        skip_contract_payload_intake=True,
         schema_baseline_file=baseline,
     )
     assert report.ok is False
@@ -262,6 +299,7 @@ def test_release_check_detects_forbidden_construct(
         skip_normalization_regression=True,
         skip_data_contract_conformance=True,
         skip_data_contract_schema_compatibility=True,
+        skip_contract_payload_intake=True,
         skip_imports=True,
     )
     assert report.ok is False
@@ -284,6 +322,7 @@ def test_release_check_detects_real_vendor_client(
         skip_normalization_regression=True,
         skip_data_contract_conformance=True,
         skip_data_contract_schema_compatibility=True,
+        skip_contract_payload_intake=True,
         skip_imports=True,
     )
     assert report.ok is False
@@ -320,6 +359,8 @@ def test_release_check_json_script_has_no_database_url(
     assert status_payload["data_contract_conformance_supported"] is True
     assert status_payload["data_contract_schema_baseline_supported"] is True
     assert status_payload["data_contract_schema_compatibility_status"] == "compatible"
+    assert status_payload["contract_payload_intake_supported"] is True
+    assert status_payload["contract_payload_intake_default"] == "dry_run"
     assert status_payload["vendor_runtime_detected"] is False
     assert status_payload["alembic_head_expected"] == EXPECTED_ALEMBIC_HEAD
     assert "paper_trading" in status_payload["capabilities"]["disabled"]

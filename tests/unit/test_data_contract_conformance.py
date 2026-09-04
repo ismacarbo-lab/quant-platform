@@ -384,6 +384,7 @@ def test_no_real_vendor_implemented() -> None:
     disabled = set(DISABLED_CAPABILITIES)
     assert "data_contract_conformance" in enabled
     assert "data_contract_schema_baseline" in enabled
+    assert "contract_payload_intake_offline" in enabled
     assert "vendor_agnostic_data_contracts" in enabled
     assert "external_market_data_vendors" in disabled
     contracts = _PACKAGE / "data" / "contracts"

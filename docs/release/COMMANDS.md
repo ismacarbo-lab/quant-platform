@@ -160,6 +160,31 @@ Does not rewrite `current_baseline.json`. See
 [DATA_CONTRACT_SCHEMA_COMPATIBILITY.md](../data/DATA_CONTRACT_SCHEMA_COMPATIBILITY.md).
 Included in `make research-release-check`. Not in `make quality`.
 
+## Contract-payload intake (offline)
+
+Maps a synthetic or fixture `VendorPayloadBatch` onto existing research
+ingestion. Dry-run by default. `--write-db` is explicit. No HTTP, no
+real vendor, no silent inserts, no trading, no PnL/returns.
+
+```bash
+make contract-payload-intake
+uv run python scripts/run-contract-payload-intake.py --json
+uv run python scripts/run-contract-payload-intake.py \
+  --fixture-dir tests/fixtures/contract_payload_intake/valid_dry_run \
+  --output-dir /tmp/contract-payload-intake \
+  --json
+make contract-payload-intake-regression
+uv run python scripts/run-contract-payload-intake-regression.py --json
+uv run python scripts/run-contract-payload-intake-regression.py \
+  --output-dir /tmp/contract-payload-intake-regression \
+  --update-expected
+```
+
+`--write-db` requires local PostgreSQL and never prints `DATABASE_URL`.
+Does not rewrite `expected.json`. See
+[CONTRACT_PAYLOAD_INTAKE.md](../data/CONTRACT_PAYLOAD_INTAKE.md).
+Included in `make research-release-check`. Not in `make quality`.
+
 ## Normalization regression
 
 ```bash
@@ -261,7 +286,10 @@ uv run python scripts/research-release-check.py --json
 Status prints `final_freeze_ready`, `evidence_bundle_available`,
 `data_contract_conformance_supported`,
 `data_contract_schema_baseline_supported`,
-`data_contract_schema_compatibility_status`, `vendor_runtime`,
+`data_contract_schema_compatibility_status`,
+`contract_payload_intake_supported`,
+`contract_payload_intake_default`,
+`vendor_runtime`,
 `external_market_data_vendors`, `alembic_head_expected`, and disabled
 capabilities. It does not ping PostgreSQL.
 

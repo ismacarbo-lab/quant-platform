@@ -40,6 +40,8 @@ The research stack can:
   conformance reports (no vendor HTTP)
 - export those contract schemas and compare them to a pinned
   compatibility baseline (still no vendor HTTP)
+- map a synthetic/fixture batch onto existing ingestion through an
+  offline intake bridge (dry-run default; `--write-db` explicit)
 
 `APP_MODE` still accepts only `research`. `GET /health` is still the only
 HTTP route.
@@ -94,6 +96,8 @@ Useful flags:
 | `--skip-regression` | Do not run the policy regression matrix. |
 | `--skip-normalization-regression` | Do not run the normalization regression matrix. |
 | `--skip-data-contract-conformance` | Do not run the data-contract conformance matrix. |
+| `--skip-data-contract-schema-compatibility` | Do not compare live schemas to the baseline. |
+| `--skip-contract-payload-intake` | Do not run the contract-payload intake matrix. |
 | `--json` | Print the status report. |
 
 The checker never prints `DATABASE_URL` or passwords. It does not
@@ -105,6 +109,8 @@ Makefile companions:
 make policy-regression
 make normalization-regression
 make data-contract-conformance-regression
+make data-contract-schema-compatibility
+make contract-payload-intake-regression
 make architecture-check
 make quality
 ```
@@ -136,6 +142,8 @@ The JSON object is `kind=research_release_status`. Important fields:
 | `data_contract_conformance_supported` | Offline conformance reports exist. |
 | `data_contract_schema_baseline_supported` | Offline schema export exists. |
 | `data_contract_schema_compatibility_status` | Live schemas versus the pinned baseline. |
+| `contract_payload_intake_supported` | Offline intake bridge exists. |
+| `contract_payload_intake_default` | Always `dry_run`. |
 | `vendor_runtime_detected` | Must be false. |
 | `capabilities.enabled` / `.disabled` | What this candidate will and will not do. |
 | `risks` | Known gaps; not runtime failures. |
@@ -202,6 +210,21 @@ If `data_contract_schema_compatibility` fails:
 See
 [DATA_CONTRACT_SCHEMA_COMPATIBILITY.md](../data/DATA_CONTRACT_SCHEMA_COMPATIBILITY.md).
 
+## How to review contract-payload-intake drift
+
+If `contract_payload_intake` fails:
+
+1. Run `make contract-payload-intake-regression` or
+   `uv run python scripts/run-contract-payload-intake-regression.py --json`.
+2. If the change is intentional, write actuals with `--update-expected`
+   (this **does not** rewrite `expected.json`).
+3. Review hashes, counts, and `write_db=false`. Reject vendor HTTP and
+   returns/PnL fields.
+4. Copy hashes and counts into that case's `expected.json` by hand.
+5. Re-run the matrix and the release check.
+
+See [CONTRACT_PAYLOAD_INTAKE.md](../data/CONTRACT_PAYLOAD_INTAKE.md).
+
 ## How to confirm there is no trading or AI runtime
 
 Release check plus architecture tests assert:
@@ -239,8 +262,8 @@ Do not skip ahead to paper trading, live trading, or an LLM runtime.
 - No execution.
 - Policy regression goldens require human review; the runner will not
   rewrite them.
-- Normalization and data-contract conformance goldens require the same
-  hand-copy discipline.
+- Normalization, data-contract conformance, and contract-payload intake
+  goldens require the same hand-copy discipline.
 - PostgreSQL is mandatory for catalogued runs; SQLite is rejected.
 - Replay/backtest artifacts need a local `--base-dir` / `--output-dir`.
 - Compose publishes `127.0.0.1:5434` on this machine because 5432/5433

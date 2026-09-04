@@ -126,13 +126,15 @@ def test_release_status_json_includes_freeze_fields(
     assert "DATABASE_URL" not in blob
     assert "postgresql+psycopg://" not in blob
     assert payload["kind"] == "research_release_status"
-    assert payload["format_version"] == 4
+    assert payload["format_version"] == 5
     assert payload["final_freeze_ready"] is True
     assert payload["evidence_bundle_available"] is True
     assert payload["evidence_bundle_fixture_reuse_supported"] is True
     assert payload["data_contract_conformance_supported"] is True
     assert payload["data_contract_schema_baseline_supported"] is True
     assert payload["data_contract_schema_compatibility_status"] == "compatible"
+    assert payload["contract_payload_intake_supported"] is True
+    assert payload["contract_payload_intake_default"] == "dry_run"
     assert payload["vendor_runtime_detected"] is False
     assert payload["alembic_head_expected"] == EXPECTED_ALEMBIC_HEAD
     disabled = payload["capabilities"]["disabled"]

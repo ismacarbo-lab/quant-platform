@@ -17,6 +17,7 @@ Fixtures: `tests/fixtures/data_contract_conformance/`.
 
 Related: [DATA_SOURCE_CONTRACTS.md](DATA_SOURCE_CONTRACTS.md),
 [DATA_CONTRACT_SCHEMA_COMPATIBILITY.md](DATA_CONTRACT_SCHEMA_COMPATIBILITY.md),
+[CONTRACT_PAYLOAD_INTAKE.md](CONTRACT_PAYLOAD_INTAKE.md),
 [ADR 0004](../adr/0004-vendor-agnostic-data-source-contract.md),
 [CAPABILITY_MATRIX.md](../release/CAPABILITY_MATRIX.md).
 
@@ -164,3 +165,5 @@ actuals beside the optional output directory.
 - `data_contract_schema_compatibility_status=compatible`
 - `vendor_runtime=none`
 - `external_market_data_vendors=disabled`
+- `contract_payload_intake_supported=true` (intake is a later bridge; see
+  [CONTRACT_PAYLOAD_INTAKE.md](CONTRACT_PAYLOAD_INTAKE.md))

@@ -73,6 +73,8 @@ class ReleaseStatusReport:
     data_contract_conformance_supported: bool
     data_contract_schema_baseline_supported: bool
     data_contract_schema_compatibility_status: str
+    contract_payload_intake_supported: bool
+    contract_payload_intake_default: str
     vendor_runtime_detected: bool
     checks: tuple[ReleaseCheckItem, ...]
     risks: tuple[ReleaseRiskItem, ...]
@@ -105,6 +107,10 @@ class ReleaseStatusReport:
             "data_contract_schema_compatibility_status": (
                 self.data_contract_schema_compatibility_status
             ),
+            "contract_payload_intake_supported": (
+                self.contract_payload_intake_supported
+            ),
+            "contract_payload_intake_default": self.contract_payload_intake_default,
             "vendor_runtime_detected": self.vendor_runtime_detected,
             "capabilities": self.capabilities.as_mapping(),
             "registered_policy_names": list(self.registered_policy_names),

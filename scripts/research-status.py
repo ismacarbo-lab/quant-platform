@@ -65,6 +65,11 @@ def main(argv: list[str] | None = None) -> int:
         "data_contract_schema_compatibility_status="
         + report.data_contract_schema_compatibility_status
     )
+    print(
+        "contract_payload_intake_supported="
+        + str(report.contract_payload_intake_supported).lower()
+    )
+    print("contract_payload_intake_default=" + report.contract_payload_intake_default)
     vendor_runtime = "detected" if report.vendor_runtime_detected else "none"
     print(f"vendor_runtime={vendor_runtime}")
     vendors = (

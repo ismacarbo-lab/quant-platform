@@ -15,6 +15,7 @@ Fixtures: `tests/fixtures/data_contract_schemas/`.
 
 Related: [DATA_SOURCE_CONTRACTS.md](DATA_SOURCE_CONTRACTS.md),
 [DATA_CONTRACT_CONFORMANCE.md](DATA_CONTRACT_CONFORMANCE.md),
+[CONTRACT_PAYLOAD_INTAKE.md](CONTRACT_PAYLOAD_INTAKE.md),
 [ADR 0004](../adr/0004-vendor-agnostic-data-source-contract.md),
 [CAPABILITY_MATRIX.md](../release/CAPABILITY_MATRIX.md).
 
@@ -151,5 +152,6 @@ This is **not a trading** control and not a go-live signal.
 
 - `data_contract_schema_baseline_supported=true`
 - `data_contract_schema_compatibility_status=compatible`
+- `contract_payload_intake_supported=true`
 - `vendor_runtime=none`
 - `external_market_data_vendors=disabled`

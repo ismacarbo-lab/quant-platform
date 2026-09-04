@@ -14,7 +14,8 @@ Related: [RESEARCH_HANDOFF.md](RESEARCH_HANDOFF.md),
 [ADR 0004](../adr/0004-vendor-agnostic-data-source-contract.md),
 [DATA_SOURCE_CONTRACTS.md](../data/DATA_SOURCE_CONTRACTS.md),
 [DATA_CONTRACT_CONFORMANCE.md](../data/DATA_CONTRACT_CONFORMANCE.md),
-[DATA_CONTRACT_SCHEMA_COMPATIBILITY.md](../data/DATA_CONTRACT_SCHEMA_COMPATIBILITY.md).
+[DATA_CONTRACT_SCHEMA_COMPATIBILITY.md](../data/DATA_CONTRACT_SCHEMA_COMPATIBILITY.md),
+[CONTRACT_PAYLOAD_INTAKE.md](../data/CONTRACT_PAYLOAD_INTAKE.md).
 
 ## Implemented
 
@@ -50,6 +51,7 @@ Related: [RESEARCH_HANDOFF.md](RESEARCH_HANDOFF.md),
 | Vendor-agnostic data contracts | Offline payload types, validation, hash, fake provider | Not a vendor download; not credentials; not internet |
 | Data-contract conformance | Offline reports, relative artifacts, golden regression | Not a vendor client; not returns/PnL; not trading |
 | Data-contract schema baseline | Offline JSON schema export and compatibility compare | Not a vendor adapter; not internet; not returns/PnL |
+| Contract-payload intake (offline) | Dry-run plan from a synthetic/fixture batch; optional `--write-db` through existing PIT ingest | Not a vendor download; not silent DB writes; not returns/PnL; not trading |
 
 ## Intentionally disabled
 

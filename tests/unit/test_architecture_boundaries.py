@@ -83,6 +83,7 @@ def test_vendor_agnostic_contracts_enabled_real_vendors_disabled() -> None:
     assert "vendor_agnostic_data_contracts" in ENABLED_CAPABILITIES
     assert "data_contract_conformance" in ENABLED_CAPABILITIES
     assert "data_contract_schema_baseline" in ENABLED_CAPABILITIES
+    assert "contract_payload_intake_offline" in ENABLED_CAPABILITIES
     assert "external_market_data_vendors" in DISABLED_CAPABILITIES
     assert detect_real_vendor_clients(PACKAGE_ROOT) == ()
     assert detect_contracts_networking(PACKAGE_ROOT) == ()

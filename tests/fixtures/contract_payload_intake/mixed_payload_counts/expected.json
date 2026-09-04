@@ -1,0 +1,13 @@
+{
+  "expected_ok": true,
+  "expected_write_db": false,
+  "expected_allow_invalid": false,
+  "expected_issue_count": 0,
+  "expected_issue_codes": [],
+  "expected_intake_hash": "sha256:679058a8a4600992d2b6230c6d0f8e03a133996c31871a778c10acee3d2c5f3e",
+  "expected_batch_hash": "sha256:4d2f12c7e638160dc6c25e8e343c1ba23a0943a566bf10af4ec257678c8a9a03",
+  "expected_conformance_hash": "sha256:65bece33171f055160535825fb689599844c9ff7f414c11f51a09b9c8a6be013",
+  "expected_planned_daily_bar_count": 2,
+  "expected_planned_corporate_action_count": 1,
+  "expected_planned_market_session_count": 1
+}

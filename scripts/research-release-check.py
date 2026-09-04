@@ -60,6 +60,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Do not compare live contract schemas against the baseline.",
     )
     parser.add_argument(
+        "--skip-contract-payload-intake",
+        action="store_true",
+        help="Do not run the contract-payload intake regression matrix.",
+    )
+    parser.add_argument(
         "--matrix-path",
         type=Path,
         default=None,
@@ -83,6 +88,12 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="Override the data-contract schema baseline JSON.",
     )
+    parser.add_argument(
+        "--intake-fixtures-dir",
+        type=Path,
+        default=None,
+        help="Override the contract-payload intake fixtures directory.",
+    )
     args = parser.parse_args(argv)
     try:
         settings = get_settings()
@@ -98,9 +109,11 @@ def main(argv: list[str] | None = None) -> int:
             skip_data_contract_schema_compatibility=bool(
                 args.skip_data_contract_schema_compatibility
             ),
+            skip_contract_payload_intake=bool(args.skip_contract_payload_intake),
             normalization_fixtures_dir=args.normalization_fixtures_dir,
             conformance_fixtures_dir=args.conformance_fixtures_dir,
             schema_baseline_file=args.schema_baseline_file,
+            intake_fixtures_dir=args.intake_fixtures_dir,
         )
     except Exception as exc:
         print(redact_secret_text(str(exc)), file=sys.stderr)

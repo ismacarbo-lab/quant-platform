@@ -60,6 +60,8 @@ make quality
 | Normalization regression | `uv run python scripts/run-normalization-regression.py` / `make normalization-regression` |
 | Data-contract conformance | `uv run python scripts/run-data-contract-conformance.py --json` / `make data-contract-conformance` |
 | Data-contract conformance regression | `uv run python scripts/run-data-contract-conformance-regression.py` / `make data-contract-conformance-regression` |
+| Contract-payload intake (dry-run) | `uv run python scripts/run-contract-payload-intake.py --json` / `make contract-payload-intake` |
+| Contract-payload intake regression | `uv run python scripts/run-contract-payload-intake-regression.py` / `make contract-payload-intake-regression` |
 | Normalization status (no DB) | `uv run python scripts/normalization-status.py` |
 | Architecture guards | `make architecture-check` |
 | Research release check | `uv run python scripts/research-release-check.py` / `make research-release-check` |
@@ -73,6 +75,7 @@ make quality
 | Canonical command list | [COMMANDS.md](../release/COMMANDS.md) |
 | Vendor-agnostic data contracts (offline) | [DATA_SOURCE_CONTRACTS.md](../data/DATA_SOURCE_CONTRACTS.md) |
 | Data-contract conformance (offline) | [DATA_CONTRACT_CONFORMANCE.md](../data/DATA_CONTRACT_CONFORMANCE.md) |
+| Contract-payload intake (offline) | [CONTRACT_PAYLOAD_INTAKE.md](../data/CONTRACT_PAYLOAD_INTAKE.md) |
 | Freeze handoff | [RESEARCH_HANDOFF.md](../release/RESEARCH_HANDOFF.md) |
 
 Unit tests and `tests/integration/test_local_infra.py` do **not** need Docker.
@@ -125,13 +128,17 @@ Conformance reports (offline, no PostgreSQL):
 [DATA_CONTRACT_CONFORMANCE.md](../data/DATA_CONTRACT_CONFORMANCE.md).
 Schema baseline (offline JSON export, no PostgreSQL):
 [DATA_CONTRACT_SCHEMA_COMPATIBILITY.md](../data/DATA_CONTRACT_SCHEMA_COMPATIBILITY.md).
+Offline intake bridge (dry-run default; `--write-db` explicit):
+[CONTRACT_PAYLOAD_INTAKE.md](../data/CONTRACT_PAYLOAD_INTAKE.md).
 
 ```bash
 uv run pytest tests/unit/test_data_source_contracts.py
 uv run pytest tests/unit/test_data_contract_conformance.py
 uv run pytest tests/unit/test_data_contract_schema_compatibility.py
+uv run pytest tests/unit/test_contract_payload_intake.py
 make data-contract-conformance-regression
 make data-contract-schema-compatibility
+make contract-payload-intake-regression
 ```
 
 Export a point-in-time daily dataset (`--as-of` required):
@@ -345,6 +352,10 @@ uv run python scripts/run-normalization-regression.py \
 uv run python scripts/run-data-contract-conformance-regression.py --json
 uv run python scripts/run-data-contract-conformance-regression.py \
   --output-dir /tmp/data-contract-conformance-regression \
+  --update-expected
+uv run python scripts/run-contract-payload-intake-regression.py --json
+uv run python scripts/run-contract-payload-intake-regression.py \
+  --output-dir /tmp/contract-payload-intake-regression \
   --update-expected
 uv run python scripts/list-normalized-datasets.py --usable-only --json
 

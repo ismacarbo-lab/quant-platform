@@ -968,6 +968,7 @@ def build_research_evidence_bundle(
             skip_data_contract_schema_compatibility=(
                 request.skip_data_contract_schema_compatibility
             ),
+            skip_contract_payload_intake=request.skip_contract_payload_intake,
             research_mode=mode,
         )
         release_status = without_local_paths(release_report.as_mapping())

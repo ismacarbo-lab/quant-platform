@@ -20,7 +20,8 @@ Vendor-agnostic data contracts:
 [docs/adr/0004-vendor-agnostic-data-source-contract.md](docs/adr/0004-vendor-agnostic-data-source-contract.md),
 [docs/data/DATA_SOURCE_CONTRACTS.md](docs/data/DATA_SOURCE_CONTRACTS.md),
 [docs/data/DATA_CONTRACT_CONFORMANCE.md](docs/data/DATA_CONTRACT_CONFORMANCE.md),
-[docs/data/DATA_CONTRACT_SCHEMA_COMPATIBILITY.md](docs/data/DATA_CONTRACT_SCHEMA_COMPATIBILITY.md).
+[docs/data/DATA_CONTRACT_SCHEMA_COMPATIBILITY.md](docs/data/DATA_CONTRACT_SCHEMA_COMPATIBILITY.md),
+[docs/data/CONTRACT_PAYLOAD_INTAKE.md](docs/data/CONTRACT_PAYLOAD_INTAKE.md).
 
 `APP_MODE` accepts only `research`. `paper` and `live` fail validation.
 The only HTTP route is `GET /health`.
@@ -60,6 +61,7 @@ make policy-regression
 make normalization-regression
 make data-contract-conformance-regression
 make data-contract-schema-compatibility
+make contract-payload-intake-regression
 make research-release-check
 make research-status
 ```
@@ -83,8 +85,9 @@ dry-run research policies, experiments, release checks, evidence bundle
 derived split normalization (silver unchanged), a normalization
 regression matrix, a metadata-only normalized-dataset catalog, an
 offline vendor-agnostic data source contract (no real vendor client),
-offline data-contract conformance reports, and an offline contract
-schema compatibility baseline.
+offline data-contract conformance reports, an offline contract
+schema compatibility baseline, and an offline contract-payload intake
+bridge (dry-run by default; `--write-db` is explicit).
 
 Prohibited: strategy, signal, portfolio, PnL, orders, brokers,
 paper/live, external vendors, AI runtime.

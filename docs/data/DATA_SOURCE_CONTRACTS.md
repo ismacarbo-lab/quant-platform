@@ -6,7 +6,8 @@ This is not a download client.
 Related: [ADR 0004](../adr/0004-vendor-agnostic-data-source-contract.md),
 [DATA_INGESTION.md](DATA_INGESTION.md),
 [DATA_CONTRACT_CONFORMANCE.md](DATA_CONTRACT_CONFORMANCE.md),
-[DATA_CONTRACT_SCHEMA_COMPATIBILITY.md](DATA_CONTRACT_SCHEMA_COMPATIBILITY.md).
+[DATA_CONTRACT_SCHEMA_COMPATIBILITY.md](DATA_CONTRACT_SCHEMA_COMPATIBILITY.md),
+[CONTRACT_PAYLOAD_INTAKE.md](CONTRACT_PAYLOAD_INTAKE.md).
 
 `APP_MODE` remains **research**. There is no trading, no PnL/returns, and
 no brokers in this layer. There are **no** real vendors, **no** internet
@@ -136,8 +137,10 @@ performance metric.
   payload.
 - Re-running `FakeVendorPayloadProvider.load_batch()` on the same
   in-memory/fixture data must yield the same hash.
-- Future silver ingest (not in this phase) must keep bronze raw rows
-  and insert new PIT silver rows, never rewrite OHLCV in place.
+- Future silver ingest is the Phase 8.0 offline intake bridge
+  (`CONTRACT_PAYLOAD_INTAKE.md`): dry-run by default; `--write-db`
+  keeps bronze raw rows and inserts new PIT silver rows, never rewrite
+  OHLCV in place.
 
 ## Corrections
 
@@ -211,3 +214,16 @@ make data-contract-schema-compatibility
 ```
 
 No HTTP. No vendors. No PostgreSQL. No returns/PnL.
+
+## Offline intake bridge
+
+Phase 8.0 maps a captured batch onto existing research ingestion.
+Dry-run is the default. `--write-db` is explicit. See
+[CONTRACT_PAYLOAD_INTAKE.md](CONTRACT_PAYLOAD_INTAKE.md).
+
+```bash
+make contract-payload-intake
+make contract-payload-intake-regression
+```
+
+No real vendors. No internet. No silent database writes. No returns/PnL.

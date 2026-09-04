@@ -27,6 +27,7 @@ class VendorContractErrorCode(StrEnum):
     INVALID_SESSION_KIND = "invalid_session_kind"
     FIXTURE_UNREADABLE = "fixture_unreadable"
     NETWORKING_IMPORT = "networking_import"
+    WRITE_DB_REQUIRED = "write_db_required"
 
 
 class VendorContractError(ValueError):

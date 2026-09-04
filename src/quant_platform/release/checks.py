@@ -66,11 +66,13 @@ def run_research_release_checks(
     skip_normalization_regression: bool = False,
     skip_data_contract_conformance: bool = False,
     skip_data_contract_schema_compatibility: bool = False,
+    skip_contract_payload_intake: bool = False,
     skip_imports: bool = False,
     research_mode: bool | None = None,
     normalization_fixtures_dir: Path | str | None = None,
     conformance_fixtures_dir: Path | str | None = None,
     schema_baseline_file: Path | str | None = None,
+    intake_fixtures_dir: Path | str | None = None,
 ) -> ReleaseStatusReport:
     """Run research release-candidate checks. Never prints secrets."""
     root = Path(repo_root) if repo_root is not None else repository_root()
@@ -129,6 +131,17 @@ def run_research_release_checks(
             else default_schema_baseline_path()
         )
         checks.append(_check_data_contract_schema_compatibility(baseline))
+    if not skip_contract_payload_intake:
+        from quant_platform.data.contracts.intake_regression import (
+            default_contract_payload_intake_dir,
+        )
+
+        intake_root = (
+            Path(intake_fixtures_dir)
+            if intake_fixtures_dir is not None
+            else default_contract_payload_intake_dir()
+        )
+        checks.append(_check_contract_payload_intake(intake_root))
     if not skip_compose:
         checks.append(_check_compose_config(root))
     database_checked = False
@@ -429,6 +442,33 @@ def _check_data_contract_schema_compatibility(baseline_file: Path) -> ReleaseChe
         "data-contract schema compatibility is potentially_breaking: "
         f"{report.issue_count} issues",
         code="data_contract_schema_incompatible",
+    )
+
+
+def _check_contract_payload_intake(fixtures_dir: Path) -> ReleaseCheckItem:
+    from quant_platform.data.contracts.errors import VendorContractError
+    from quant_platform.data.contracts.intake_regression import (
+        run_contract_payload_intake_regression,
+    )
+
+    try:
+        report = run_contract_payload_intake_regression(fixtures_dir)
+    except (VendorContractError, OSError) as exc:
+        return _error(
+            "contract_payload_intake",
+            f"contract-payload intake matrix could not run: {type(exc).__name__}",
+            code="contract_payload_intake_error",
+        )
+    if report.ok:
+        return _ok(
+            "contract_payload_intake",
+            f"{report.passed_count}/{report.case_count} regression cases passed",
+        )
+    return _error(
+        "contract_payload_intake",
+        f"contract-payload intake failed: {report.failed_count} cases, "
+        f"{report.error_count} errors",
+        code="contract_payload_intake_failed",
     )
 
 

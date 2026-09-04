@@ -122,6 +122,13 @@ DOCUMENTED_RELEASE_RISKS: tuple[ReleaseRiskItem, ...] = (
         ),
     ),
     ReleaseRiskItem(
+        code="intake_regression_manual_goldens",
+        message=(
+            "Contract-payload intake goldens must be copied into "
+            "expected.json by hand after review."
+        ),
+    ),
+    ReleaseRiskItem(
         code="evidence_not_profitability",
         message=(
             "The evidence bundle proves the research pipeline ran; "
@@ -180,6 +187,12 @@ def hash_release_status_report(
         ),
         "data_contract_schema_compatibility_status": payload.get(
             "data_contract_schema_compatibility_status"
+        ),
+        "contract_payload_intake_supported": payload.get(
+            "contract_payload_intake_supported"
+        ),
+        "contract_payload_intake_default": payload.get(
+            "contract_payload_intake_default"
         ),
         "vendor_runtime_detected": payload.get("vendor_runtime_detected"),
         "capabilities": payload.get("capabilities"),
@@ -252,6 +265,8 @@ def build_release_status(
         data_contract_conformance_supported=True,
         data_contract_schema_baseline_supported=True,
         data_contract_schema_compatibility_status=_schema_compatibility_status(),
+        contract_payload_intake_supported=True,
+        contract_payload_intake_default="dry_run",
         vendor_runtime_detected=_vendor_runtime_detected(root),
         checks=ranked_checks,
         risks=DOCUMENTED_RELEASE_RISKS,

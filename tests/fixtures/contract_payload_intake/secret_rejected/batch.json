@@ -1,0 +1,30 @@
+{
+  "source_name": "offline_fixture",
+  "contract": {
+    "source_name": "offline_fixture",
+    "source_kind": "offline_fixture",
+    "capabilities": ["daily_bars"],
+    "requires_network": false,
+    "requires_credentials": false,
+    "pit_required": true,
+    "capture_raw_payload": true
+  },
+  "daily_bars": [
+    {
+      "symbol": "ACME",
+      "source_name": "offline_fixture",
+      "observation_time": "2024-01-02T00:00:00Z",
+      "available_time": "2024-01-03T00:00:00Z",
+      "ingestion_time": "2024-01-04T12:00:00Z",
+      "open": "10.00",
+      "high": "11.00",
+      "low": "9.50",
+      "close": "10.50",
+      "volume": "1000",
+      "raw_payload": {"symbol": "ACME"},
+      "metadata": {"token": "test-token-not-real"}
+    }
+  ],
+  "corporate_actions": [],
+  "market_sessions": []
+}
