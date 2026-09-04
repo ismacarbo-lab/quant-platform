@@ -365,3 +365,26 @@ def test_intake_remote_verification_doc() -> None:
     assert "DATABASE_URL=" not in raw
     assert "postgresql+psycopg://quant:" not in text
     assert "quant_dev_only_not_for_production" not in text
+
+
+def test_intake_post_tag_release_notes() -> None:
+    spec = (
+        _ROOT / "docs" / "release" / "CONTRACT_PAYLOAD_INTAKE_POST_TAG_RELEASE_NOTES.md"
+    )
+    assert spec.is_file()
+    raw = spec.read_text(encoding="utf-8")
+    text = " ".join(raw.replace("*", " ").lower().split())
+    assert "v0.5.0-research-intake-bridge" in raw
+    assert "807bd6b4f19afd57141981ef664a25b205d6cfb1" in raw
+    assert "0010_normalized_dataset_catalog" in raw
+    assert "dry-run" in text
+    assert "--write-db" in raw
+    assert "vendor_runtime=none" in text
+    assert "external_market_data_vendors=disabled" in text
+    assert "no vendors reales" in text
+    assert "no internet" in text
+    assert "no trading" in text
+    assert "no pnl/returns" in text
+    assert "DATABASE_URL=" not in raw
+    assert "postgresql+psycopg://quant:" not in text
+    assert "quant_dev_only_not_for_production" not in text
