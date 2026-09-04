@@ -1,4 +1,4 @@
-.PHONY: lint format format-check typecheck test test-fast test-postgres check-db migrate compose-config quality policy-regression normalization-regression data-contract-conformance data-contract-conformance-regression architecture-check research-release-check research-status research-evidence-bundle verify-research-evidence-bundle normalization-status
+.PHONY: lint format format-check typecheck test test-fast test-postgres check-db migrate compose-config quality policy-regression normalization-regression data-contract-conformance data-contract-conformance-regression data-contract-schema-export data-contract-schema-compatibility architecture-check research-release-check research-status research-evidence-bundle verify-research-evidence-bundle normalization-status
 
 lint:
 	uv run ruff check .
@@ -41,6 +41,12 @@ data-contract-conformance:
 
 data-contract-conformance-regression:
 	uv run python scripts/run-data-contract-conformance-regression.py
+
+data-contract-schema-export:
+	uv run python scripts/export-data-contract-schemas.py --json
+
+data-contract-schema-compatibility:
+	uv run python scripts/check-data-contract-schema-compatibility.py
 
 normalization-status:
 	uv run python scripts/normalization-status.py

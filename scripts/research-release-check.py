@@ -55,6 +55,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Do not run the data-contract conformance regression matrix.",
     )
     parser.add_argument(
+        "--skip-data-contract-schema-compatibility",
+        action="store_true",
+        help="Do not compare live contract schemas against the baseline.",
+    )
+    parser.add_argument(
         "--matrix-path",
         type=Path,
         default=None,
@@ -72,6 +77,12 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="Override the data-contract conformance fixtures directory.",
     )
+    parser.add_argument(
+        "--schema-baseline-file",
+        type=Path,
+        default=None,
+        help="Override the data-contract schema baseline JSON.",
+    )
     args = parser.parse_args(argv)
     try:
         settings = get_settings()
@@ -84,8 +95,12 @@ def main(argv: list[str] | None = None) -> int:
             skip_regression=bool(args.skip_regression),
             skip_normalization_regression=bool(args.skip_normalization_regression),
             skip_data_contract_conformance=bool(args.skip_data_contract_conformance),
+            skip_data_contract_schema_compatibility=bool(
+                args.skip_data_contract_schema_compatibility
+            ),
             normalization_fixtures_dir=args.normalization_fixtures_dir,
             conformance_fixtures_dir=args.conformance_fixtures_dir,
+            schema_baseline_file=args.schema_baseline_file,
         )
     except Exception as exc:
         print(redact_secret_text(str(exc)), file=sys.stderr)

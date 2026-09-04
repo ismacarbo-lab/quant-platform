@@ -1,0 +1,585 @@
+{
+  "bundle_hash": "sha256:f52d704bb3c422bd318033f1ef7606a12098c0127c17bd434950009f3097648a",
+  "format_version": 1,
+  "kind": "data_contract_schema_bundle",
+  "schema_count": 7,
+  "schemas": [
+    {
+      "enum_values": {},
+      "fields": [
+        {
+          "enum_values": [],
+          "name": "contract_name",
+          "required": true,
+          "type_repr": "str"
+        },
+        {
+          "enum_values": [],
+          "name": "contract_version",
+          "required": true,
+          "type_repr": "str"
+        },
+        {
+          "enum_values": [],
+          "name": "source_name",
+          "required": true,
+          "type_repr": "str"
+        },
+        {
+          "enum_values": [],
+          "name": "batch_hash",
+          "required": true,
+          "type_repr": "str"
+        },
+        {
+          "enum_values": [],
+          "name": "conformance_hash",
+          "required": true,
+          "type_repr": "str"
+        },
+        {
+          "enum_values": [],
+          "name": "payload_counts",
+          "required": true,
+          "type_repr": "DataContractPayloadCounts"
+        },
+        {
+          "enum_values": [],
+          "name": "issue_count",
+          "required": true,
+          "type_repr": "int"
+        },
+        {
+          "enum_values": [],
+          "name": "validation_ok",
+          "required": true,
+          "type_repr": "bool"
+        },
+        {
+          "enum_values": [],
+          "name": "forbidden_terms_ok",
+          "required": true,
+          "type_repr": "bool"
+        },
+        {
+          "enum_values": [],
+          "name": "offline_only_ok",
+          "required": true,
+          "type_repr": "bool"
+        },
+        {
+          "enum_values": [],
+          "name": "artifacts",
+          "required": true,
+          "type_repr": "tuple[DataContractConformanceArtifact, ...]"
+        }
+      ],
+      "hash": "sha256:f2a4289cd3fb90126b8070692099017f8de5dd7d1dc94589a2112f9306d57c33",
+      "required_fields": [
+        "contract_name",
+        "contract_version",
+        "source_name",
+        "batch_hash",
+        "conformance_hash",
+        "payload_counts",
+        "issue_count",
+        "validation_ok",
+        "forbidden_terms_ok",
+        "offline_only_ok",
+        "artifacts"
+      ],
+      "schema_name": "DataContractConformanceManifest",
+      "schema_version": "1"
+    },
+    {
+      "enum_values": {},
+      "fields": [
+        {
+          "enum_values": [],
+          "name": "ok",
+          "required": true,
+          "type_repr": "bool"
+        },
+        {
+          "enum_values": [],
+          "name": "summary",
+          "required": true,
+          "type_repr": "DataContractConformanceSummary"
+        },
+        {
+          "enum_values": [],
+          "name": "issues",
+          "required": true,
+          "type_repr": "tuple[DataContractConformanceIssue, ...]"
+        },
+        {
+          "enum_values": [],
+          "name": "created_by",
+          "required": true,
+          "type_repr": "str"
+        },
+        {
+          "enum_values": [],
+          "name": "notes",
+          "required": true,
+          "type_repr": "str | None"
+        },
+        {
+          "enum_values": [],
+          "name": "conformance_hash",
+          "required": true,
+          "type_repr": "str"
+        }
+      ],
+      "hash": "sha256:e53b268c3805242eefc98a2b3b020aab5f988e69427c076f4c74a6d93941847e",
+      "required_fields": [
+        "ok",
+        "summary",
+        "issues",
+        "created_by",
+        "notes",
+        "conformance_hash"
+      ],
+      "schema_name": "DataContractConformanceReport",
+      "schema_version": "1"
+    },
+    {
+      "enum_values": {
+        "capabilities": [
+          "corporate_actions",
+          "daily_bars",
+          "market_sessions"
+        ],
+        "source_kind": [
+          "local_csv",
+          "offline_fixture"
+        ]
+      },
+      "fields": [
+        {
+          "enum_values": [],
+          "name": "source_name",
+          "required": true,
+          "type_repr": "str"
+        },
+        {
+          "enum_values": [
+            "local_csv",
+            "offline_fixture"
+          ],
+          "name": "source_kind",
+          "required": true,
+          "type_repr": "str"
+        },
+        {
+          "enum_values": [
+            "corporate_actions",
+            "daily_bars",
+            "market_sessions"
+          ],
+          "name": "capabilities",
+          "required": true,
+          "type_repr": "tuple[DataVendorCapability, ...]"
+        },
+        {
+          "enum_values": [],
+          "name": "requires_network",
+          "required": true,
+          "type_repr": "bool"
+        },
+        {
+          "enum_values": [],
+          "name": "requires_credentials",
+          "required": true,
+          "type_repr": "bool"
+        },
+        {
+          "enum_values": [],
+          "name": "pit_required",
+          "required": true,
+          "type_repr": "bool"
+        },
+        {
+          "enum_values": [],
+          "name": "capture_raw_payload",
+          "required": false,
+          "type_repr": "bool"
+        }
+      ],
+      "hash": "sha256:ceaee5e3249f6cf5fdeaf3b489591f3f5725c636ecd96279fa1a8653a2a331d0",
+      "required_fields": [
+        "source_name",
+        "source_kind",
+        "capabilities",
+        "requires_network",
+        "requires_credentials",
+        "pit_required"
+      ],
+      "schema_name": "DataSourceContract",
+      "schema_version": "1"
+    },
+    {
+      "enum_values": {
+        "action_type": [
+          "delisting",
+          "dividend",
+          "reverse_split",
+          "split",
+          "symbol_change"
+        ]
+      },
+      "fields": [
+        {
+          "enum_values": [],
+          "name": "symbol",
+          "required": true,
+          "type_repr": "str"
+        },
+        {
+          "enum_values": [],
+          "name": "source_name",
+          "required": true,
+          "type_repr": "str"
+        },
+        {
+          "enum_values": [
+            "delisting",
+            "dividend",
+            "reverse_split",
+            "split",
+            "symbol_change"
+          ],
+          "name": "action_type",
+          "required": true,
+          "type_repr": "str"
+        },
+        {
+          "enum_values": [],
+          "name": "effective_time",
+          "required": true,
+          "type_repr": "datetime"
+        },
+        {
+          "enum_values": [],
+          "name": "available_time",
+          "required": true,
+          "type_repr": "datetime"
+        },
+        {
+          "enum_values": [],
+          "name": "observation_time",
+          "required": true,
+          "type_repr": "datetime"
+        },
+        {
+          "enum_values": [],
+          "name": "ingestion_time",
+          "required": true,
+          "type_repr": "datetime"
+        },
+        {
+          "enum_values": [],
+          "name": "raw_payload",
+          "required": false,
+          "type_repr": "Mapping[str, object]"
+        },
+        {
+          "enum_values": [],
+          "name": "metadata",
+          "required": false,
+          "type_repr": "Mapping[str, object]"
+        },
+        {
+          "enum_values": [],
+          "name": "quantity_before",
+          "required": false,
+          "type_repr": "Decimal | None"
+        },
+        {
+          "enum_values": [],
+          "name": "quantity_after",
+          "required": false,
+          "type_repr": "Decimal | None"
+        },
+        {
+          "enum_values": [],
+          "name": "cash_amount",
+          "required": false,
+          "type_repr": "Decimal | None"
+        },
+        {
+          "enum_values": [],
+          "name": "currency",
+          "required": false,
+          "type_repr": "str | None"
+        },
+        {
+          "enum_values": [],
+          "name": "note",
+          "required": false,
+          "type_repr": "str | None"
+        }
+      ],
+      "hash": "sha256:bca4015a64c107998443e079baddf78c18bb548871881cc68a6ea9210b67e8be",
+      "required_fields": [
+        "symbol",
+        "source_name",
+        "action_type",
+        "effective_time",
+        "available_time",
+        "observation_time",
+        "ingestion_time"
+      ],
+      "schema_name": "VendorCorporateActionPayload",
+      "schema_version": "1"
+    },
+    {
+      "enum_values": {},
+      "fields": [
+        {
+          "enum_values": [],
+          "name": "symbol",
+          "required": true,
+          "type_repr": "str"
+        },
+        {
+          "enum_values": [],
+          "name": "source_name",
+          "required": true,
+          "type_repr": "str"
+        },
+        {
+          "enum_values": [],
+          "name": "observation_time",
+          "required": true,
+          "type_repr": "datetime"
+        },
+        {
+          "enum_values": [],
+          "name": "available_time",
+          "required": true,
+          "type_repr": "datetime"
+        },
+        {
+          "enum_values": [],
+          "name": "ingestion_time",
+          "required": true,
+          "type_repr": "datetime"
+        },
+        {
+          "enum_values": [],
+          "name": "open",
+          "required": true,
+          "type_repr": "Decimal"
+        },
+        {
+          "enum_values": [],
+          "name": "high",
+          "required": true,
+          "type_repr": "Decimal"
+        },
+        {
+          "enum_values": [],
+          "name": "low",
+          "required": true,
+          "type_repr": "Decimal"
+        },
+        {
+          "enum_values": [],
+          "name": "close",
+          "required": true,
+          "type_repr": "Decimal"
+        },
+        {
+          "enum_values": [],
+          "name": "volume",
+          "required": true,
+          "type_repr": "Decimal | None"
+        },
+        {
+          "enum_values": [],
+          "name": "raw_payload",
+          "required": false,
+          "type_repr": "Mapping[str, object]"
+        },
+        {
+          "enum_values": [],
+          "name": "metadata",
+          "required": false,
+          "type_repr": "Mapping[str, object]"
+        },
+        {
+          "enum_values": [],
+          "name": "is_correction",
+          "required": false,
+          "type_repr": "bool"
+        },
+        {
+          "enum_values": [],
+          "name": "correction_reason",
+          "required": false,
+          "type_repr": "str | None"
+        }
+      ],
+      "hash": "sha256:9765997afb64180491823ca5e460fc6090fc95e15331fffbea7f6562f288cab6",
+      "required_fields": [
+        "symbol",
+        "source_name",
+        "observation_time",
+        "available_time",
+        "ingestion_time",
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume"
+      ],
+      "schema_name": "VendorDailyBarPayload",
+      "schema_version": "1"
+    },
+    {
+      "enum_values": {
+        "session_kind": [
+          "exceptional_close",
+          "half_session",
+          "holiday",
+          "open"
+        ]
+      },
+      "fields": [
+        {
+          "enum_values": [],
+          "name": "source_name",
+          "required": true,
+          "type_repr": "str"
+        },
+        {
+          "enum_values": [],
+          "name": "calendar_code",
+          "required": true,
+          "type_repr": "str"
+        },
+        {
+          "enum_values": [],
+          "name": "session_date",
+          "required": true,
+          "type_repr": "date"
+        },
+        {
+          "enum_values": [],
+          "name": "observation_time",
+          "required": true,
+          "type_repr": "datetime"
+        },
+        {
+          "enum_values": [],
+          "name": "available_time",
+          "required": true,
+          "type_repr": "datetime"
+        },
+        {
+          "enum_values": [],
+          "name": "ingestion_time",
+          "required": true,
+          "type_repr": "datetime"
+        },
+        {
+          "enum_values": [
+            "exceptional_close",
+            "half_session",
+            "holiday",
+            "open"
+          ],
+          "name": "session_kind",
+          "required": true,
+          "type_repr": "str"
+        },
+        {
+          "enum_values": [],
+          "name": "is_open",
+          "required": true,
+          "type_repr": "bool"
+        },
+        {
+          "enum_values": [],
+          "name": "raw_payload",
+          "required": false,
+          "type_repr": "Mapping[str, object]"
+        },
+        {
+          "enum_values": [],
+          "name": "metadata",
+          "required": false,
+          "type_repr": "Mapping[str, object]"
+        },
+        {
+          "enum_values": [],
+          "name": "symbol",
+          "required": false,
+          "type_repr": "str | None"
+        },
+        {
+          "enum_values": [],
+          "name": "note",
+          "required": false,
+          "type_repr": "str | None"
+        }
+      ],
+      "hash": "sha256:6e04fd8d45d3cfd6265f250b309bb9813ae0a09230831f57508ffa484a2880a4",
+      "required_fields": [
+        "source_name",
+        "calendar_code",
+        "session_date",
+        "observation_time",
+        "available_time",
+        "ingestion_time",
+        "session_kind",
+        "is_open"
+      ],
+      "schema_name": "VendorMarketSessionPayload",
+      "schema_version": "1"
+    },
+    {
+      "enum_values": {},
+      "fields": [
+        {
+          "enum_values": [],
+          "name": "source_name",
+          "required": true,
+          "type_repr": "str"
+        },
+        {
+          "enum_values": [],
+          "name": "contract",
+          "required": true,
+          "type_repr": "DataSourceContract"
+        },
+        {
+          "enum_values": [],
+          "name": "daily_bars",
+          "required": false,
+          "type_repr": "tuple[VendorDailyBarPayload, ...]"
+        },
+        {
+          "enum_values": [],
+          "name": "corporate_actions",
+          "required": false,
+          "type_repr": "tuple[VendorCorporateActionPayload, ...]"
+        },
+        {
+          "enum_values": [],
+          "name": "market_sessions",
+          "required": false,
+          "type_repr": "tuple[VendorMarketSessionPayload, ...]"
+        }
+      ],
+      "hash": "sha256:f188240fffb5efb80993d6e35f5d5085bac8b06dd123e9e9cadbf83160986a2f",
+      "required_fields": [
+        "source_name",
+        "contract"
+      ],
+      "schema_name": "VendorPayloadBatch",
+      "schema_version": "1"
+    }
+  ]
+}

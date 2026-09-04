@@ -11,7 +11,8 @@ Related: [CAPABILITY_MATRIX.md](CAPABILITY_MATRIX.md),
 [RESEARCH_HANDOFF.md](RESEARCH_HANDOFF.md),
 [ADR 0003](../adr/0003-research-mode-freeze.md),
 [ADR 0004](../adr/0004-vendor-agnostic-data-source-contract.md),
-[DATA_CONTRACT_CONFORMANCE.md](../data/DATA_CONTRACT_CONFORMANCE.md).
+[DATA_CONTRACT_CONFORMANCE.md](../data/DATA_CONTRACT_CONFORMANCE.md),
+[DATA_CONTRACT_SCHEMA_COMPATIBILITY.md](../data/DATA_CONTRACT_SCHEMA_COMPATIBILITY.md).
 
 | ID | Risk | Impact | Current mitigation | Possible later phase |
 |----|------|--------|--------------------|----------------------|
@@ -33,6 +34,7 @@ Related: [CAPABILITY_MATRIX.md](CAPABILITY_MATRIX.md),
 | R14 | Shared local PostgreSQL already holds e2e fixtures | A second evidence-bundle ingest inserts 0 silver bars and looks like a failure | Strict default still fails; `--allow-existing-fixture-data` verifies equivalence then reuses; PIT constraints stay; no deletes or `daily_bars` rewrites | Keep verification-before-reuse; never silent conflict ignore |
 | R15 | Rate limits and licensing unimplemented | A future adapter could hit vendor quotas or violate redistribution terms | Documented only (`vendor_rate_limits_unimplemented`); no HTTP client | Implement limits and license checks with the adapter ADR, not before |
 | R16 | Conformance goldens are manual | Hash drift can fail CI until a human copies `expected.json` | `--update-expected` writes actuals; goldens are hand-copied; no vendor HTTP | Same discipline; do not auto-rewrite goldens |
+| R17 | Schema baseline goldens are manual | Contract field or type drift can fail CI until a human copies `current_baseline.json` | Compatibility checker; goldens are hand-copied; no vendor HTTP | Same discipline; do not auto-rewrite goldens |
 
 Severity for all rows above is **accepted for this freeze**. The
 mitigation is documentation plus tests, not a trading control.

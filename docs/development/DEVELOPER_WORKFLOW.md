@@ -123,11 +123,15 @@ no credentials, no real vendor):
 [ADR 0004](../adr/0004-vendor-agnostic-data-source-contract.md).
 Conformance reports (offline, no PostgreSQL):
 [DATA_CONTRACT_CONFORMANCE.md](../data/DATA_CONTRACT_CONFORMANCE.md).
+Schema baseline (offline JSON export, no PostgreSQL):
+[DATA_CONTRACT_SCHEMA_COMPATIBILITY.md](../data/DATA_CONTRACT_SCHEMA_COMPATIBILITY.md).
 
 ```bash
 uv run pytest tests/unit/test_data_source_contracts.py
 uv run pytest tests/unit/test_data_contract_conformance.py
+uv run pytest tests/unit/test_data_contract_schema_compatibility.py
 make data-contract-conformance-regression
+make data-contract-schema-compatibility
 ```
 
 Export a point-in-time daily dataset (`--as-of` required):

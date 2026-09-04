@@ -5,9 +5,9 @@ from __future__ import annotations
 EXPECTED_ALEMBIC_HEAD = "0010_normalized_dataset_catalog"
 
 RELEASE_STATUS_KIND = "research_release_status"
-RELEASE_STATUS_FORMAT_VERSION = 3
+RELEASE_STATUS_FORMAT_VERSION = 4
 RELEASE_STATUS_HASH_KIND = "research_release_status"
-RELEASE_STATUS_HASH_FORMAT_VERSION = 3
+RELEASE_STATUS_HASH_FORMAT_VERSION = 4
 
 FREEZE_DOC_PATHS: tuple[str, ...] = (
     "docs/adr/0003-research-mode-freeze.md",
@@ -48,6 +48,7 @@ ENABLED_CAPABILITIES: tuple[str, ...] = (
     "normalized_dataset_catalog",
     "vendor_agnostic_data_contracts",
     "data_contract_conformance",
+    "data_contract_schema_baseline",
     "health_endpoint",
 )
 

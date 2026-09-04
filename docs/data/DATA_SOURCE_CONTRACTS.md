@@ -5,7 +5,8 @@ This is not a download client.
 
 Related: [ADR 0004](../adr/0004-vendor-agnostic-data-source-contract.md),
 [DATA_INGESTION.md](DATA_INGESTION.md),
-[DATA_CONTRACT_CONFORMANCE.md](DATA_CONTRACT_CONFORMANCE.md).
+[DATA_CONTRACT_CONFORMANCE.md](DATA_CONTRACT_CONFORMANCE.md),
+[DATA_CONTRACT_SCHEMA_COMPATIBILITY.md](DATA_CONTRACT_SCHEMA_COMPATIBILITY.md).
 
 `APP_MODE` remains **research**. There is no trading, no PnL/returns, and
 no brokers in this layer. There are **no** real vendors, **no** internet
@@ -194,6 +195,19 @@ matrix. See [DATA_CONTRACT_CONFORMANCE.md](DATA_CONTRACT_CONFORMANCE.md).
 ```bash
 make data-contract-conformance
 make data-contract-conformance-regression
+```
+
+No HTTP. No vendors. No PostgreSQL. No returns/PnL.
+
+## Schema baseline
+
+Phase 7.5 adds an offline JSON schema export and a pinned compatibility
+baseline. See
+[DATA_CONTRACT_SCHEMA_COMPATIBILITY.md](DATA_CONTRACT_SCHEMA_COMPATIBILITY.md).
+
+```bash
+make data-contract-schema-export
+make data-contract-schema-compatibility
 ```
 
 No HTTP. No vendors. No PostgreSQL. No returns/PnL.

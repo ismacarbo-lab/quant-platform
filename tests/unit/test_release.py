@@ -78,7 +78,10 @@ def test_status_report_serializes_without_secrets(
     assert "external_market_data_vendors" in disabled
     assert "vendor_agnostic_data_contracts" in ENABLED_CAPABILITIES
     assert "data_contract_conformance" in ENABLED_CAPABILITIES
+    assert "data_contract_schema_baseline" in ENABLED_CAPABILITIES
     assert report.data_contract_conformance_supported is True
+    assert report.data_contract_schema_baseline_supported is True
+    assert report.data_contract_schema_compatibility_status == "compatible"
     assert report.vendor_runtime_detected is False
 
 
@@ -112,6 +115,7 @@ def test_release_check_detects_incorrect_app_mode(
         skip_regression=True,
         skip_normalization_regression=True,
         skip_data_contract_conformance=True,
+        skip_data_contract_schema_compatibility=True,
         skip_imports=True,
         research_mode=False,
     )
@@ -151,6 +155,7 @@ def test_release_check_detects_policy_regression_failure(
         skip_imports=True,
         skip_normalization_regression=True,
         skip_data_contract_conformance=True,
+        skip_data_contract_schema_compatibility=True,
     )
     assert report.ok is False
     names = {item.name: item.status for item in report.checks if item.status == "error"}
@@ -174,6 +179,7 @@ def test_release_check_detects_normalization_regression_failure(
         skip_regression=True,
         skip_imports=True,
         skip_data_contract_conformance=True,
+        skip_data_contract_schema_compatibility=True,
         normalization_fixtures_dir=tmp_path,
     )
     assert report.ok is False
@@ -198,11 +204,48 @@ def test_release_check_detects_data_contract_conformance_failure(
         skip_regression=True,
         skip_imports=True,
         skip_normalization_regression=True,
+        skip_data_contract_schema_compatibility=True,
         conformance_fixtures_dir=tmp_path,
     )
     assert report.ok is False
     names = {item.name: item.status for item in report.checks if item.status == "error"}
     assert names.get("data_contract_conformance") == "error"
+
+
+def test_release_check_detects_data_contract_schema_incompatibility(
+    research_settings: Settings, tmp_path: Path
+) -> None:
+    from dataclasses import replace
+
+    from quant_platform.data.contracts.schema_export import (
+        build_contract_schema_bundle,
+        rebuild_schema_bundle,
+    )
+
+    bundle = build_contract_schema_bundle()
+    first = bundle.schemas[0]
+    mutated_first = replace(first, fields=first.fields[1:])
+    mutated = rebuild_schema_bundle(
+        replace(bundle, schemas=(mutated_first, *bundle.schemas[1:]), bundle_hash="")
+    )
+    baseline = tmp_path / "current_baseline.json"
+    baseline.write_text(
+        json.dumps(mutated.as_mapping(), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    report = run_research_release_checks(
+        settings=research_settings,
+        skip_db=True,
+        skip_compose=True,
+        skip_regression=True,
+        skip_imports=True,
+        skip_normalization_regression=True,
+        skip_data_contract_conformance=True,
+        schema_baseline_file=baseline,
+    )
+    assert report.ok is False
+    names = {item.name: item.status for item in report.checks if item.status == "error"}
+    assert names.get("data_contract_schema_compatibility") == "error"
 
 
 def test_release_check_detects_forbidden_construct(
@@ -218,6 +261,7 @@ def test_release_check_detects_forbidden_construct(
         skip_regression=True,
         skip_normalization_regression=True,
         skip_data_contract_conformance=True,
+        skip_data_contract_schema_compatibility=True,
         skip_imports=True,
     )
     assert report.ok is False
@@ -239,6 +283,7 @@ def test_release_check_detects_real_vendor_client(
         skip_regression=True,
         skip_normalization_regression=True,
         skip_data_contract_conformance=True,
+        skip_data_contract_schema_compatibility=True,
         skip_imports=True,
     )
     assert report.ok is False
@@ -273,6 +318,8 @@ def test_release_check_json_script_has_no_database_url(
     assert status_payload["final_freeze_ready"] is True
     assert status_payload["evidence_bundle_available"] is True
     assert status_payload["data_contract_conformance_supported"] is True
+    assert status_payload["data_contract_schema_baseline_supported"] is True
+    assert status_payload["data_contract_schema_compatibility_status"] == "compatible"
     assert status_payload["vendor_runtime_detected"] is False
     assert status_payload["alembic_head_expected"] == EXPECTED_ALEMBIC_HEAD
     assert "paper_trading" in status_payload["capabilities"]["disabled"]

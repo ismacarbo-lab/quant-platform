@@ -1,4 +1,4 @@
-# Architecture — Phase 7.1
+# Architecture — Phase 7.5
 
 Status: research ingestion, an internal **dataset query API**, **dataset
 quality reports**, **local hashed snapshots**, a **PostgreSQL snapshot
@@ -22,8 +22,10 @@ and a **normalization regression matrix** plus an opt-in normalized
 dataset on the evidence bundle, and a **PostgreSQL metadata catalog**
 for those derived datasets (no normalized bars in the database), and an
 **offline vendor-agnostic data source contract** (no real vendor client,
-no internet, no credentials), and **offline data-contract conformance
-reports** (golden regression; still no vendor HTTP).
+no internet, no credentials), **offline data-contract conformance
+reports** (golden regression; still no vendor HTTP), and an **offline
+data-contract schema compatibility baseline** (JSON export; still no
+vendor HTTP).
 No LLM runtime, strategies, brokers, or execution.
 
 ## Modular monolith
@@ -35,7 +37,7 @@ until a measured operational need appears.
 ```
 src/quant_platform/
   core/         configuration, UTC clock, identifiers
-  data/         local CSV ingest, PIT daily bars, repositories, vendor-agnostic contracts and conformance (offline)
+  data/         local CSV ingest, PIT daily bars, repositories, vendor-agnostic contracts, conformance, and schema baseline (offline)
   research/     PIT datasets, quality reports, snapshots, catalog, integrity, CA normalization, normalization regression, normalized-dataset catalog
   simulation/   dataset replay, run catalog, backtest readiness gate (no strategies)
   backtest/     dry-run engine, research policies, catalog, integrity, regression matrix (no orders)
@@ -298,6 +300,8 @@ orders or PnL).
 Phase 7.1 adds offline data-contract conformance reports and a golden
 regression matrix (no schema change, no vendor HTTP; still no orders or
 PnL).
+Phase 7.5 adds an offline data-contract schema export and compatibility
+baseline (no schema change, no vendor HTTP; still no orders or PnL).
 None of these add HTTP routes or gold/trading tables.
 
 ## AI usage boundary

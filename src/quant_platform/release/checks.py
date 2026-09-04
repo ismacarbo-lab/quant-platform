@@ -65,10 +65,12 @@ def run_research_release_checks(
     skip_regression: bool = False,
     skip_normalization_regression: bool = False,
     skip_data_contract_conformance: bool = False,
+    skip_data_contract_schema_compatibility: bool = False,
     skip_imports: bool = False,
     research_mode: bool | None = None,
     normalization_fixtures_dir: Path | str | None = None,
     conformance_fixtures_dir: Path | str | None = None,
+    schema_baseline_file: Path | str | None = None,
 ) -> ReleaseStatusReport:
     """Run research release-candidate checks. Never prints secrets."""
     root = Path(repo_root) if repo_root is not None else repository_root()
@@ -116,6 +118,17 @@ def run_research_release_checks(
             else default_data_contract_conformance_dir()
         )
         checks.append(_check_data_contract_conformance(conformance_root))
+    if not skip_data_contract_schema_compatibility:
+        from quant_platform.data.contracts.schema_export import (
+            default_schema_baseline_path,
+        )
+
+        baseline = (
+            Path(schema_baseline_file)
+            if schema_baseline_file is not None
+            else default_schema_baseline_path()
+        )
+        checks.append(_check_data_contract_schema_compatibility(baseline))
     if not skip_compose:
         checks.append(_check_compose_config(root))
     database_checked = False
@@ -387,6 +400,35 @@ def _check_data_contract_conformance(fixtures_dir: Path) -> ReleaseCheckItem:
         f"data-contract conformance failed: {report.failed_count} cases, "
         f"{report.error_count} errors",
         code="data_contract_conformance_failed",
+    )
+
+
+def _check_data_contract_schema_compatibility(baseline_file: Path) -> ReleaseCheckItem:
+    from quant_platform.data.contracts.errors import VendorContractError
+    from quant_platform.data.contracts.schema_compatibility import (
+        check_schema_compatibility_against_baseline,
+    )
+
+    try:
+        report = check_schema_compatibility_against_baseline(
+            baseline_file=baseline_file
+        )
+    except (VendorContractError, OSError) as exc:
+        return _error(
+            "data_contract_schema_compatibility",
+            f"data-contract schema compatibility could not run: {type(exc).__name__}",
+            code="data_contract_schema_compatibility_error",
+        )
+    if report.ok:
+        return _ok(
+            "data_contract_schema_compatibility",
+            "schema baseline compatible",
+        )
+    return _error(
+        "data_contract_schema_compatibility",
+        "data-contract schema compatibility is potentially_breaking: "
+        f"{report.issue_count} issues",
+        code="data_contract_schema_incompatible",
     )
 
 

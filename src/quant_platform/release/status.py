@@ -116,6 +116,12 @@ DOCUMENTED_RELEASE_RISKS: tuple[ReleaseRiskItem, ...] = (
         ),
     ),
     ReleaseRiskItem(
+        code="schema_baseline_manual_goldens",
+        message=(
+            "Data-contract schema baseline JSON must be copied by hand after review."
+        ),
+    ),
+    ReleaseRiskItem(
         code="evidence_not_profitability",
         message=(
             "The evidence bundle proves the research pipeline ran; "
@@ -168,6 +174,12 @@ def hash_release_status_report(
         "evidence_bundle_available": payload.get("evidence_bundle_available"),
         "data_contract_conformance_supported": payload.get(
             "data_contract_conformance_supported"
+        ),
+        "data_contract_schema_baseline_supported": payload.get(
+            "data_contract_schema_baseline_supported"
+        ),
+        "data_contract_schema_compatibility_status": payload.get(
+            "data_contract_schema_compatibility_status"
         ),
         "vendor_runtime_detected": payload.get("vendor_runtime_detected"),
         "capabilities": payload.get("capabilities"),
@@ -238,6 +250,8 @@ def build_release_status(
         evidence_bundle_available=bundle_available,
         evidence_bundle_fixture_reuse_supported=True,
         data_contract_conformance_supported=True,
+        data_contract_schema_baseline_supported=True,
+        data_contract_schema_compatibility_status=_schema_compatibility_status(),
         vendor_runtime_detected=_vendor_runtime_detected(root),
         checks=ranked_checks,
         risks=DOCUMENTED_RELEASE_RISKS,
@@ -289,6 +303,18 @@ def _vendor_runtime_detected(repo_root: Path) -> bool:
     return bool(
         detect_real_vendor_clients(package) or detect_contracts_networking(package)
     )
+
+
+def _schema_compatibility_status() -> str:
+    try:
+        from quant_platform.data.contracts.schema_compatibility import (
+            check_schema_compatibility_against_baseline,
+        )
+
+        report = check_schema_compatibility_against_baseline()
+    except Exception:
+        return "unavailable"
+    return report.compatibility_status
 
 
 def _regression_case_count(matrix_path: Path | str | None) -> int:

@@ -188,6 +188,7 @@ class ResearchEvidenceBundleRequest:
     skip_release_db: bool = True
     skip_normalization_regression: bool = True
     skip_data_contract_conformance: bool = True
+    skip_data_contract_schema_compatibility: bool = True
     include_normalized_dataset: bool = False
     register_normalized_dataset: bool = False
     normalization_adjustment_mode: str = DEFAULT_NORMALIZATION_ADJUSTMENT_MODE

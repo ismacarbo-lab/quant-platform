@@ -16,6 +16,7 @@ Package: `quant_platform.data.contracts.conformance`,
 Fixtures: `tests/fixtures/data_contract_conformance/`.
 
 Related: [DATA_SOURCE_CONTRACTS.md](DATA_SOURCE_CONTRACTS.md),
+[DATA_CONTRACT_SCHEMA_COMPATIBILITY.md](DATA_CONTRACT_SCHEMA_COMPATIBILITY.md),
 [ADR 0004](../adr/0004-vendor-agnostic-data-source-contract.md),
 [CAPABILITY_MATRIX.md](../release/CAPABILITY_MATRIX.md).
 
@@ -159,5 +160,7 @@ actuals beside the optional output directory.
 `make research-status` prints:
 
 - `data_contract_conformance_supported=true`
+- `data_contract_schema_baseline_supported=true`
+- `data_contract_schema_compatibility_status=compatible`
 - `vendor_runtime=none`
 - `external_market_data_vendors=disabled`

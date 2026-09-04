@@ -137,6 +137,29 @@ Does not rewrite `expected.json`. See
 [DATA_CONTRACT_CONFORMANCE.md](../data/DATA_CONTRACT_CONFORMANCE.md).
 Included in `make research-release-check`. Not in `make quality`.
 
+## Data-contract schema compatibility
+
+Offline JSON schema export and a pinned baseline. No HTTP, no
+credentials, no real vendor, no PostgreSQL, no trading, no PnL/returns.
+
+```bash
+make data-contract-schema-export
+uv run python scripts/export-data-contract-schemas.py --json
+uv run python scripts/export-data-contract-schemas.py \
+  --output-dir /tmp/data-contract-schemas \
+  --json
+make data-contract-schema-compatibility
+uv run python scripts/check-data-contract-schema-compatibility.py --json
+uv run python scripts/check-data-contract-schema-compatibility.py \
+  --baseline-file tests/fixtures/data_contract_schemas/current_baseline.json \
+  --write-current /tmp/data-contract-schemas-current \
+  --json
+```
+
+Does not rewrite `current_baseline.json`. See
+[DATA_CONTRACT_SCHEMA_COMPATIBILITY.md](../data/DATA_CONTRACT_SCHEMA_COMPATIBILITY.md).
+Included in `make research-release-check`. Not in `make quality`.
+
 ## Normalization regression
 
 ```bash
@@ -236,7 +259,9 @@ uv run python scripts/research-release-check.py --json
 ```
 
 Status prints `final_freeze_ready`, `evidence_bundle_available`,
-`data_contract_conformance_supported`, `vendor_runtime`,
+`data_contract_conformance_supported`,
+`data_contract_schema_baseline_supported`,
+`data_contract_schema_compatibility_status`, `vendor_runtime`,
 `external_market_data_vendors`, `alembic_head_expected`, and disabled
 capabilities. It does not ping PostgreSQL.
 
@@ -289,6 +314,8 @@ before reuse. It does not relax PIT constraints, delete rows, or rewrite
   observations; update `matrix.json` by hand if the change is intended.
 - If **normalization regression** fails: run the matrix locally; review
   factors and warnings; update `expected.json` by hand if intended.
+- If **data-contract schema compatibility** fails: export schemas;
+  review issue codes; copy `current_baseline.json` by hand if intended.
 - If **setup-uv** fails: retry / pin the action; do not weaken gates.
 - Never paste passwords or connection URLs into issues or logs.
 

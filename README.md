@@ -19,7 +19,8 @@ Freeze ADR: [docs/adr/0003-research-mode-freeze.md](docs/adr/0003-research-mode-
 Vendor-agnostic data contracts:
 [docs/adr/0004-vendor-agnostic-data-source-contract.md](docs/adr/0004-vendor-agnostic-data-source-contract.md),
 [docs/data/DATA_SOURCE_CONTRACTS.md](docs/data/DATA_SOURCE_CONTRACTS.md),
-[docs/data/DATA_CONTRACT_CONFORMANCE.md](docs/data/DATA_CONTRACT_CONFORMANCE.md).
+[docs/data/DATA_CONTRACT_CONFORMANCE.md](docs/data/DATA_CONTRACT_CONFORMANCE.md),
+[docs/data/DATA_CONTRACT_SCHEMA_COMPATIBILITY.md](docs/data/DATA_CONTRACT_SCHEMA_COMPATIBILITY.md).
 
 `APP_MODE` accepts only `research`. `paper` and `live` fail validation.
 The only HTTP route is `GET /health`.
@@ -58,6 +59,7 @@ make quality
 make policy-regression
 make normalization-regression
 make data-contract-conformance-regression
+make data-contract-schema-compatibility
 make research-release-check
 make research-status
 ```
@@ -81,7 +83,8 @@ dry-run research policies, experiments, release checks, evidence bundle
 derived split normalization (silver unchanged), a normalization
 regression matrix, a metadata-only normalized-dataset catalog, an
 offline vendor-agnostic data source contract (no real vendor client),
-and offline data-contract conformance reports.
+offline data-contract conformance reports, and an offline contract
+schema compatibility baseline.
 
 Prohibited: strategy, signal, portfolio, PnL, orders, brokers,
 paper/live, external vendors, AI runtime.
@@ -157,14 +160,16 @@ It is **not** a trading system.
   credentials, no real vendor client.
 - Pin those payloads with offline conformance reports and a golden
   regression matrix (hashes and issue codes only; still no vendor HTTP).
+- Export those contract schemas and pin a compatibility baseline
+  (still no vendor HTTP, no internet, no returns/PnL).
 
 ## What is not implemented
 
 - Strategies and BUY/SELL signals
 - Machine learning or LLM runtime
 - Real backtester (PnL, portfolio, orders); only a NoOp dry-run exists
-- Market-data download or vendor APIs (only an offline contract and
-  conformance reports exist)
+- Market-data download or vendor APIs (only an offline contract,
+  conformance reports, and a schema baseline exist)
 - Broker connectivity
 - Paper trading
 - Live trading or order routing

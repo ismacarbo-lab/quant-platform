@@ -71,6 +71,8 @@ class ReleaseStatusReport:
     evidence_bundle_available: bool
     evidence_bundle_fixture_reuse_supported: bool
     data_contract_conformance_supported: bool
+    data_contract_schema_baseline_supported: bool
+    data_contract_schema_compatibility_status: str
     vendor_runtime_detected: bool
     checks: tuple[ReleaseCheckItem, ...]
     risks: tuple[ReleaseRiskItem, ...]
@@ -96,6 +98,12 @@ class ReleaseStatusReport:
             ),
             "data_contract_conformance_supported": (
                 self.data_contract_conformance_supported
+            ),
+            "data_contract_schema_baseline_supported": (
+                self.data_contract_schema_baseline_supported
+            ),
+            "data_contract_schema_compatibility_status": (
+                self.data_contract_schema_compatibility_status
             ),
             "vendor_runtime_detected": self.vendor_runtime_detected,
             "capabilities": self.capabilities.as_mapping(),

@@ -16,6 +16,7 @@ Related: [POLICY_REGRESSION_MATRIX.md](../backtest/POLICY_REGRESSION_MATRIX.md),
 [RESEARCH_HANDOFF.md](RESEARCH_HANDOFF.md),
 [CAPABILITY_MATRIX.md](CAPABILITY_MATRIX.md),
 [DATA_CONTRACT_CONFORMANCE.md](../data/DATA_CONTRACT_CONFORMANCE.md),
+[DATA_CONTRACT_SCHEMA_COMPATIBILITY.md](../data/DATA_CONTRACT_SCHEMA_COMPATIBILITY.md),
 [AI_USAGE_BOUNDARY.md](../ai/AI_USAGE_BOUNDARY.md).
 
 Phase 5.2 added no schema. Expected Alembic head after Phase 6.2/6.3 is
@@ -37,6 +38,8 @@ The research stack can:
 - register derived normalized-dataset metadata (hashes and counts only)
 - validate offline vendor-agnostic payloads and pin them with
   conformance reports (no vendor HTTP)
+- export those contract schemas and compare them to a pinned
+  compatibility baseline (still no vendor HTTP)
 
 `APP_MODE` still accepts only `research`. `GET /health` is still the only
 HTTP route.
@@ -131,6 +134,8 @@ The JSON object is `kind=research_release_status`. Important fields:
 | `trading_constructs_detected` | Must be false. |
 | `ai_runtime_detected` | Must be false. |
 | `data_contract_conformance_supported` | Offline conformance reports exist. |
+| `data_contract_schema_baseline_supported` | Offline schema export exists. |
+| `data_contract_schema_compatibility_status` | Live schemas versus the pinned baseline. |
 | `vendor_runtime_detected` | Must be false. |
 | `capabilities.enabled` / `.disabled` | What this candidate will and will not do. |
 | `risks` | Known gaps; not runtime failures. |
@@ -179,6 +184,23 @@ If `data_contract_conformance` fails:
 5. Re-run the matrix and the release check.
 
 See [DATA_CONTRACT_CONFORMANCE.md](../data/DATA_CONTRACT_CONFORMANCE.md).
+
+## How to review data-contract-schema drift
+
+If `data_contract_schema_compatibility` fails:
+
+1. Run `make data-contract-schema-compatibility` or
+   `uv run python scripts/check-data-contract-schema-compatibility.py --json`.
+2. If the change is intentional, export the live bundle with
+   `make data-contract-schema-export` (this **does not** rewrite
+   `current_baseline.json`).
+3. Review issue codes. Reject returns/PnL and vendor HTTP.
+4. Copy the reviewed bundle into
+   `tests/fixtures/data_contract_schemas/current_baseline.json` by hand.
+5. Re-run the compatibility check and the release check.
+
+See
+[DATA_CONTRACT_SCHEMA_COMPATIBILITY.md](../data/DATA_CONTRACT_SCHEMA_COMPATIBILITY.md).
 
 ## How to confirm there is no trading or AI runtime
 
