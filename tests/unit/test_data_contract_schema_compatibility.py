@@ -392,3 +392,23 @@ def test_schema_remote_verification_doc() -> None:
     assert "DATABASE_URL=" not in raw
     assert "postgresql+psycopg://quant:" not in text
     assert "quant_dev_only_not_for_production" not in text
+
+
+def test_schema_post_tag_release_notes() -> None:
+    spec = _ROOT / "docs" / "release" / "DATA_CONTRACT_SCHEMA_POST_TAG_RELEASE_NOTES.md"
+    assert spec.is_file()
+    raw = spec.read_text(encoding="utf-8")
+    text = " ".join(raw.replace("*", " ").lower().split())
+    assert "v0.4.0-research-data-contract-schemas" in raw
+    assert "681ab7cbcba8af2a5f7a0045a4cdc383b07cc393" in raw
+    assert "0010_normalized_dataset_catalog" in raw
+    assert "schema compatibility baseline" in text
+    assert "vendor_runtime=none" in text
+    assert "external_market_data_vendors=disabled" in text
+    assert "no vendors reales" in text
+    assert "no internet" in text
+    assert "no trading" in text
+    assert "no pnl/returns" in text
+    assert "DATABASE_URL=" not in raw
+    assert "postgresql+psycopg://quant:" not in text
+    assert "quant_dev_only_not_for_production" not in text
