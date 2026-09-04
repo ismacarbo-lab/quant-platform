@@ -369,3 +369,26 @@ def test_schema_compatibility_docs_exist_without_database_url() -> None:
     assert "pnl" in lowered
     assert "returns" in lowered
     assert "vendor" in lowered
+
+
+def test_schema_remote_verification_doc() -> None:
+    spec = (
+        _ROOT
+        / "docs"
+        / "release"
+        / "DATA_CONTRACT_SCHEMA_REMOTE_RELEASE_VERIFICATION.md"
+    )
+    assert spec.is_file()
+    raw = spec.read_text(encoding="utf-8")
+    text = " ".join(raw.replace("*", " ").lower().split())
+    assert "v0.4.0-research-data-contract-schemas" in raw
+    assert "0010_normalized_dataset_catalog" in raw
+    assert "schema compatibility baseline" in text
+    assert "vendor-agnostic" in text
+    assert "no vendors reales" in text
+    assert "no internet" in text
+    assert "no trading" in text
+    assert "no pnl/returns" in text
+    assert "DATABASE_URL=" not in raw
+    assert "postgresql+psycopg://quant:" not in text
+    assert "quant_dev_only_not_for_production" not in text
