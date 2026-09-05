@@ -145,6 +145,17 @@ uv run python scripts/run-contract-payload-intake-regression.py \
 Goldens live in each case's `expected.json`. `--update-expected` writes
 actuals beside `--output-dir`; it does **not** rewrite goldens.
 
+## Evidence bundle (opt-in)
+
+The research evidence bundle can attach this bridge with
+`--include-contract-payload-intake`. Default bundles stay unchanged, so
+existing hashes remain comparable. Intake inside the bundle is still
+**dry-run** unless `--contract-intake-write-db` is also set.
+
+This does **not** integrate a real vendor, call the internet, compute
+returns/PnL, or trade. See
+[RESEARCH_EVIDENCE_BUNDLE.md](../release/RESEARCH_EVIDENCE_BUNDLE.md).
+
 ## Research status
 
 `make research-status` prints:

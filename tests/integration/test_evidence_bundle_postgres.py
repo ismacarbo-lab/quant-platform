@@ -11,11 +11,12 @@ from pathlib import Path
 from uuid import uuid4
 
 import pytest
-from sqlalchemy import inspect, text
+from sqlalchemy import func, inspect, select, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 from quant_platform.core.config import get_settings
+from quant_platform.data.models import DailyBar, DataSource, RawIngestionRecord
 from quant_platform.release.checks import run_research_release_checks
 from quant_platform.release.constants import EXPECTED_ALEMBIC_HEAD
 from quant_platform.release.evidence_bundle import build_research_evidence_bundle
@@ -61,6 +62,80 @@ def _unique_fixtures(tmp_path: Path) -> Path:
             encoding="utf-8",
         )
     return dest
+
+
+def _unique_intake_batch(tmp_path: Path) -> tuple[Path, str]:
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    source_batch = (
+        ROOT
+        / "tests"
+        / "fixtures"
+        / "contract_payload_intake"
+        / "valid_dry_run"
+        / "batch.json"
+    )
+    dest = tmp_path / "batch.json"
+    token = uuid4().hex[:8]
+    source_name = f"offline_intake_{token}"
+    symbol = f"ITK{token[:5].upper()}"
+    calendar = f"cal_{token}"
+    raw = source_batch.read_text(encoding="utf-8")
+    dest.write_text(
+        raw.replace(
+            '"source_name": "offline_fixture"', f'"source_name": "{source_name}"'
+        )
+        .replace("ACME", symbol)
+        .replace('"calendar_code": "TEST"', f'"calendar_code": "{calendar}"'),
+        encoding="utf-8",
+    )
+    return dest, source_name
+
+
+def _source_by_name(session: Session, name: str) -> DataSource | None:
+    return session.scalar(select(DataSource).where(DataSource.name == name))
+
+
+def _source_bar_count(session: Session, source_name: str) -> int:
+    source = _source_by_name(session, source_name)
+    if source is None:
+        return 0
+    counted = session.scalar(
+        select(func.count())
+        .select_from(DailyBar)
+        .where(DailyBar.source_id == source.id)
+    )
+    return int(counted or 0)
+
+
+def _source_raw_count(session: Session, source_name: str) -> int:
+    source = _source_by_name(session, source_name)
+    if source is None:
+        return 0
+    counted = session.scalar(
+        select(func.count())
+        .select_from(RawIngestionRecord)
+        .where(RawIngestionRecord.source_id == source.id)
+    )
+    return int(counted or 0)
+
+
+def _intake_bar_state(
+    session: Session, source_name: str
+) -> tuple[tuple[object, ...], ...]:
+    source = _source_by_name(session, source_name)
+    if source is None:
+        return ()
+    rows = session.execute(
+        text(
+            "SELECT b.id, b.observation_time, b.available_time, "
+            "b.open, b.high, b.low, b.close, b.volume, b.is_correction "
+            "FROM daily_bars AS b "
+            "WHERE b.source_id = :source_id "
+            "ORDER BY b.observation_time, b.available_time, b.id"
+        ),
+        {"source_id": source.id},
+    ).all()
+    return tuple(tuple(item) for item in rows)
 
 
 def _request(tmp_path: Path, **overrides: object) -> ResearchEvidenceBundleRequest:
@@ -208,6 +283,117 @@ def test_evidence_bundle_default_omits_normalized_dataset(
     step_names = [item.name for item in result.manifest.steps]
     assert "normalization" not in step_names
     assert not (result.output_dir / NORMALIZED_DATASET_DIRNAME).exists()
+    assert result.manifest.contract_intake_included is None
+    assert "contract_payload_intake" not in step_names
+    assert not (result.output_dir / "contract_payload_intake").exists()
+
+
+def test_evidence_bundle_default_omits_contract_intake(
+    db_session: Session, tmp_path: Path
+) -> None:
+    request = _request(tmp_path)
+    result = build_research_evidence_bundle(db_session, request)
+    assert result.ok is True
+    payload = result.manifest.as_mapping()
+    assert "contract_intake_included" not in payload
+    assert "contract_intake_hash" not in payload
+    assert result.manifest.contract_intake_included is None
+    step_names = [item.name for item in result.manifest.steps]
+    assert "contract_payload_intake" not in step_names
+    assert not (result.output_dir / "contract_payload_intake").exists()
+
+
+def test_evidence_bundle_intake_dry_run_does_not_write(
+    db_session: Session, tmp_path: Path, postgres_engine: Engine
+) -> None:
+    batch_path, intake_source = _unique_intake_batch(tmp_path / "intake")
+    request = _request(
+        tmp_path,
+        include_contract_payload_intake=True,
+        contract_intake_batch_file=batch_path,
+    )
+    before = _source_bar_count(db_session, intake_source)
+    before_raw = _source_raw_count(db_session, intake_source)
+    result = build_research_evidence_bundle(db_session, request)
+    assert result.ok is True
+    assert result.manifest.contract_intake_included is True
+    assert result.manifest.contract_intake_write_db is False
+    assert result.manifest.contract_intake_status == "dry_run"
+    assert result.manifest.contract_intake_db_status == "not_executed"
+    assert result.manifest.contract_intake_hash
+    assert result.manifest.contract_intake_batch_hash
+    inserted = result.manifest.contract_intake_inserted_counts or {}
+    assert inserted.get("total") == 0
+    step_names = [item.name for item in result.manifest.steps]
+    assert "contract_payload_intake" in step_names
+    intake_dir = result.output_dir / "contract_payload_intake"
+    assert (intake_dir / "contract_payload_intake_plan.json").is_file()
+    report = verify_research_evidence_bundle(result.output_dir)
+    assert report.ok is True
+    assert _source_bar_count(db_session, intake_source) == before
+    assert _source_raw_count(db_session, intake_source) == before_raw
+    settings = get_settings()
+    assert settings.app_mode == "research"
+    tables = set(list_public_tables(postgres_engine))
+    for name in ("strategies", "signals", "orders", "portfolio", "trades", "fills"):
+        assert name not in tables
+    blob = json.dumps(result.manifest.as_mapping(), sort_keys=True)
+    assert "DATABASE_URL" not in blob
+    assert "postgresql+psycopg://" not in blob
+
+
+def test_evidence_bundle_intake_write_db_is_idempotent(
+    db_session: Session, tmp_path: Path
+) -> None:
+    batch_path, intake_source = _unique_intake_batch(tmp_path / "intake")
+    first = _request(
+        tmp_path / "first",
+        include_contract_payload_intake=True,
+        contract_intake_write_db=True,
+        contract_intake_batch_file=batch_path,
+    )
+    inserted = build_research_evidence_bundle(db_session, first)
+    assert inserted.ok is True
+    assert inserted.manifest.contract_intake_write_db is True
+    assert inserted.manifest.contract_intake_db_status == "executed"
+    counts = inserted.manifest.contract_intake_inserted_counts or {}
+    assert counts.get("daily_bars") == 1
+    assert counts.get("total") == 3
+    assert _source_bar_count(db_session, intake_source) == 1
+    assert _source_raw_count(db_session, intake_source) >= 3
+    evidence_before = _raw_daily_bar_state(
+        db_session, first.fixture_dir, first.source_name
+    )
+    intake_before = _intake_bar_state(db_session, intake_source)
+    second = ResearchEvidenceBundleRequest(
+        fixture_dir=first.fixture_dir,
+        output_dir=tmp_path / "second",
+        deterministic_id=True,
+        created_at=_STAMP,
+        git_commit=None,
+        resolve_git=False,
+        source_name=first.source_name,
+        skip_compose=True,
+        skip_regression=True,
+        skip_release_db=True,
+        allow_existing_fixture_data=True,
+        include_contract_payload_intake=True,
+        contract_intake_write_db=True,
+        contract_intake_batch_file=batch_path,
+    )
+    reused = build_research_evidence_bundle(db_session, second)
+    assert reused.ok is True
+    skipped = reused.manifest.contract_intake_skipped_counts or {}
+    inserted_again = reused.manifest.contract_intake_inserted_counts or {}
+    assert inserted_again.get("daily_bars") == 0
+    assert skipped.get("daily_bars") == 1
+    assert _source_bar_count(db_session, intake_source) == 1
+    assert _raw_daily_bar_state(db_session, first.fixture_dir, first.source_name) == (
+        evidence_before
+    )
+    assert _intake_bar_state(db_session, intake_source) == intake_before
+    settings = get_settings()
+    assert settings.is_research_mode is True
 
 
 def test_evidence_bundle_release_check_stays_green(

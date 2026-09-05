@@ -90,6 +90,9 @@ from quant_platform.release.evidence_artifacts import (
     write_evidence_json,
     write_research_evidence_artifacts,
 )
+from quant_platform.release.evidence_contract_intake import (
+    run_evidence_contract_payload_intake,
+)
 from quant_platform.release.evidence_fixture_reuse import (
     check_existing_evidence_fixture_data,
     existing_fixture_daily_bars_present,
@@ -110,6 +113,7 @@ from quant_platform.release.evidence_types import (
     STEP_BACKTEST,
     STEP_BACKTEST_USABILITY,
     STEP_CATALOG,
+    STEP_CONTRACT_PAYLOAD_INTAKE,
     STEP_CORRECTIONS,
     STEP_EXPERIMENT,
     STEP_EXPERIMENT_USABILITY,
@@ -289,6 +293,32 @@ def hash_research_evidence_bundle(
             "inserted_session_count": reuse.get("inserted_session_count"),
             "reused_session_count": reuse.get("reused_session_count"),
         }
+    if payload.get("contract_intake_included") is True:
+        digest["contract_intake_included"] = True
+        digest["contract_intake_write_db"] = payload.get("contract_intake_write_db")
+        digest["contract_intake_hash"] = payload.get("contract_intake_hash")
+        digest["contract_intake_batch_hash"] = payload.get("contract_intake_batch_hash")
+        digest["contract_intake_status"] = payload.get("contract_intake_status")
+        digest["contract_intake_artifact_status"] = payload.get(
+            "contract_intake_artifact_status"
+        )
+        digest["contract_intake_db_status"] = payload.get("contract_intake_db_status")
+        inserted = payload.get("contract_intake_inserted_counts")
+        skipped = payload.get("contract_intake_skipped_counts")
+        if isinstance(inserted, Mapping):
+            digest["contract_intake_inserted_counts"] = {
+                "daily_bars": inserted.get("daily_bars"),
+                "corporate_actions": inserted.get("corporate_actions"),
+                "market_sessions": inserted.get("market_sessions"),
+                "total": inserted.get("total"),
+            }
+        if isinstance(skipped, Mapping):
+            digest["contract_intake_skipped_counts"] = {
+                "daily_bars": skipped.get("daily_bars"),
+                "corporate_actions": skipped.get("corporate_actions"),
+                "market_sessions": skipped.get("market_sessions"),
+                "total": skipped.get("total"),
+            }
     blob = canonical_json(digest)
     if manifest_contains_secrets(blob):
         raise EvidenceBundleError(
@@ -350,6 +380,16 @@ def build_research_evidence_bundle(
     failed = False
     fixture_data_mode: str | None = None
     fixture_reuse: EvidenceFixtureReuseReport | None = None
+    contract_intake_included: bool | None = None
+    contract_intake_write_db: bool | None = None
+    contract_intake_hash: str | None = None
+    contract_intake_batch_hash: str | None = None
+    contract_intake_status: str | None = None
+    contract_intake_artifact_status: str | None = None
+    contract_intake_db_status: str | None = None
+    contract_intake_inserted_counts: dict[str, int] | None = None
+    contract_intake_skipped_counts: dict[str, int] | None = None
+    contract_intake_artifacts: tuple[ResearchEvidenceBundleArtifact, ...] = ()
 
     def _ok(name: str, detail: str | None = None) -> None:
         steps.append(
@@ -676,6 +716,39 @@ def build_research_evidence_bundle(
                 _ok(STEP_NORMALIZATION, normalized_dataset_hash)
             except NormalizationError as exc:
                 _fail(STEP_NORMALIZATION, exc.code, str(exc))
+
+        if (
+            request.contract_intake_write_db
+            and not request.include_contract_payload_intake
+        ):
+            raise EvidenceBundleError(
+                "contract_intake_write_db requires include_contract_payload_intake",
+                code="contract_intake_write_without_include",
+            )
+        if request.include_contract_payload_intake:
+            try:
+                intake_outcome = run_evidence_contract_payload_intake(
+                    request,
+                    output_dir,
+                    session=session if request.contract_intake_write_db else None,
+                    evidence_source_id=source.id,
+                )
+                contract_intake_included = True
+                contract_intake_write_db = intake_outcome.write_db
+                contract_intake_hash = intake_outcome.intake_hash
+                contract_intake_batch_hash = intake_outcome.batch_hash
+                contract_intake_status = intake_outcome.status
+                contract_intake_artifact_status = intake_outcome.artifact_status
+                contract_intake_db_status = intake_outcome.db_status
+                contract_intake_inserted_counts = dict(intake_outcome.inserted_counts)
+                contract_intake_skipped_counts = dict(intake_outcome.skipped_counts)
+                contract_intake_artifacts = intake_outcome.artifacts
+                artifacts.extend(intake_outcome.artifacts)
+                if request.contract_intake_write_db:
+                    session.flush()
+                _ok(STEP_CONTRACT_PAYLOAD_INTAKE, intake_outcome.intake_hash)
+            except EvidenceBundleError as exc:
+                _fail(STEP_CONTRACT_PAYLOAD_INTAKE, exc.code, str(exc))
 
         dataset_request = snapshot_request.dataset
         replay = create_daily_bar_replay(
@@ -1054,6 +1127,16 @@ def build_research_evidence_bundle(
         normalized_dataset_id=normalized_dataset_id,
         fixture_data_mode=fixture_data_mode,
         fixture_reuse=fixture_reuse,
+        contract_intake_included=contract_intake_included,
+        contract_intake_write_db=contract_intake_write_db,
+        contract_intake_hash=contract_intake_hash,
+        contract_intake_batch_hash=contract_intake_batch_hash,
+        contract_intake_status=contract_intake_status,
+        contract_intake_artifact_status=contract_intake_artifact_status,
+        contract_intake_db_status=contract_intake_db_status,
+        contract_intake_inserted_counts=contract_intake_inserted_counts,
+        contract_intake_skipped_counts=contract_intake_skipped_counts,
+        contract_intake_artifacts=contract_intake_artifacts,
         steps=tuple(steps),
         artifacts=_dedupe_artifacts(artifacts),
         warnings=tuple(warnings),

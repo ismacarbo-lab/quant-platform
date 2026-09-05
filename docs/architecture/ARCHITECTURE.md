@@ -26,7 +26,8 @@ no internet, no credentials), **offline data-contract conformance
 reports** (golden regression; still no vendor HTTP), an **offline
 data-contract schema compatibility baseline** (JSON export; still no
 vendor HTTP), and an **offline contract-payload intake bridge** (dry-run
-by default; explicit `--write-db` uses local PostgreSQL only).
+by default; explicit `--write-db` uses local PostgreSQL only; opt-in on
+the evidence bundle).
 No LLM runtime, strategies, brokers, or execution.
 
 ## Modular monolith
@@ -305,6 +306,9 @@ Phase 7.5 adds an offline data-contract schema export and compatibility
 baseline (no schema change, no vendor HTTP; still no orders or PnL).
 Phase 8.0 adds an offline contract-payload intake bridge (dry-run by
 default; optional `--write-db` through existing ingestion; no schema
+change, no vendor HTTP; still no orders or PnL).
+Phase 8.4 attaches that intake bridge to the evidence bundle as an
+opt-in dry-run step (explicit `--contract-intake-write-db`; no schema
 change, no vendor HTTP; still no orders or PnL).
 None of these add HTTP routes or gold/trading tables.
 

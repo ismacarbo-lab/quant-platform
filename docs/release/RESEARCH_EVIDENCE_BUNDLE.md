@@ -18,6 +18,7 @@ Scripts: `scripts/build-research-evidence-bundle.py`,
 Related: [RESEARCH_RELEASE_CANDIDATE.md](RESEARCH_RELEASE_CANDIDATE.md),
 [DATA_QUALITY_POLICIES.md](../backtest/DATA_QUALITY_POLICIES.md),
 [BACKTEST_EXPERIMENT_USABILITY.md](../backtest/BACKTEST_EXPERIMENT_USABILITY.md),
+[CONTRACT_PAYLOAD_INTAKE.md](../data/CONTRACT_PAYLOAD_INTAKE.md),
 [DEVELOPER_WORKFLOW.md](../development/DEVELOPER_WORKFLOW.md),
 [RESEARCH_HANDOFF.md](RESEARCH_HANDOFF.md).
 
@@ -61,6 +62,12 @@ A derived normalized dataset is **opt-in** (`--include-normalized-dataset`).
 Default bundles do not include it, so older hashes stay comparable. The
 opt-in path still does not compute returns or PnL.
 
+An offline **contract-payload intake** step is also **opt-in**
+(`--include-contract-payload-intake`). Default bundles stay unchanged.
+That step is **dry-run** unless `--contract-intake-write-db` is set. It
+uses a local fixture or JSON batch, never a vendor HTTP client. It does
+not rewrite silver `daily_bars`.
+
 ## How to build it
 
 PostgreSQL must be reachable. `APP_MODE` must be `research`. Alembic must
@@ -93,6 +100,11 @@ Useful flags:
 | `--register-normalized-dataset` | Also register catalog metadata (requires the opt-in). |
 | `--normalization-adjustment-mode` | Mode for that derived view. Default: `split_only`. |
 | `--allow-existing-fixture-data` | If ingest inserts 0 bars, verify existing rows match the fixtures and reuse them. Off by default. |
+| `--include-contract-payload-intake` | Opt-in offline intake plan/artifacts under `contract_payload_intake/`. Dry-run by default. |
+| `--contract-intake-write-db` | Execute intake through existing PIT ingest. Requires the intake opt-in. Does not rewrite `daily_bars`. |
+| `--contract-intake-batch-file` | Local `VendorPayloadBatch` JSON. |
+| `--contract-intake-fixture-dir` | Local intake fixture directory with `batch.json`. |
+| `--contract-intake-output-dir-name` | Relative subdirectory name. Default: `contract_payload_intake`. |
 | `--json` | Print the evidence summary. |
 
 The builder fails if `APP_MODE` is not research, Alembic is not at the
@@ -112,6 +124,15 @@ you already loaded; do not use it to ignore a failed ingest.
 The manifest records `fixture_data_mode` (`inserted` / `reused` / `failed`)
 and inserted vs reused counts. `bundle_hash` includes that mode and the
 counts; it still excludes wall-clock and absolute paths.
+
+`--include-contract-payload-intake` records that a local vendor-agnostic
+batch passed conformance, produced an intake plan, and wrote relative
+artifacts. Default is dry-run (`contract_intake_write_db=false`,
+inserted counts total 0). `--contract-intake-write-db` uses the existing
+intake bridge: raw capture before silver, PIT preserved, no UPDATE of
+`daily_bars`. It is **not** a real vendor, **not** internet, and **not**
+a returns/PnL or trading step. Default bundles omit this step so existing
+hashes stay comparable.
 
 The builder reuses existing APIs. It does not add a second ingest, replay,
 or backtest engine.
@@ -153,6 +174,7 @@ The bundle directory contains:
 | `experiment/` | Experiment summary/manifest plus member runs |
 | `reports/` | Quality, readiness, usability, and research report JSON |
 | `normalized_dataset/` | Opt-in derived bars, report, and manifest (absent by default) |
+| `contract_payload_intake/` | Opt-in intake plan, report, and manifest (absent by default) |
 
 Event rows live in `replay_run/events.jsonl`. The bundle manifest does
 not copy them.
@@ -174,6 +196,9 @@ versioned.
   (`normalized_dataset_id` is stored on the manifest when register is
   also on; it is not part of the digest)
 - `fixture_data_mode` and inserted/reused counts when present
+- `contract_intake_included` plus intake hashes, write flag, status, and
+  inserted/skipped counts only when `--include-contract-payload-intake`
+  is set
 - step names and statuses
 - `ok` / `error_count`
 - package version, `app_mode`, Alembic head

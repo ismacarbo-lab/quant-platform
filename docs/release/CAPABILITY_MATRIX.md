@@ -46,12 +46,12 @@ Related: [RESEARCH_HANDOFF.md](RESEARCH_HANDOFF.md),
 | Experiment usability | Intact evidence gate | Not profitability |
 | Policy regression matrix | Golden hashes | Not a walk-forward |
 | Release checks / status | Guardrails, Alembic pin | Not a trading launch |
-| Evidence bundle | Fixture → release local pack | Not a performance report |
+| Evidence bundle | Fixture → release local pack; opt-in intake is dry-run unless `--contract-intake-write-db` | Not a performance report; not a vendor client |
 | Health endpoint | `GET /health` | Not a data or trade API |
 | Vendor-agnostic data contracts | Offline payload types, validation, hash, fake provider | Not a vendor download; not credentials; not internet |
 | Data-contract conformance | Offline reports, relative artifacts, golden regression | Not a vendor client; not returns/PnL; not trading |
 | Data-contract schema baseline | Offline JSON schema export and compatibility compare | Not a vendor adapter; not internet; not returns/PnL |
-| Contract-payload intake (offline) | Dry-run plan from a synthetic/fixture batch; optional `--write-db` through existing PIT ingest | Not a vendor download; not silent DB writes; not returns/PnL; not trading |
+| Contract-payload intake (offline) | Dry-run plan from a synthetic/fixture batch; optional `--write-db` through existing PIT ingest; opt-in evidence-bundle step | Not a vendor download; not silent DB writes; not returns/PnL; not trading |
 
 ## Intentionally disabled
 

@@ -372,6 +372,12 @@ uv run python scripts/build-research-evidence-bundle.py \
   --deterministic-id \
   --allow-existing-fixture-data \
   --json
+uv run python scripts/build-research-evidence-bundle.py \
+  --fixture-dir tests/fixtures/e2e_research_bundle \
+  --output-dir /tmp/research-evidence-bundle \
+  --deterministic-id \
+  --include-contract-payload-intake \
+  --json
 uv run python scripts/verify-research-evidence-bundle.py \
   --bundle-dir /tmp/research-evidence-bundle
 ```

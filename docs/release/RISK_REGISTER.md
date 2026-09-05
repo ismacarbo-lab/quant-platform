@@ -37,6 +37,7 @@ Related: [CAPABILITY_MATRIX.md](CAPABILITY_MATRIX.md),
 | R16 | Conformance goldens are manual | Hash drift can fail CI until a human copies `expected.json` | `--update-expected` writes actuals; goldens are hand-copied; no vendor HTTP | Same discipline; do not auto-rewrite goldens |
 | R17 | Schema baseline goldens are manual | Contract field or type drift can fail CI until a human copies `current_baseline.json` | Compatibility checker; goldens are hand-copied; no vendor HTTP | Same discipline; do not auto-rewrite goldens |
 | R18 | Intake goldens are manual | Hash drift can fail CI until a human copies `expected.json` | `--update-expected` writes actuals; goldens are hand-copied; dry-run default; `--write-db` explicit | Same discipline; do not auto-rewrite goldens |
+| R19 | Evidence-bundle intake is opt-in | Operators may expect every bundle to prove vendor intake, or may enable `--contract-intake-write-db` on a shared database | Default omit keeps existing hashes; dry-run unless the write flag is set; no vendor HTTP; `daily_bars` are not rewritten | Keep default off; never silent writes |
 
 Severity for all rows above is **accepted for this freeze**. The
 mitigation is documentation plus tests, not a trading control.

@@ -49,8 +49,16 @@ STEP_RESEARCH_REPORT = "research_report"
 STEP_RELEASE_STATUS = "release_status"
 STEP_WRITE_MANIFEST = "write_manifest"
 STEP_NORMALIZATION = "normalization"
+STEP_CONTRACT_PAYLOAD_INTAKE = "contract_payload_intake"
 NORMALIZED_DATASET_DIRNAME = "normalized_dataset"
 DEFAULT_NORMALIZATION_ADJUSTMENT_MODE = "split_only"
+DEFAULT_CONTRACT_INTAKE_OUTPUT_DIR_NAME = "contract_payload_intake"
+DEFAULT_CONTRACT_INTAKE_FIXTURE_CASE = "valid_dry_run"
+CONTRACT_INTAKE_STATUS_DRY_RUN = "dry_run"
+CONTRACT_INTAKE_STATUS_WRITTEN = "written"
+CONTRACT_INTAKE_ARTIFACT_STATUS_OK = "ok"
+CONTRACT_INTAKE_DB_STATUS_NOT_EXECUTED = "not_executed"
+CONTRACT_INTAKE_DB_STATUS_EXECUTED = "executed"
 
 EVIDENCE_STEPS: tuple[str, ...] = (
     STEP_VALIDATE_MODE,
@@ -194,6 +202,11 @@ class ResearchEvidenceBundleRequest:
     register_normalized_dataset: bool = False
     normalization_adjustment_mode: str = DEFAULT_NORMALIZATION_ADJUSTMENT_MODE
     allow_existing_fixture_data: bool = False
+    include_contract_payload_intake: bool = False
+    contract_intake_write_db: bool = False
+    contract_intake_batch_file: Path | None = None
+    contract_intake_fixture_dir: Path | None = None
+    contract_intake_output_dir_name: str = DEFAULT_CONTRACT_INTAKE_OUTPUT_DIR_NAME
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "fixture_dir", Path(self.fixture_dir))
@@ -212,6 +225,24 @@ class ResearchEvidenceBundleRequest:
             "normalization_adjustment_mode",
             self.normalization_adjustment_mode.strip()
             or DEFAULT_NORMALIZATION_ADJUSTMENT_MODE,
+        )
+        if self.contract_intake_batch_file is not None:
+            object.__setattr__(
+                self,
+                "contract_intake_batch_file",
+                Path(self.contract_intake_batch_file),
+            )
+        if self.contract_intake_fixture_dir is not None:
+            object.__setattr__(
+                self,
+                "contract_intake_fixture_dir",
+                Path(self.contract_intake_fixture_dir),
+            )
+        object.__setattr__(
+            self,
+            "contract_intake_output_dir_name",
+            self.contract_intake_output_dir_name.strip()
+            or DEFAULT_CONTRACT_INTAKE_OUTPUT_DIR_NAME,
         )
 
 
@@ -292,6 +323,16 @@ class ResearchEvidenceBundleManifest:
     normalized_dataset_id: str | None = None
     fixture_data_mode: str | None = None
     fixture_reuse: EvidenceFixtureReuseReport | None = None
+    contract_intake_included: bool | None = None
+    contract_intake_write_db: bool | None = None
+    contract_intake_hash: str | None = None
+    contract_intake_batch_hash: str | None = None
+    contract_intake_status: str | None = None
+    contract_intake_artifact_status: str | None = None
+    contract_intake_db_status: str | None = None
+    contract_intake_inserted_counts: dict[str, int] | None = None
+    contract_intake_skipped_counts: dict[str, int] | None = None
+    contract_intake_artifacts: tuple[ResearchEvidenceBundleArtifact, ...] = ()
 
     def as_mapping(self, *, include_bundle_hash: bool = True) -> dict[str, object]:
         payload: dict[str, object] = {
@@ -336,6 +377,28 @@ class ResearchEvidenceBundleManifest:
             payload["fixture_data_mode"] = self.fixture_data_mode
         if self.fixture_reuse is not None:
             payload["fixture_reuse"] = self.fixture_reuse.as_mapping()
+        if self.contract_intake_included:
+            payload["contract_intake_included"] = True
+            payload["contract_intake_write_db"] = bool(self.contract_intake_write_db)
+            payload["contract_intake_hash"] = self.contract_intake_hash
+            payload["contract_intake_batch_hash"] = self.contract_intake_batch_hash
+            payload["contract_intake_status"] = self.contract_intake_status
+            payload["contract_intake_artifact_status"] = (
+                self.contract_intake_artifact_status
+            )
+            payload["contract_intake_db_status"] = self.contract_intake_db_status
+            if self.contract_intake_inserted_counts is not None:
+                payload["contract_intake_inserted_counts"] = dict(
+                    self.contract_intake_inserted_counts
+                )
+            if self.contract_intake_skipped_counts is not None:
+                payload["contract_intake_skipped_counts"] = dict(
+                    self.contract_intake_skipped_counts
+                )
+            if self.contract_intake_artifacts:
+                payload["contract_intake_artifacts"] = [
+                    item.as_mapping() for item in self.contract_intake_artifacts
+                ]
         if include_bundle_hash:
             payload["bundle_hash"] = self.bundle_hash
         return payload
@@ -400,6 +463,35 @@ class ResearchEvidenceBundleResult:
             payload["fixture_data_mode"] = self.manifest.fixture_data_mode
         if self.manifest.fixture_reuse is not None:
             payload["fixture_reuse"] = self.manifest.fixture_reuse.as_mapping()
+        if self.manifest.contract_intake_included:
+            payload["contract_intake_included"] = True
+            payload["contract_intake_write_db"] = bool(
+                self.manifest.contract_intake_write_db
+            )
+            payload["contract_intake_hash"] = self.manifest.contract_intake_hash
+            payload["contract_intake_batch_hash"] = (
+                self.manifest.contract_intake_batch_hash
+            )
+            payload["contract_intake_status"] = self.manifest.contract_intake_status
+            payload["contract_intake_artifact_status"] = (
+                self.manifest.contract_intake_artifact_status
+            )
+            payload["contract_intake_db_status"] = (
+                self.manifest.contract_intake_db_status
+            )
+            if self.manifest.contract_intake_inserted_counts is not None:
+                payload["contract_intake_inserted_counts"] = dict(
+                    self.manifest.contract_intake_inserted_counts
+                )
+            if self.manifest.contract_intake_skipped_counts is not None:
+                payload["contract_intake_skipped_counts"] = dict(
+                    self.manifest.contract_intake_skipped_counts
+                )
+            if self.manifest.contract_intake_artifacts:
+                payload["contract_intake_artifacts"] = [
+                    item.as_mapping()
+                    for item in self.manifest.contract_intake_artifacts
+                ]
         return payload
 
 

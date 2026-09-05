@@ -88,6 +88,40 @@ def main(argv: list[str] | None = None) -> int:
             "delete, truncate, or rewrite daily_bars."
         ),
     )
+    parser.add_argument(
+        "--include-contract-payload-intake",
+        action="store_true",
+        help=(
+            "Attach an offline contract-payload intake plan and artifacts. "
+            "Opt-in; default bundles stay unchanged. Dry-run unless "
+            "--contract-intake-write-db is also set. No vendor HTTP."
+        ),
+    )
+    parser.add_argument(
+        "--contract-intake-write-db",
+        action="store_true",
+        help=(
+            "Execute intake through existing PIT ingest. Requires "
+            "--include-contract-payload-intake. Does not rewrite daily_bars."
+        ),
+    )
+    parser.add_argument(
+        "--contract-intake-batch-file",
+        type=Path,
+        default=None,
+        help="Local VendorPayloadBatch JSON. Mutually exclusive with fixture-dir.",
+    )
+    parser.add_argument(
+        "--contract-intake-fixture-dir",
+        type=Path,
+        default=None,
+        help="Local intake fixture directory containing batch.json.",
+    )
+    parser.add_argument(
+        "--contract-intake-output-dir-name",
+        default="contract_payload_intake",
+        help="Relative subdirectory for intake artifacts inside the bundle.",
+    )
     parser.add_argument("--json", action="store_true", dest="as_json")
     args = parser.parse_args(argv)
 
@@ -111,6 +145,24 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         policy_config = loaded
 
+    if args.contract_intake_write_db and not args.include_contract_payload_intake:
+        print(
+            "error: --contract-intake-write-db requires "
+            "--include-contract-payload-intake",
+            file=sys.stderr,
+        )
+        return 1
+    if (
+        args.contract_intake_batch_file is not None
+        and args.contract_intake_fixture_dir is not None
+    ):
+        print(
+            "error: specify only one of --contract-intake-batch-file or "
+            "--contract-intake-fixture-dir",
+            file=sys.stderr,
+        )
+        return 1
+
     engine = create_db_engine(settings, connect_timeout_seconds=5)
     factory = create_session_factory(engine)
     session = factory()
@@ -126,6 +178,11 @@ def main(argv: list[str] | None = None) -> int:
             register_normalized_dataset=bool(args.register_normalized_dataset),
             normalization_adjustment_mode=args.normalization_adjustment_mode,
             allow_existing_fixture_data=bool(args.allow_existing_fixture_data),
+            include_contract_payload_intake=bool(args.include_contract_payload_intake),
+            contract_intake_write_db=bool(args.contract_intake_write_db),
+            contract_intake_batch_file=args.contract_intake_batch_file,
+            contract_intake_fixture_dir=args.contract_intake_fixture_dir,
+            contract_intake_output_dir_name=args.contract_intake_output_dir_name,
         )
         result = build_research_evidence_bundle(session, request)
         if result.ok:
@@ -160,6 +217,20 @@ def main(argv: list[str] | None = None) -> int:
         if reuse is not None:
             print(f"inserted_bar_count={reuse.inserted_bar_count}")
             print(f"reused_bar_count={reuse.reused_bar_count}")
+        if result.manifest.contract_intake_included:
+            print("contract_intake_included=true")
+            print(
+                "contract_intake_write_db="
+                + str(bool(result.manifest.contract_intake_write_db)).lower()
+            )
+            status = result.manifest.contract_intake_status or ""
+            print(f"contract_intake_status={status}")
+            digest = result.manifest.contract_intake_hash or ""
+            print(f"contract_intake_hash={digest}")
+            inserted = result.manifest.contract_intake_inserted_counts or {}
+            skipped = result.manifest.contract_intake_skipped_counts or {}
+            print(f"contract_intake_inserted_total={inserted.get('total', 0)}")
+            print(f"contract_intake_skipped_total={skipped.get('total', 0)}")
         print(f"errors={len(result.manifest.errors)}")
         for issue in result.manifest.errors:
             print(f"error\t{issue.code}\t{issue.message}")

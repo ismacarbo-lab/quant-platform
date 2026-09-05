@@ -9,9 +9,13 @@ from enum import StrEnum
 from pathlib import Path
 
 from quant_platform.backtest.observations import contains_operative_language
+from quant_platform.data.contracts.intake_integrity import (
+    verify_contract_payload_intake_artifacts,
+)
 from quant_platform.release.evidence_bundle import hash_research_evidence_bundle
 from quant_platform.release.evidence_types import (
     ALLOWED_FIXTURE_DATA_MODES,
+    DEFAULT_CONTRACT_INTAKE_OUTPUT_DIR_NAME,
     EVIDENCE_MANIFEST_NAME,
     EVIDENCE_SUMMARY_NAME,
     NORMALIZED_DATASET_DIRNAME,
@@ -39,6 +43,8 @@ _HASH_FIELDS = (
     "release_report_hash",
     "bundle_hash",
     "normalized_dataset_hash",
+    "contract_intake_hash",
+    "contract_intake_batch_hash",
 )
 
 _FORBIDDEN_METRIC_TOKENS = (
@@ -75,6 +81,8 @@ class EvidenceIntegrityCode(StrEnum):
     INVALID_FIXTURE_DATA_MODE = "invalid_fixture_data_mode"
     NEGATIVE_REUSE_COUNT = "negative_reuse_count"
     FIXTURE_DATA_FAILED = "fixture_data_failed"
+    CONTRACT_INTAKE_MISSING = "contract_intake_missing"
+    CONTRACT_INTAKE_WRITE_MISMATCH = "contract_intake_write_mismatch"
 
 
 @dataclass(frozen=True, slots=True)
@@ -239,6 +247,8 @@ def verify_research_evidence_bundle(bundle_dir: Path | str) -> EvidenceIntegrity
             _check_fixture_data(summary_payload, issues)
         if manifest_payload.get("normalized_dataset_hash"):
             _check_normalized_dataset(root, issues)
+        if manifest_payload.get("contract_intake_included") is True:
+            _check_contract_intake(manifest_payload, root, issues)
 
     error_count = sum(
         1 for item in issues if item.severity == EvidenceIntegritySeverity.ERROR
@@ -409,6 +419,110 @@ def _check_normalized_dataset(
                 "normalized dataset artifacts failed verification",
             )
         )
+
+
+def _check_contract_intake(
+    payload: Mapping[str, object],
+    root: Path,
+    issues: list[EvidenceIntegrityIssue],
+) -> None:
+    write_db = payload.get("contract_intake_write_db")
+    if not isinstance(write_db, bool):
+        issues.append(
+            _error(
+                EvidenceIntegrityCode.CONTRACT_INTAKE_WRITE_MISMATCH,
+                "contract_intake_write_db must be a boolean",
+            )
+        )
+    intake_hash = payload.get("contract_intake_hash")
+    batch_hash = payload.get("contract_intake_batch_hash")
+    if not isinstance(intake_hash, str) or not is_sha256_digest(intake_hash):
+        issues.append(
+            _error(
+                EvidenceIntegrityCode.INVALID_HASH,
+                "contract_intake_hash is not a sha256 digest",
+            )
+        )
+    if not isinstance(batch_hash, str) or not is_sha256_digest(batch_hash):
+        issues.append(
+            _error(
+                EvidenceIntegrityCode.INVALID_HASH,
+                "contract_intake_batch_hash is not a sha256 digest",
+            )
+        )
+    inserted = payload.get("contract_intake_inserted_counts")
+    inserted_total = _intake_count_total(
+        inserted, issues, "contract_intake_inserted_counts"
+    )
+    if write_db is False and inserted_total is not None and inserted_total > 0:
+        issues.append(
+            _error(
+                EvidenceIntegrityCode.CONTRACT_INTAKE_WRITE_MISMATCH,
+                "dry-run contract intake must have inserted_counts total 0",
+            )
+        )
+    dirname = _contract_intake_dir_name(payload)
+    target = root / dirname
+    if not target.is_dir():
+        issues.append(
+            _error(
+                EvidenceIntegrityCode.CONTRACT_INTAKE_MISSING,
+                "contract_payload_intake directory is missing",
+            )
+        )
+        return
+    report = verify_contract_payload_intake_artifacts(target)
+    if not report.ok:
+        issues.append(
+            _error(
+                EvidenceIntegrityCode.HASH_MISMATCH,
+                "contract intake artifacts failed verification",
+            )
+        )
+
+
+def _contract_intake_dir_name(payload: Mapping[str, object]) -> str:
+    artifacts = payload.get("contract_intake_artifacts")
+    if isinstance(artifacts, list):
+        for item in artifacts:
+            if not isinstance(item, Mapping):
+                continue
+            raw = item.get("path")
+            if not isinstance(raw, str) or not raw.strip():
+                continue
+            path = raw.strip().replace("\\", "/")
+            if "/" in path:
+                return path.split("/", 1)[0]
+    return DEFAULT_CONTRACT_INTAKE_OUTPUT_DIR_NAME
+
+
+def _intake_count_total(
+    value: object,
+    issues: list[EvidenceIntegrityIssue],
+    field: str,
+) -> int | None:
+    if value is None:
+        return 0
+    if not isinstance(value, Mapping):
+        issues.append(
+            _error(
+                EvidenceIntegrityCode.CONTRACT_INTAKE_WRITE_MISMATCH,
+                f"{field} must be an object",
+            )
+        )
+        return None
+    total = value.get("total")
+    if total is None:
+        return 0
+    if not isinstance(total, int) or isinstance(total, bool) or total < 0:
+        issues.append(
+            _error(
+                EvidenceIntegrityCode.NEGATIVE_REUSE_COUNT,
+                f"{field} total must be a non-negative integer",
+            )
+        )
+        return None
+    return total
 
 
 def _check_fixture_data(

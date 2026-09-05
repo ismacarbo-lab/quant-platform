@@ -11,6 +11,9 @@ from pathlib import Path
 import pytest
 
 from quant_platform.release.evidence_bundle import hash_research_evidence_bundle
+from quant_platform.release.evidence_contract_intake import (
+    run_evidence_contract_payload_intake,
+)
 from quant_platform.release.evidence_integrity import (
     EvidenceIntegrityCode,
     verify_research_evidence_bundle,
@@ -408,7 +411,201 @@ def test_build_script_help_mentions_allow_existing(
     assert exc.value.code == 0
     captured = capsys.readouterr()
     assert "--allow-existing-fixture-data" in captured.out
+    assert "--include-contract-payload-intake" in captured.out
+    assert "--contract-intake-write-db" in captured.out
     _assert_no_secrets(captured.out)
+
+
+def _intake_manifest_fields(**overrides: object) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "contract_intake_included": True,
+        "contract_intake_write_db": False,
+        "contract_intake_hash": _FAKE_HASH,
+        "contract_intake_batch_hash": _FAKE_HASH,
+        "contract_intake_status": "dry_run",
+        "contract_intake_artifact_status": "ok",
+        "contract_intake_db_status": "not_executed",
+        "contract_intake_inserted_counts": {
+            "daily_bars": 0,
+            "corporate_actions": 0,
+            "market_sessions": 0,
+            "total": 0,
+        },
+        "contract_intake_skipped_counts": {
+            "daily_bars": 0,
+            "corporate_actions": 0,
+            "market_sessions": 0,
+            "total": 0,
+        },
+    }
+    payload.update(overrides)
+    return payload
+
+
+def test_request_default_omits_contract_intake(tmp_path: Path) -> None:
+    request = ResearchEvidenceBundleRequest(
+        fixture_dir=tmp_path / "fixtures",
+        output_dir=tmp_path / "bundle",
+    )
+    assert request.include_contract_payload_intake is False
+    assert request.contract_intake_write_db is False
+    payload = _manifest().as_mapping()
+    assert "contract_intake_included" not in payload
+    assert "contract_intake_hash" not in payload
+    blob = json.dumps(payload, sort_keys=True)
+    assert "contract_payload_intake" not in blob
+    _assert_no_secrets(blob)
+
+
+def test_default_bundle_hash_unchanged_without_intake() -> None:
+    left = hash_research_evidence_bundle(_manifest())
+    right = hash_research_evidence_bundle(
+        _manifest(
+            contract_intake_included=None,
+            contract_intake_hash=None,
+            contract_intake_write_db=None,
+        )
+    )
+    assert left == right
+
+
+def test_bundle_hash_changes_when_intake_hash_changes() -> None:
+    left = hash_research_evidence_bundle(_manifest(**_intake_manifest_fields()))
+    right = hash_research_evidence_bundle(
+        _manifest(**_intake_manifest_fields(contract_intake_hash=_OTHER_HASH))
+    )
+    assert left != right
+    assert left.startswith("sha256:")
+
+
+def test_intake_rejects_ambiguous_source(tmp_path: Path) -> None:
+    request = ResearchEvidenceBundleRequest(
+        fixture_dir=tmp_path / "fixtures",
+        output_dir=tmp_path / "bundle",
+        include_contract_payload_intake=True,
+        contract_intake_batch_file=tmp_path / "batch.json",
+        contract_intake_fixture_dir=tmp_path / "fixtures-intake",
+    )
+    with pytest.raises(EvidenceBundleError, match="only one"):
+        run_evidence_contract_payload_intake(request, tmp_path / "bundle")
+    root = tmp_path / "bundle"
+    request = ResearchEvidenceBundleRequest(
+        fixture_dir=tmp_path / "fixtures",
+        output_dir=root,
+        include_contract_payload_intake=True,
+    )
+    outcome = run_evidence_contract_payload_intake(request, root)
+    assert outcome.included is True
+    assert outcome.write_db is False
+    assert outcome.inserted_counts["total"] == 0
+    assert outcome.report.db_executed is False
+    assert outcome.status == "dry_run"
+    intake_dir = root / "contract_payload_intake"
+    assert (intake_dir / "contract_payload_intake_plan.json").is_file()
+    assert (intake_dir / "contract_payload_intake_report.json").is_file()
+    assert (intake_dir / "contract_payload_intake_manifest.json").is_file()
+    blob = json.dumps(outcome.report.as_mapping(), sort_keys=True)
+    _assert_no_secrets(blob)
+    assert "/home/" not in blob
+    assert "pnl" not in blob.lower()
+    assert "returns" not in blob.lower()
+
+
+def test_integrity_accepts_intake_dry_run(tmp_path: Path) -> None:
+    root = tmp_path / "bundle"
+    request = ResearchEvidenceBundleRequest(
+        fixture_dir=tmp_path / "fixtures",
+        output_dir=root,
+        include_contract_payload_intake=True,
+    )
+    outcome = run_evidence_contract_payload_intake(request, root)
+    artifacts = _manifest().artifacts + outcome.artifacts
+    draft = _manifest(
+        artifacts=artifacts,
+        contract_intake_artifacts=outcome.artifacts,
+        **_intake_manifest_fields(
+            contract_intake_hash=outcome.intake_hash,
+            contract_intake_batch_hash=outcome.batch_hash,
+        ),
+    )
+    digest = hash_research_evidence_bundle(draft)
+    _write_payload_bundle(root, replace(draft, bundle_hash=digest))
+    report = verify_research_evidence_bundle(root)
+    assert report.ok is True, report.issues
+
+
+def test_integrity_rejects_intake_without_artifacts(tmp_path: Path) -> None:
+    root = tmp_path / "bundle"
+    draft = _manifest(**_intake_manifest_fields())
+    digest = hash_research_evidence_bundle(draft)
+    _write_payload_bundle(root, replace(draft, bundle_hash=digest))
+    report = verify_research_evidence_bundle(root)
+    assert report.ok is False
+    codes = {item.code for item in report.issues}
+    assert EvidenceIntegrityCode.CONTRACT_INTAKE_MISSING.value in codes
+
+
+def test_integrity_rejects_write_db_false_with_inserts(tmp_path: Path) -> None:
+    root = tmp_path / "bundle"
+    request = ResearchEvidenceBundleRequest(
+        fixture_dir=tmp_path / "fixtures",
+        output_dir=root,
+        include_contract_payload_intake=True,
+    )
+    outcome = run_evidence_contract_payload_intake(request, root)
+    artifacts = _manifest().artifacts + outcome.artifacts
+    draft = _manifest(
+        artifacts=artifacts,
+        contract_intake_artifacts=outcome.artifacts,
+        **_intake_manifest_fields(
+            contract_intake_hash=outcome.intake_hash,
+            contract_intake_batch_hash=outcome.batch_hash,
+            contract_intake_inserted_counts={
+                "daily_bars": 1,
+                "corporate_actions": 0,
+                "market_sessions": 0,
+                "total": 1,
+            },
+        ),
+    )
+    digest = hash_research_evidence_bundle(draft)
+    _write_payload_bundle(root, replace(draft, bundle_hash=digest))
+    report = verify_research_evidence_bundle(root)
+    assert report.ok is False
+    codes = {item.code for item in report.issues}
+    assert EvidenceIntegrityCode.CONTRACT_INTAKE_WRITE_MISMATCH.value in codes
+
+
+def test_evidence_intake_module_has_no_network_or_vendors() -> None:
+    root = Path(__file__).resolve().parents[2]
+    path = root / "src" / "quant_platform" / "release" / "evidence_contract_intake.py"
+    blob = path.read_text(encoding="utf-8").lower()
+    assert "import requests" not in blob
+    assert "import httpx" not in blob
+    assert "import aiohttp" not in blob
+    assert "urllib.request" not in blob
+    assert "polygon" not in blob
+    assert "yfinance" not in blob
+    assert "alpaca" not in blob
+
+
+def test_build_script_rejects_write_db_without_include(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    runner = _load_script("build-research-evidence-bundle.py")
+    code = runner.main(
+        [
+            "--fixture-dir",
+            "/var/unused",
+            "--output-dir",
+            "/var/unused-out",
+            "--contract-intake-write-db",
+        ]
+    )
+    captured = capsys.readouterr()
+    assert code == 1
+    assert "include-contract-payload-intake" in captured.err
+    _assert_no_secrets(captured.err + captured.out)
 
 
 def _write_payload_bundle(root: Path, manifest: ResearchEvidenceBundleManifest) -> None:

@@ -319,11 +319,20 @@ uv run python scripts/build-research-evidence-bundle.py \
   --deterministic-id \
   --allow-existing-fixture-data \
   --json
+uv run python scripts/build-research-evidence-bundle.py \
+  --fixture-dir tests/fixtures/e2e_research_bundle \
+  --output-dir /tmp/research-evidence-bundle \
+  --deterministic-id \
+  --include-contract-payload-intake \
+  --json
 ```
 
 Not in `make quality`. Needs PostgreSQL. `--include-normalized-dataset`
 is opt-in and does not compute returns. `--register-normalized-dataset`
 stores catalog metadata only when that opt-in is also set.
+`--include-contract-payload-intake` is opt-in, dry-run by default, and
+does not call vendors or the internet. `--contract-intake-write-db`
+requires that opt-in and does not rewrite `daily_bars`.
 `--allow-existing-fixture-data` is off by default. Use it only to re-run
 the bundle on a shared database whose existing rows already match the
 fixtures. It verifies OHLCV, times, corporate actions, and sessions

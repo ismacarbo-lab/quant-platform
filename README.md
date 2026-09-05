@@ -165,6 +165,9 @@ It is **not** a trading system.
   regression matrix (hashes and issue codes only; still no vendor HTTP).
 - Export those contract schemas and pin a compatibility baseline
   (still no vendor HTTP, no internet, no returns/PnL).
+- Optionally attach the offline contract-payload intake bridge to a
+  research evidence bundle (`--include-contract-payload-intake`; dry-run
+  unless `--contract-intake-write-db`). Still no vendor HTTP.
 
 ## What is not implemented
 
@@ -172,7 +175,8 @@ It is **not** a trading system.
 - Machine learning or LLM runtime
 - Real backtester (PnL, portfolio, orders); only a NoOp dry-run exists
 - Market-data download or vendor APIs (only an offline contract,
-  conformance reports, and a schema baseline exist)
+  conformance reports, a schema baseline, and an opt-in intake bridge
+  exist)
 - Broker connectivity
 - Paper trading
 - Live trading or order routing
