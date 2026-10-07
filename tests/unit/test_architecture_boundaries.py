@@ -1,4 +1,4 @@
-"""Fail if trading/broker packages or premature AI/runtime deps appear."""
+"""Fail if live-trading/broker packages or AI runtime deps appear."""
 
 from __future__ import annotations
 
@@ -64,26 +64,28 @@ def test_ai_runtime_is_not_detected_in_this_repo() -> None:
     assert findings == ()
 
 
-def test_disabled_capabilities_cover_trading_and_ai() -> None:
+def test_disabled_capabilities_cover_live_trading_and_ai() -> None:
     disabled = set(DISABLED_CAPABILITIES)
     for name in (
-        "paper_trading",
         "live_trading",
-        "brokers",
+        "real_brokers",
+        "real_money",
+        "leverage",
+        "short_selling",
         "ai_runtime",
-        "signals",
-        "strategies",
-        "portfolio",
-        "order_execution",
     ):
         assert name in disabled
+    enabled = set(ENABLED_CAPABILITIES)
+    for name in ("paper_trading_simulated", "strategies", "strategy_backtests"):
+        assert name in enabled
+    assert enabled.isdisjoint(disabled)
 
 
-def test_vendor_agnostic_contracts_enabled_real_vendors_disabled() -> None:
+def test_vendor_agnostic_contracts_stay_offline_inside_contracts_package() -> None:
     assert "vendor_agnostic_data_contracts" in ENABLED_CAPABILITIES
     assert "data_contract_conformance" in ENABLED_CAPABILITIES
     assert "data_contract_schema_baseline" in ENABLED_CAPABILITIES
     assert "contract_payload_intake_offline" in ENABLED_CAPABILITIES
-    assert "external_market_data_vendors" in DISABLED_CAPABILITIES
+    assert "market_data_yfinance" in ENABLED_CAPABILITIES
     assert detect_real_vendor_clients(PACKAGE_ROOT) == ()
     assert detect_contracts_networking(PACKAGE_ROOT) == ()

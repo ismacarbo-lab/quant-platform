@@ -74,11 +74,12 @@ def test_status_report_serializes_without_secrets(
     assert report.evidence_bundle_fixture_reuse_supported is True
     assert report.alembic_head_expected == EXPECTED_ALEMBIC_HEAD
     disabled = set(report.capabilities.disabled)
-    assert "paper_trading" in disabled
     assert "live_trading" in disabled
-    assert "brokers" in disabled
+    assert "real_brokers" in disabled
+    assert "real_money" in disabled
     assert "ai_runtime" in disabled
-    assert "external_market_data_vendors" in disabled
+    assert "paper_trading_simulated" in ENABLED_CAPABILITIES
+    assert "external_market_data_vendors" in ENABLED_CAPABILITIES
     assert "vendor_agnostic_data_contracts" in ENABLED_CAPABILITIES
     assert "data_contract_conformance" in ENABLED_CAPABILITIES
     assert "data_contract_schema_baseline" in ENABLED_CAPABILITIES
@@ -96,19 +97,25 @@ def test_expected_alembic_head_matches_scripts() -> None:
     assert heads == (EXPECTED_ALEMBIC_HEAD,)
 
 
-def test_disabled_capabilities_list_trading_paper_live_brokers_ai() -> None:
+def test_disabled_capabilities_list_live_brokers_real_money_ai() -> None:
     disabled = set(DISABLED_CAPABILITIES)
     for name in (
-        "paper_trading",
         "live_trading",
-        "brokers",
+        "real_brokers",
+        "real_money",
+        "leverage",
+        "short_selling",
         "ai_runtime",
-        "order_execution",
-        "portfolio",
-        "signals",
-        "strategies",
     ):
         assert name in disabled
+    enabled = set(ENABLED_CAPABILITIES)
+    for name in (
+        "paper_trading_simulated",
+        "strategies",
+        "strategy_backtests",
+        "market_data_yfinance",
+    ):
+        assert name in enabled
 
 
 def test_release_check_detects_incorrect_app_mode(
@@ -288,8 +295,8 @@ def test_release_check_detects_data_contract_schema_incompatibility(
 def test_release_check_detects_forbidden_construct(
     research_settings: Settings, tmp_path: Path
 ) -> None:
-    (tmp_path / "strategies").mkdir()
-    (tmp_path / "strategies" / "__init__.py").write_text("", encoding="utf-8")
+    (tmp_path / "live_trading").mkdir()
+    (tmp_path / "live_trading" / "__init__.py").write_text("", encoding="utf-8")
     report = run_research_release_checks(
         settings=research_settings,
         package_root=tmp_path,
@@ -363,9 +370,9 @@ def test_release_check_json_script_has_no_database_url(
     assert status_payload["contract_payload_intake_default"] == "dry_run"
     assert status_payload["vendor_runtime_detected"] is False
     assert status_payload["alembic_head_expected"] == EXPECTED_ALEMBIC_HEAD
-    assert "paper_trading" in status_payload["capabilities"]["disabled"]
+    assert "paper_trading_simulated" in status_payload["capabilities"]["enabled"]
     assert "live_trading" in status_payload["capabilities"]["disabled"]
-    assert "brokers" in status_payload["capabilities"]["disabled"]
+    assert "real_brokers" in status_payload["capabilities"]["disabled"]
     assert "ai_runtime" in status_payload["capabilities"]["disabled"]
 
 

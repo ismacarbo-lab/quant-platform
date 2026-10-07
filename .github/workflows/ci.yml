@@ -27,24 +27,38 @@ jobs:
         run: uv run ruff format --check .
       - name: mypy
         run: uv run mypy src
-      - name: Fast tests (no PostgreSQL)
+      - name: Fast tests (no PostgreSQL, no network)
         run: uv run pytest -m "not postgres"
       - name: Architecture boundary tests
         run: uv run pytest tests/unit/test_architecture_boundaries.py tests/unit/test_config.py tests/integration/test_local_infra.py
       - name: Policy regression matrix
-        env:
-          APP_MODE: research
         run: uv run python scripts/run-policy-regression-matrix.py
       - name: Normalization regression matrix
-        env:
-          APP_MODE: research
         run: uv run python scripts/run-normalization-regression.py
       - name: Research release check (no DB)
-        env:
-          APP_MODE: research
         run: uv run python scripts/research-release-check.py --skip-db --skip-compose --skip-regression
       - name: Docker Compose config
         run: docker compose config
+
+  dashboard:
+    name: dashboard-typecheck-build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dashboard
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Type-check
+        run: npm run typecheck
+      - name: Build
+        run: npm run build
 
   postgres:
     name: postgres-integration
@@ -77,7 +91,7 @@ jobs:
         run: uv sync --frozen
       - name: Apply Alembic migrations
         run: uv run alembic upgrade head
-      - name: PostgreSQL tests
+      - name: PostgreSQL tests (research tooling + paper engine, offline fixtures)
         run: uv run pytest -m postgres
       - name: Database ping
         run: uv run python scripts/check-db.py

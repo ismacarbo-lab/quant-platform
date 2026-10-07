@@ -24,6 +24,7 @@ from quant_platform.data.repository import (
     upsert_instrument,
 )
 from quant_platform.data.validation import DailyBarDraft
+from quant_platform.release.constants import EXPECTED_PUBLIC_TABLES
 from quant_platform.research.snapshot_types import (
     DAILY_BARS_ARTIFACT_NAME,
     MANIFEST_ARTIFACT_NAME,
@@ -35,27 +36,7 @@ from quant_platform.storage.database import list_public_tables
 
 pytestmark = pytest.mark.postgres
 
-_RESEARCH_TABLES = frozenset(
-    {
-        "alembic_version",
-        "corporate_actions",
-        "daily_bars",
-        "data_sources",
-        "exchanges",
-        "ingestion_errors",
-        "ingestion_runs",
-        "instrument_identifiers",
-        "instruments",
-        "market_calendars",
-        "market_sessions",
-        "raw_ingestion_records",
-        "dataset_snapshots",
-        "simulation_replay_runs",
-        "backtest_runs",
-        "backtest_experiments",
-        "normalized_datasets",
-    }
-)
+_RESEARCH_TABLES = EXPECTED_PUBLIC_TABLES
 
 
 def _unique(prefix: str) -> str:

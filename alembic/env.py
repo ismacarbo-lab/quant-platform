@@ -7,8 +7,10 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
+from quant_platform.backtesting import models as _backtesting_models  # noqa: F401
 from quant_platform.core.config import get_settings
 from quant_platform.data import models as _ingestion_models  # noqa: F401
+from quant_platform.paper import models as _paper_models  # noqa: F401
 from quant_platform.storage.database import Base
 
 config = context.config

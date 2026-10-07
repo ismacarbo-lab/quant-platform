@@ -25,7 +25,7 @@ from quant_platform.storage.database import (
 
 NORMALIZATION_STATUS_KIND = "normalization_addon_status"
 EXPECTED_CATALOG_TABLE = "normalized_datasets"
-DIVIDEND_POLICY = "informational only"
+DIVIDEND_POLICY = "informational only (reinvested only in total_return mode)"
 NORMALIZATION_CAPABILITY = "normalized_dataset_catalog"
 
 
@@ -108,7 +108,7 @@ def build_normalization_status(*, check_db: bool = False) -> NormalizationStatus
         settings.is_research_mode
         and capability_enabled
         and table_expected
-        and EXPECTED_ALEMBIC_HEAD == "0010_normalized_dataset_catalog"
+        and EXPECTED_ALEMBIC_HEAD >= "0010_normalized_dataset_catalog"
         and db_ok
     )
     return NormalizationStatusReport(

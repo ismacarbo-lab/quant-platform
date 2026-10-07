@@ -21,10 +21,30 @@ def test_default_mode_is_research() -> None:
     assert settings.app_mode == "research"
 
 
-@pytest.mark.parametrize("mode", ["live", "LIVE", "paper", "production", "trading"])
-def test_non_research_modes_are_rejected(mode: str) -> None:
+@pytest.mark.parametrize("mode", ["live", "LIVE", "production", "trading", "real"])
+def test_live_and_unknown_modes_are_rejected(mode: str) -> None:
     with pytest.raises(ValidationError):
         Settings(_env_file=None, app_mode=mode)
+
+
+@pytest.mark.parametrize("mode", ["paper", "PAPER", " paper "])
+def test_paper_mode_is_accepted_and_allows_research_tooling(mode: str) -> None:
+    settings = Settings(_env_file=None, app_mode=mode)
+    assert settings.app_mode is AppMode.PAPER
+    assert settings.is_paper_mode is True
+    assert settings.is_research_mode is True
+
+
+def test_research_mode_does_not_allow_paper_writes() -> None:
+    settings = Settings(_env_file=None, app_mode="research")
+    assert settings.is_paper_mode is False
+    assert settings.paper_initial_cash > 0
+    assert settings.paper_slippage_bps >= 0
+
+
+def test_negative_paper_amounts_are_rejected() -> None:
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, paper_initial_cash="-1")
 
 
 def test_sqlite_database_url_is_rejected() -> None:

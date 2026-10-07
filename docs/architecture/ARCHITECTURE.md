@@ -102,13 +102,32 @@ flowchart LR
 
 - Risk is a gate, not a helper inside the strategy.
 - Execution and strategy stay decoupled.
-- Paper trading may appear later; **live trading is not enabled** and is
-  not a valid `APP_MODE` in this phase.
+- Paper trading exists since ADR 0005 as a **simulated** path
+  (`quant_platform.paper`: `SimulatedBroker` behind a `BrokerAdapter`
+  seam, fictional cash). **Live trading is not enabled** and is not a
+  valid `APP_MODE`.
 
 ## Application mode
 
-The process starts in **research** mode. Settings reject `live`, `paper`,
-and any other value. There is no broker endpoint configuration.
+`APP_MODE` is `research` (default: data and research tooling only) or
+`paper` (adds the simulated paper engine). Settings reject `live` and any
+other value. There is no broker endpoint configuration.
+
+## Paper-trading pivot (ADR 0005)
+
+New packages on top of the research layer:
+
+- `marketdata/` — Yahoo Finance adapter (the only module importing
+  `yfinance`, lazily) producing `VendorPayloadBatch` objects for the
+  existing contract intake.
+- `strategies/` — long-only target-weight rules over a PIT
+  `StrategyContext`.
+- `backtesting/` — PIT price panel (`total_return` adjusted), daily
+  engine with costs and execution lag, metrics, walk-forward, promotion
+  rule, `strategy_backtests` persistence (`0011`).
+- `paper/` — accounts, orders, fills, positions, equity snapshots
+  (`0012`), daily idempotent engine.
+- `api/routes/` and `dashboard/` — local JSON API and React dashboard.
 
 ## Data architecture
 

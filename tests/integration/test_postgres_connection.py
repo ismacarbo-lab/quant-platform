@@ -7,29 +7,10 @@ from sqlalchemy.engine import Engine
 
 from quant_platform.api.app import create_app
 from quant_platform.core.config import Settings
+from quant_platform.release.constants import EXPECTED_PUBLIC_TABLES
 from quant_platform.storage.database import list_public_tables, ping_database
 
-_ALLOWED_TABLES = frozenset(
-    {
-        "alembic_version",
-        "data_sources",
-        "instruments",
-        "ingestion_runs",
-        "daily_bars",
-        "raw_ingestion_records",
-        "ingestion_errors",
-        "market_calendars",
-        "market_sessions",
-        "instrument_identifiers",
-        "exchanges",
-        "corporate_actions",
-        "dataset_snapshots",
-        "simulation_replay_runs",
-        "backtest_runs",
-        "backtest_experiments",
-        "normalized_datasets",
-    }
-)
+_ALLOWED_TABLES = EXPECTED_PUBLIC_TABLES
 _TRADING_TABLES = frozenset(
     {
         "trades",

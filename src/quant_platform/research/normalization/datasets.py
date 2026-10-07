@@ -10,7 +10,10 @@ from quant_platform.research.datasets import get_daily_bars_dataset
 from quant_platform.research.normalization.corporate_actions import (
     load_visible_corporate_actions,
 )
-from quant_platform.research.normalization.factors import compute_bar_adjustment
+from quant_platform.research.normalization.factors import (
+    compute_bar_adjustment,
+    compute_dividend_price_factors,
+)
 from quant_platform.research.normalization.types import (
     AdjustmentMode,
     CorporateActionFactor,
@@ -78,6 +81,12 @@ def assemble_normalized_dataset(
     issues: list[NormalizationIssue] = []
     applied: dict[str, CorporateActionFactor] = {}
     seen_issue: set[tuple[str, str | None, str | None]] = set()
+    dividend_factors: dict[str, Decimal] = {}
+    if request.adjustment_mode is AdjustmentMode.TOTAL_RETURN:
+        visible_now = tuple(
+            item for item in actions if item.available_time <= request.as_of
+        )
+        dividend_factors = compute_dividend_price_factors(raw_dataset.rows, visible_now)
 
     for bar in raw_dataset.rows:
         price, volume, factors, bar_issues, trace = compute_bar_adjustment(
@@ -85,6 +94,7 @@ def assemble_normalized_dataset(
             actions,
             as_of=request.as_of,
             adjustment_mode=request.adjustment_mode,
+            dividend_price_factors=dividend_factors,
         )
         traces.append(trace)
         for issue in bar_issues:

@@ -103,8 +103,14 @@ uv run alembic upgrade head
 uv run alembic current
 ```
 
-Expected head: `0010_normalized_dataset_catalog`.
-(`v0.1.0-research` was tagged at `0009_backtest_experiments`.)
+Expected head: `0012_paper_trading` (research head
+`0010_normalized_dataset_catalog` plus `0011_strategy_backtests` and
+`0012_paper_trading`; `v0.1.0-research` was tagged at
+`0009_backtest_experiments`).
+
+Real market data, backtests, paper trading and the dashboard:
+[COMMANDS.md](../release/COMMANDS.md#paper-trading-pivot-adr-0005) and
+[PAPER_TRADING.md](../trading/PAPER_TRADING.md).
 
 Load a local CSV (no vendors). Default is collect-errors:
 

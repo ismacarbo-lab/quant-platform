@@ -1,116 +1,81 @@
-# Capability matrix — research freeze
+# Capability matrix
 
-This matrix is the freeze inventory for `quant_platform`. Implemented
-does **not** mean profitable. Disabled and prohibited stay off until a
-later ADR.
+Inventory of what `quant_platform` does after the paper-trading pivot
+([ADR 0005](../adr/0005-paper-trading-pivot.md)). Implemented does
+**not** mean profitable. Disabled and prohibited stay off until a later
+ADR.
 
-Operational Alembic head is `0010_normalized_dataset_catalog`
-(`normalized_datasets` is metadata-only). The freeze tag
-`v0.1.0-research` was cut at `0009_backtest_experiments`.
+Historical research tags (`v0.1.0-research` … `v0.6.0-research-evidence-intake`)
+describe the frozen research layer; that layer is still here and its
+regression matrices still run.
 
 Related: [RESEARCH_HANDOFF.md](RESEARCH_HANDOFF.md),
 [RISK_REGISTER.md](RISK_REGISTER.md),
 [ADR 0003](../adr/0003-research-mode-freeze.md),
 [ADR 0004](../adr/0004-vendor-agnostic-data-source-contract.md),
-[DATA_SOURCE_CONTRACTS.md](../data/DATA_SOURCE_CONTRACTS.md),
-[DATA_CONTRACT_CONFORMANCE.md](../data/DATA_CONTRACT_CONFORMANCE.md),
-[DATA_CONTRACT_SCHEMA_COMPATIBILITY.md](../data/DATA_CONTRACT_SCHEMA_COMPATIBILITY.md),
-[CONTRACT_PAYLOAD_INTAKE.md](../data/CONTRACT_PAYLOAD_INTAKE.md).
+[ADR 0005](../adr/0005-paper-trading-pivot.md),
+[PAPER_TRADING.md](../trading/PAPER_TRADING.md),
+[STRATEGIES_AND_BACKTESTS.md](../trading/STRATEGIES_AND_BACKTESTS.md).
 
-## Implemented
+## Implemented — research layer
 
 | Capability | What it does | What it is not |
 |------------|--------------|----------------|
-| Research mode | `APP_MODE=research` only | Not paper or live |
-| Local CSV ingestion | PIT daily bars into PostgreSQL | Not a vendor download |
+| Modes | `APP_MODE=research` or `APP_MODE=paper` | Not live |
+| Local CSV ingestion | PIT daily bars into PostgreSQL | Not the only data path any more |
 | PIT daily bars | `available_time`, corrections as new rows | Not rewritten history |
 | Bronze / silver | Raw records + canonical bars | Not gold features |
 | Instrument master | Symbol, asset class, exchange, currency | Not a broker account |
 | Calendars / sessions | Manual open, holiday, exceptional_close | Not an exchange feed |
-| Corporate action store | Facts stored; silver OHLCV unchanged | Not a vendor CA feed |
-| CA normalization | Derived split / reverse-split view | Not a strategy; not dividend-adjusted; not performance |
-| Normalization research layer | In-memory golden matrix + opt-in evidence artifacts | Not returns, PnL, or a walk-forward |
-| Normalized dataset catalog | PostgreSQL metadata table `normalized_datasets` (metadata-only) | Not normalized bars in the DB; not returns |
-| Dataset API | `as_of` required | Not a trading book |
-| Dataset quality | Coverage, calendar, PIT, ingest notes | Not a score of edge |
-| Snapshots | Local hashed CSV + quality + manifest | Not cloud object storage |
-| Snapshot catalog | PostgreSQL metadata | Not event rows in the DB |
-| Snapshot integrity | Read-only hash / path checks | Not a repair tool |
-| Replay | Ordered market events | Not a strategy engine |
-| Replay audit / registry | Stream hash, catalog row | Not PnL |
-| Replay readiness | Gate for dry-run | Not a go-live |
-| Dry-run backtest | Registered `ResearchPolicy` observer | Not orders or fills |
-| Data-quality policies | `data_quality`, `coverage`, CA/correction audit | Not signals |
-| Policy output integrity | Hashes and observation reports | Not returns |
-| Experiments | Group dry-runs | Not a portfolio |
-| Experiment usability | Intact evidence gate | Not profitability |
-| Policy regression matrix | Golden hashes | Not a walk-forward |
-| Release checks / status | Guardrails, Alembic pin | Not a trading launch |
-| Evidence bundle | Fixture → release local pack; opt-in intake is dry-run unless `--contract-intake-write-db` | Not a performance report; not a vendor client |
-| Health endpoint | `GET /health` | Not a data or trade API |
-| Vendor-agnostic data contracts | Offline payload types, validation, hash, fake provider | Not a vendor download; not credentials; not internet |
-| Data-contract conformance | Offline reports, relative artifacts, golden regression | Not a vendor client; not returns/PnL; not trading |
-| Data-contract schema baseline | Offline JSON schema export and compatibility compare | Not a vendor adapter; not internet; not returns/PnL |
-| Contract-payload intake (offline) | Dry-run plan from a synthetic/fixture batch; optional `--write-db` through existing PIT ingest; opt-in evidence-bundle step | Not a vendor download; not silent DB writes; not returns/PnL; not trading |
+| Corporate action store | Facts stored; silver OHLCV unchanged | Not applied in place |
+| CA normalization | Derived split / reverse-split / total-return views | Not stored bars |
+| Normalized dataset catalog | PostgreSQL metadata table `normalized_datasets` | Not normalized bars in the DB |
+| Dataset API / quality / snapshots | `as_of` required; hashed CSV snapshots | Not cloud storage |
+| Replay / dry-run backtest / policies | Research observers with golden hashes | Not the strategy engine |
+| Evidence bundle | Fixture → release local pack; opt-in intake | Not a performance report |
+| Vendor-agnostic data contracts | Payload types, validation, hash, fake provider | Not credentials |
+| Contract-payload intake | Plan + optional `--write-db` through PIT ingest | Not silent writes |
+| Health endpoint | `GET /health` | — |
+
+## Implemented — trading layer (paper, fictional money)
+
+| Capability | What it does | What it is not |
+|------------|--------------|----------------|
+| Market data (yfinance) | Downloads daily bars, dividends, splits into the PIT store through contract intake | Not intraday; not a paid vendor; no API key |
+| Universe | Liquid US ETFs across asset classes (+ optional BTC-USD) | Not single-stock picking |
+| Strategies | Trend, dual momentum, relative momentum top-N, inverse volatility, benchmarks | Not signals from AI |
+| Strategy backtests | Vectorized, costs in bps, metrics, walk-forward IS/OOS | Not a guarantee of future returns |
+| Portfolio / PnL / returns metrics | CAGR, vol, Sharpe, Sortino, max drawdown, Calmar, turnover | Not real money |
+| Paper trading (simulated) | Daily run → target weights → orders → fills at next open with slippage; persisted account | Not a real broker |
+| Dashboard API / UI | `/api/*` JSON + local React dashboard | Not exposed to the internet |
 
 ## Intentionally disabled
 
-These names exist as **disabled** capabilities in release status. They
-are not implemented.
+These names exist as **disabled** capabilities in release status:
 
-- paper trading
 - live trading
-- brokers
-- order execution
-- portfolio
-- positions
-- PnL
-- returns
-- signals
-- strategies
-- fills
-- trades
+- real brokers
+- real money
+- leverage
+- short selling
+- intraday trading
 - AI runtime (OpenAI, Anthropic, LangChain, RAG)
-- external market-data vendors
 - SQLite fallback
 - cloud object storage
 
-`APP_MODE=paper` and `APP_MODE=live` fail settings validation.
+`APP_MODE=live` fails settings validation.
 
-## Explicitly prohibited (this freeze)
+## Explicitly prohibited (this phase)
 
-Do not add without a new ADR and a later phase spec:
+Do not add without a new ADR:
 
-- strategy / signal / alpha models
-- buy / sell / hold or target weights
-- orders, fills, trades, execution, brokers
-- paper trading or live trading
-- portfolio, positions, cash, PnL, returns
-- drawdown, Sharpe, hit ratio, exposure as product metrics
-- risk engine or optimizer
-- ML training/inference runtime
-- OpenAI, Anthropic, LangChain, RAG, Cursor SDK as app runtime
-- external finance vendors or automatic data downloads
-- HTTP routes beyond `GET /health`
+- live orders, real brokers, real money, broker credentials
+- leverage, margin, short selling, options, futures, intraday
+- ML / AI as a trading brain; OpenAI, Anthropic, LangChain, RAG runtime
+- silent mutation of silver `daily_bars`
+- SQLite substitute for PostgreSQL
 - S3 / GCS / Azure object storage
-- dynamic external policy plugins
 - mixing this repo with `AI_VENTURE_OS_PROMPTS/`
 
-## Future candidates
-
-Only after an explicit ADR. Still research-first unless that ADR says
-otherwise:
-
-1. A real vendor **adapter behind this contract** (PIT, raw capture,
-   hashed idempotence, secrets out of repo). Not a silent internet
-   call from tests.
-2. Richer **local** datasets (still no vendor client until that adapter
-   ADR).
-3. Dividend or FX restatement as another **derived** view (still not a
-   strategy).
-4. A strategy **interface** with no brokers, no orders, and no PnL
-   until those layers exist.
-5. Optional, default-off research assistant (see
-   [ADR 0002](../adr/0002-ai-usage-boundary.md)) — never a trading brain.
-
-Do not skip from this freeze to paper or live.
+Strategy, signal, portfolio, PnL and order concepts are now part of the
+simulated paper layer only. Nothing sends an order to a real broker.

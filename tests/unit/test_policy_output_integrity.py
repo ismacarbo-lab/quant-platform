@@ -467,9 +467,18 @@ def test_no_trading_modules() -> None:
     assert names.isdisjoint(FORBIDDEN_TABLE_NAMES)
     assert names.isdisjoint({"portfolio", "positions", "orders", "fills"})
     root = Path(__file__).resolve().parents[2] / "src" / "quant_platform"
-    forbidden = {"strategy", "signal", "order", "portfolio", "broker"}
-    found = {path.stem for path in root.rglob("*.py") if path.stem in forbidden}
+    # Research dry-run packages must not grow trading modules; the simulated
+    # paper layer lives in its own packages (ADR 0005).
+    research_roots = ("backtest", "simulation", "research", "data", "release")
+    forbidden = {"strategy", "signal", "order", "portfolio", "broker", "live"}
+    found = {
+        path.stem
+        for package in research_roots
+        for path in (root / package).rglob("*.py")
+        if path.stem in forbidden
+    }
     assert found == set()
+    assert not (root / "live").exists()
 
 
 def test_policy_output_scripts_parse_args() -> None:

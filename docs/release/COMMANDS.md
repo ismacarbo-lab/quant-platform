@@ -1,4 +1,4 @@
-# Canonical commands — research freeze
+# Canonical commands
 
 Working directory: `/home/isma/invest`.
 
@@ -9,6 +9,7 @@ placeholders only).
 Full narrative: [DEVELOPER_WORKFLOW.md](../development/DEVELOPER_WORKFLOW.md).
 Handoff: [RESEARCH_HANDOFF.md](RESEARCH_HANDOFF.md).
 Minimal path: [MINIMAL_REPRODUCIBLE_EXAMPLE.md](MINIMAL_REPRODUCIBLE_EXAMPLE.md).
+Paper trading: [PAPER_TRADING.md](../trading/PAPER_TRADING.md).
 
 ## Setup
 
@@ -18,7 +19,25 @@ uv sync
 cp .env.example .env
 ```
 
-`APP_MODE` must remain `research`.
+`APP_MODE` is `research` (default) or `paper`. `live` is rejected.
+
+## Paper-trading pivot (ADR 0005)
+
+```bash
+make fetch-data                      # Yahoo Finance -> PIT store (incremental)
+uv run python scripts/fetch-market-data.py --symbols SPY TLT --dry-run
+make backtest-all                    # all strategies, costs + walk-forward
+uv run python scripts/run-strategy-backtest.py --strategy trend_following --no-store
+make paper-replay FROM=2024-01-02    # simulated track record (APP_MODE=paper)
+make paper-run                       # daily: fetch + run engine (APP_MODE=paper)
+make dashboard-install
+make dashboard-build
+make app                             # API + dashboard on http://127.0.0.1:8000
+make dashboard-dev                   # Vite dev server on 127.0.0.1:5173
+make dashboard-typecheck
+```
+
+Fictional money only. No live mode, no real broker.
 
 ## Quality (no PostgreSQL required)
 
@@ -48,8 +67,10 @@ uv run alembic current
 uv run alembic upgrade head
 ```
 
-Expected head: `0010_normalized_dataset_catalog`.
-(`v0.1.0-research` was tagged at `0009_backtest_experiments`.)
+Expected head: `0012_paper_trading` (`0011_strategy_backtests` and
+`0012_paper_trading` follow the research head
+`0010_normalized_dataset_catalog`; `v0.1.0-research` was tagged at
+`0009_backtest_experiments`).
 
 ## Load sample data
 

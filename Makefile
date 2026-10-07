@@ -1,4 +1,4 @@
-.PHONY: lint format format-check typecheck test test-fast test-postgres check-db migrate compose-config quality policy-regression normalization-regression data-contract-conformance data-contract-conformance-regression data-contract-schema-export data-contract-schema-compatibility contract-payload-intake contract-payload-intake-regression architecture-check research-release-check research-status research-evidence-bundle verify-research-evidence-bundle normalization-status
+.PHONY: lint format format-check typecheck test test-fast test-postgres check-db migrate compose-config quality policy-regression normalization-regression data-contract-conformance data-contract-conformance-regression data-contract-schema-export data-contract-schema-compatibility contract-payload-intake contract-payload-intake-regression architecture-check research-release-check research-status research-evidence-bundle verify-research-evidence-bundle normalization-status fetch-data backtest-all paper-run paper-replay dashboard-install dashboard-typecheck dashboard-build dashboard-dev app
 
 lint:
 	uv run ruff check .
@@ -75,5 +75,41 @@ research-evidence-bundle:
 verify-research-evidence-bundle:
 	uv run python scripts/verify-research-evidence-bundle.py \
 		--bundle-dir /tmp/research-evidence-bundle
+
+# --- Paper-trading pivot (ADR 0005) -----------------------------------------
+
+# Download real daily data (Yahoo Finance) into the PIT store. Incremental.
+fetch-data:
+	uv run python scripts/fetch-market-data.py --include-crypto
+
+# Backtest every registered strategy with costs + walk-forward and rank them.
+backtest-all:
+	uv run python scripts/run-strategy-backtest.py
+
+# Daily paper run (fictional money). Requires APP_MODE=paper.
+paper-run:
+	APP_MODE=paper uv run python scripts/paper-run.py --fetch
+
+# Build a simulated track record from a past date (replayed sessions).
+# Usage: make paper-replay FROM=2024-01-02
+paper-replay:
+	APP_MODE=paper uv run python scripts/paper-run.py --replay-from $(FROM)
+
+dashboard-install:
+	cd dashboard && npm install --no-audit --no-fund
+
+dashboard-typecheck:
+	cd dashboard && npm run typecheck
+
+dashboard-build:
+	cd dashboard && npm run build
+
+# Vite dev server with API proxy (run `make app` in another terminal).
+dashboard-dev:
+	cd dashboard && npm run dev
+
+# API + built dashboard on http://127.0.0.1:8000 (paper mode).
+app:
+	APP_MODE=paper uv run uvicorn quant_platform.api.app:app --host 127.0.0.1 --port 8000
 
 quality: lint format-check typecheck test-fast compose-config

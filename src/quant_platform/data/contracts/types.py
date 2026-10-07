@@ -1,4 +1,10 @@
-"""Vendor-agnostic payload types. No real vendor clients and no network."""
+"""Vendor-agnostic payload types.
+
+The contracts package itself never opens a network connection. Since ADR
+0005 a ``vendor_api`` source kind exists so the separate
+``quant_platform.marketdata`` adapter can hand real captured payloads to the
+same intake path. Brokers and paid vendors stay forbidden identities.
+"""
 
 from __future__ import annotations
 
@@ -24,12 +30,11 @@ FORBIDDEN_VENDOR_IDENTITY_NAMES = frozenset(
         "polygon",
         "refinitiv",
         "tiingo",
-        "yahoo",
-        "yfinance",
     }
 )
 
-ALLOWED_SOURCE_KINDS = frozenset({"offline_fixture", "local_csv"})
+ALLOWED_SOURCE_KINDS = frozenset({"offline_fixture", "local_csv", "vendor_api"})
+NETWORK_SOURCE_KINDS = frozenset({"vendor_api"})
 ALLOWED_ACTION_TYPES = frozenset(
     {"split", "reverse_split", "dividend", "symbol_change", "delisting"}
 )
@@ -48,14 +53,16 @@ class DataVendorCapability(StrEnum):
 class DataSourceKind(StrEnum):
     OFFLINE_FIXTURE = "offline_fixture"
     LOCAL_CSV = "local_csv"
+    VENDOR_API = "vendor_api"
 
 
 @dataclass(frozen=True, slots=True)
 class DataSourceContract:
-    """Identity and capability flags for a future data source adapter.
+    """Identity and capability flags for a data source adapter.
 
-    ``requires_network`` and ``requires_credentials`` stay false until a
-    later ADR implements a real adapter. This object is not a client.
+    ``requires_network`` may only be true for ``vendor_api`` sources.
+    ``requires_credentials`` stays false: no API keys live in this repo.
+    This object is not a client.
     """
 
     source_name: str

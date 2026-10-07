@@ -39,16 +39,16 @@ def test_freeze_and_handoff_docs_exist() -> None:
     assert "research-mode freeze" in _ADR.read_text(encoding="utf-8").lower()
 
 
-def test_readme_is_research_only_and_not_trading() -> None:
+def test_readme_states_paper_only_and_no_live_trading() -> None:
     raw = _README.read_text(encoding="utf-8").lower().replace("*", " ")
     text = " ".join(raw.split())
-    assert "research-only" in text
-    assert "not a trading system" in text
+    assert "paper trading" in text
+    assert "live trading" in text
+    assert "no real money" in text or "dinero real" in text
     assert "docs/release/research_handoff.md" in text
     assert "docs/release/research_evidence_bundle.md" in text
     assert "docs/release/capability_matrix.md" in text
-    assert "paper trading" in text
-    assert "live trading" in text
+    assert "docs/adr/0005-paper-trading-pivot.md" in text
 
 
 def test_capability_matrix_lists_prohibited_capabilities() -> None:
@@ -64,9 +64,11 @@ def test_capability_matrix_lists_prohibited_capabilities() -> None:
         "live",
         "vendor",
         "ai runtime",
+        "real money",
     ):
         assert needle in text
     assert "explicitly prohibited" in text
+    assert "adr 0005" in text
 
 
 def test_command_docs_do_not_contain_database_url() -> None:
@@ -139,10 +141,10 @@ def test_release_status_json_includes_freeze_fields(
     assert payload["alembic_head_expected"] == EXPECTED_ALEMBIC_HEAD
     disabled = payload["capabilities"]["disabled"]
     assert isinstance(disabled, list)
-    assert "paper_trading" in disabled
     assert "live_trading" in disabled
-    assert "brokers" in disabled
+    assert "real_brokers" in disabled
     assert "ai_runtime" in disabled
+    assert "paper_trading_simulated" in payload["capabilities"]["enabled"]
     assert evidence_bundle_available(_ROOT) is True
     assert (
         final_freeze_ready(

@@ -26,9 +26,16 @@ Phase 4.5 does not add a revision.
 Phase 6.2 revision `0010_normalized_dataset_catalog` adds
 `normalized_datasets` (derived-dataset catalog metadata only; not
 normalized bars, orders, or PnL).
-Current operational head: `0010_normalized_dataset_catalog`.
+Research head: `0010_normalized_dataset_catalog`.
 The freeze tag `v0.1.0-research` was tagged at `0009_backtest_experiments`.
-None of these revisions create orders, trades, or broker tables.
+None of the research revisions create orders, trades, or broker tables.
+
+ADR 0005 (paper-trading pivot) adds `0011_strategy_backtests`
+(`strategy_backtests`: backtest config, metrics, equity curve, promotion
+verdict) and `0012_paper_trading` (`paper_accounts`, `paper_runs`,
+`paper_orders`, `paper_fills`, `paper_positions`,
+`paper_equity_snapshots`; fictional cash, simulated fills, no real
+broker). Current operational head: `0012_paper_trading`.
 
 ```bash
 docker compose up -d postgres

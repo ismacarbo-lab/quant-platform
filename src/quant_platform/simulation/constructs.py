@@ -1,6 +1,8 @@
-"""Detect trading constructs that must not exist before backtesting.
+"""Detect live-trading constructs that must not exist in this repository.
 
-This is a research guardrail, not a strategy or broker adapter.
+This is a guardrail, not a strategy or broker adapter. Since ADR 0005 the
+simulated paper-trading layer (``strategies``, ``backtesting``, ``paper``)
+is allowed; live execution packages and un-namespaced live tables are not.
 """
 
 from __future__ import annotations
@@ -16,15 +18,8 @@ from quant_platform.simulation.readiness_types import (
 
 FORBIDDEN_PACKAGE_NAMES = frozenset(
     {
-        "backtesting",
-        "broker",
-        "brokers",
-        "execution",
-        "orders",
-        "portfolio",
-        "signals",
-        "strategies",
-        "strategy",
+        "live",
+        "live_trading",
     }
 )
 FORBIDDEN_TABLE_NAMES = frozenset(
@@ -95,7 +90,9 @@ def _quant_platform_root() -> Path:
 
 
 def _metadata_table_names() -> tuple[str, ...]:
+    from quant_platform.backtesting import models as _backtest_models  # noqa: F401
     from quant_platform.data import models as _models  # noqa: F401
+    from quant_platform.paper import models as _paper_models  # noqa: F401
     from quant_platform.storage.database import Base
 
     return tuple(sorted(Base.metadata.tables))

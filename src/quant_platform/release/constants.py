@@ -1,8 +1,8 @@
-"""Research release-candidate constants. Not a trading or AI runtime."""
+"""Release-candidate constants. Research + simulated paper trading; no live."""
 
 from __future__ import annotations
 
-EXPECTED_ALEMBIC_HEAD = "0010_normalized_dataset_catalog"
+EXPECTED_ALEMBIC_HEAD = "0012_paper_trading"
 
 RELEASE_STATUS_KIND = "research_release_status"
 RELEASE_STATUS_FORMAT_VERSION = 5
@@ -51,49 +51,40 @@ ENABLED_CAPABILITIES: tuple[str, ...] = (
     "data_contract_schema_baseline",
     "contract_payload_intake_offline",
     "health_endpoint",
+    # ADR 0005: paper-trading pivot (fictional money, simulated fills).
+    "external_market_data_vendors",
+    "market_data_yfinance",
+    "total_return_normalization",
+    "strategies",
+    "strategy_backtests",
+    "walk_forward_validation",
+    "portfolio_simulation",
+    "pnl_and_returns_metrics",
+    "paper_trading_simulated",
+    "dashboard_api",
 )
 
 DISABLED_CAPABILITIES: tuple[str, ...] = (
-    "paper_trading",
     "live_trading",
-    "brokers",
-    "order_execution",
-    "portfolio",
-    "positions",
-    "pnl",
-    "returns",
-    "signals",
-    "strategies",
-    "fills",
-    "trades",
+    "real_brokers",
+    "real_money",
+    "leverage",
+    "short_selling",
+    "intraday_trading",
     "ai_runtime",
     "openai",
     "anthropic",
     "langchain",
     "rag",
-    "external_market_data_vendors",
     "sqlite_fallback",
     "cloud_object_storage",
 )
 
 FORBIDDEN_RUNTIME_PACKAGES: tuple[str, ...] = (
-    "broker",
-    "brokers",
-    "execution",
-    "fills",
     "live",
+    "live_trading",
     "llm",
-    "orders",
-    "paper",
-    "portfolio",
-    "positions",
     "rag",
-    "signal",
-    "signals",
-    "strategies",
-    "strategy",
-    "trades",
-    "trading",
 )
 
 FORBIDDEN_DEPENDENCY_NAMES = frozenset(
@@ -118,7 +109,6 @@ FORBIDDEN_DEPENDENCY_NAMES = frozenset(
         "polygon",
         "tiingo",
         "transformers",
-        "yfinance",
     }
 )
 
@@ -139,8 +129,15 @@ EXPECTED_PUBLIC_TABLES = frozenset(
         "market_calendars",
         "market_sessions",
         "normalized_datasets",
+        "paper_accounts",
+        "paper_equity_snapshots",
+        "paper_fills",
+        "paper_orders",
+        "paper_positions",
+        "paper_runs",
         "raw_ingestion_records",
         "simulation_replay_runs",
+        "strategy_backtests",
     }
 )
 
@@ -154,4 +151,8 @@ SMOKE_IMPORT_MODULES: tuple[str, ...] = (
     "quant_platform.research.normalization",
     "quant_platform.data.contracts",
     "quant_platform.storage.database",
+    "quant_platform.marketdata",
+    "quant_platform.strategies",
+    "quant_platform.backtesting",
+    "quant_platform.paper",
 )

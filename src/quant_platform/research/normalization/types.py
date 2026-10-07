@@ -28,6 +28,9 @@ class AdjustmentMode(StrEnum):
     SPLIT_ONLY = "split_only"
     SPLIT_AND_REVERSE_SPLIT = "split_and_reverse_split"
     INFORMATIONAL = "informational"
+    # Splits, reverse splits and cash dividends reinvested on the ex-date
+    # (ADR 0005). Derived view only; silver bars stay unadjusted.
+    TOTAL_RETURN = "total_return"
 
 
 DEFAULT_ADJUSTMENT_MODE = AdjustmentMode.SPLIT_ONLY

@@ -1,62 +1,118 @@
 # quant_platform
 
-**Research-only** quantitative platform. Research mode was frozen at
-`v0.1.0-research` on Alembic `0009_backtest_experiments`. Later
-research-only work added a metadata-only catalog of derived normalized
-datasets (`0010_normalized_dataset_catalog`; silver `daily_bars`
-unchanged) and an **offline vendor-agnostic data source contract** (no
-real vendor, no internet, no credentials). Evidence-bundle re-runs on a
-shared database can opt into verified fixture reuse; they do not delete
-or rewrite silver bars. It is
-**not** a trading system: no strategies,
-signals, orders, fills, portfolio, PnL, returns, brokers, paper trading,
-live trading, or AI runtime.
+Quantitative platform with a point-in-time market data store, research
+tooling, strategy backtests and **paper trading** with fictional money.
+Real market data comes from Yahoo Finance (`yfinance`, free, no account).
+There is **no real money** and **no live trading**: `APP_MODE=live` is
+rejected, no broker SDK is installed, and no credentials live in the repo.
+Pivot decision: [docs/adr/0005-paper-trading-pivot.md](docs/adr/0005-paper-trading-pivot.md).
+
+The research layer frozen at `v0.1.0-research` … `v0.6.0-research-evidence-intake`
+(PIT daily bars, bronze/silver, corporate actions, normalization, evidence
+bundles, vendor-agnostic contracts) is still here and its regression
+matrices still run.
 
 Handoff: [docs/release/RESEARCH_HANDOFF.md](docs/release/RESEARCH_HANDOFF.md).
 Evidence bundle: [docs/release/RESEARCH_EVIDENCE_BUNDLE.md](docs/release/RESEARCH_EVIDENCE_BUNDLE.md).
 Capabilities: [docs/release/CAPABILITY_MATRIX.md](docs/release/CAPABILITY_MATRIX.md).
-Freeze ADR: [docs/adr/0003-research-mode-freeze.md](docs/adr/0003-research-mode-freeze.md).
-Vendor-agnostic data contracts:
-[docs/adr/0004-vendor-agnostic-data-source-contract.md](docs/adr/0004-vendor-agnostic-data-source-contract.md),
-[docs/data/DATA_SOURCE_CONTRACTS.md](docs/data/DATA_SOURCE_CONTRACTS.md),
-[docs/data/DATA_CONTRACT_CONFORMANCE.md](docs/data/DATA_CONTRACT_CONFORMANCE.md),
-[docs/data/DATA_CONTRACT_SCHEMA_COMPATIBILITY.md](docs/data/DATA_CONTRACT_SCHEMA_COMPATIBILITY.md),
-[docs/data/CONTRACT_PAYLOAD_INTAKE.md](docs/data/CONTRACT_PAYLOAD_INTAKE.md).
+Paper trading: [docs/trading/PAPER_TRADING.md](docs/trading/PAPER_TRADING.md).
+Strategies and backtests: [docs/trading/STRATEGIES_AND_BACKTESTS.md](docs/trading/STRATEGIES_AND_BACKTESTS.md).
+Market data: [docs/trading/MARKET_DATA.md](docs/trading/MARKET_DATA.md).
 
-`APP_MODE` accepts only `research`. `paper` and `live` fail validation.
-The only HTTP route is `GET /health`.
+## Honest expectation
+
+Nothing here is "always profitable" or "safe money". The strategies were
+chosen because they have decades of academic evidence (trend, momentum,
+volatility targeting), not because they guarantee anything. Backtests
+charge commission and slippage, separate in-sample from out-of-sample
+(walk-forward), and always show the benchmark next to the strategy. If
+paper trading does not beat buy-and-hold, the dashboard says so.
+
+## Quickstart (paper trading + dashboard)
+
+```bash
+uv python install 3.13
+uv sync
+cp .env.example .env            # fictional local values, gitignored
+docker compose up -d postgres   # local PostgreSQL on 127.0.0.1:5434
+uv run alembic upgrade head     # head: 0012_paper_trading
+
+make fetch-data                 # Yahoo Finance -> PIT store (~4 min first time)
+make backtest-all               # all strategies, costs + walk-forward (~4 min)
+make paper-replay FROM=2024-01-02   # simulated track record from that date
+make dashboard-install && make dashboard-build
+make app                        # http://127.0.0.1:8000  (APP_MODE=paper)
+```
+
+Then, once per trading day after the US close (cron example in
+`scripts/paper-run.py`):
+
+```bash
+make paper-run                  # fetch latest data + run the paper engine
+```
+
+Development: `make dashboard-dev` (Vite on `127.0.0.1:5173`, proxies to
+the API on 8000).
+
+## What it does
+
+- **Market data** (`quant_platform.marketdata`): downloads daily bars and
+  dividends for a diversified ETF universe (SPY, QQQ, IWM, EFA, EEM, VNQ,
+  TLT, IEF, GLD, DBC, BIL, optional BTC-USD) and writes them through the
+  existing contract-payload intake: bronze raw capture, PIT
+  `available_time`, idempotent silver inserts, vendor restatements stored
+  as corrections. Incremental by default.
+- **Strategies** (`quant_platform.strategies`): long-only target weights
+  from prices visible at `as_of` only: trend following (SMA), dual
+  momentum, relative momentum top-N, inverse volatility with a vol
+  target, plus buy-and-hold SPY and 60/40 benchmarks.
+- **Backtests** (`quant_platform.backtesting`): daily simulation with a
+  one-session execution lag, commission + slippage in bps, drift between
+  rebalances, metrics (CAGR, vol, Sharpe, Sortino, max drawdown, Calmar,
+  turnover), anchored walk-forward validation and a promotion rule.
+  Results persist in `strategy_backtests`.
+- **Paper trading** (`quant_platform.paper`): one simulated account per
+  strategy (100,000 fictional USD). Each daily run fills yesterday's
+  orders at today's open with slippage, credits dividends, marks to
+  market, and queues the next rebalance. Idempotent per session; replays
+  are flagged. A `BrokerAdapter` seam exists; only `SimulatedBroker` is
+  implemented.
+- **Dashboard** (`dashboard/`, React + Vite): overview, strategies,
+  backtest detail (equity, drawdown, monthly heatmap, walk-forward),
+  paper accounts (positions, orders, fills), market candlesticks and
+  data coverage. Served by FastAPI at `/`, JSON API under `/api`.
+- **Research layer** (unchanged): PIT datasets, quality, snapshots,
+  replay, dry-run research policies, evidence bundles, normalization
+  (now with a `total_return` mode), vendor-agnostic contracts.
+
+## Boundaries
+
+Enabled: research tooling, yfinance market data, strategies, strategy
+backtests with PnL/returns metrics, simulated paper trading, dashboard.
+
+Disabled and rejected: live trading, real brokers, real money, leverage,
+short selling, intraday, AI runtime, SQLite, cloud object storage.
+`APP_MODE=live` fails settings validation.
+
+Full matrix: [docs/release/CAPABILITY_MATRIX.md](docs/release/CAPABILITY_MATRIX.md).
+Risks: [docs/release/RISK_REGISTER.md](docs/release/RISK_REGISTER.md).
 
 A pre-existing tree named `AI_VENTURE_OS_PROMPTS/` may sit next to this
 project. It is a separate product and is **not** part of `quant_platform`.
 Do not mix the two.
 
-## Quickstart
+## Modes
+
+- `APP_MODE=research` (default in `.env.example`): data and research
+  tooling; paper endpoints are read-only.
+- `APP_MODE=paper`: adds the simulated paper engine. `make app`,
+  `make paper-run` and `make paper-replay` set it explicitly.
+- `APP_MODE=live`: not implemented, rejected.
+
+## Quality gates
 
 ```bash
-uv python install 3.13
-uv sync
-cp .env.example .env
-make quality
-```
-
-With local PostgreSQL:
-
-```bash
-docker compose up -d postgres
-uv run alembic upgrade head
-uv run python scripts/check-db.py
-uv run pytest -m postgres
-```
-
-Minimal evidence pack (fixtures only, no vendors):
-[docs/release/MINIMAL_REPRODUCIBLE_EXAMPLE.md](docs/release/MINIMAL_REPRODUCIBLE_EXAMPLE.md).
-
-Canonical commands: [docs/release/COMMANDS.md](docs/release/COMMANDS.md).
-
-## Final release checks
-
-```bash
-make quality
+make quality                 # ruff, format, mypy, fast tests, compose config
 make policy-regression
 make normalization-regression
 make data-contract-conformance-regression
@@ -64,338 +120,81 @@ make data-contract-schema-compatibility
 make contract-payload-intake-regression
 make research-release-check
 make research-status
+make dashboard-typecheck
 ```
 
-Optional with PostgreSQL: `uv run pytest -m postgres`, then
-`make research-evidence-bundle` and `make verify-research-evidence-bundle`.
-On a shared local database whose fixtures are already loaded, add
-`--allow-existing-fixture-data` (off by default; verifies existing rows
-first; does not rewrite `daily_bars`).
+With PostgreSQL: `uv run pytest -m postgres`. CI runs the Python fast
+path, the dashboard type-check/build and a Postgres job. Tests never hit
+the network: the market data adapter is exercised with recorded fixtures.
 
-Manual list: [docs/release/FINAL_RESEARCH_CHECKLIST.md](docs/release/FINAL_RESEARCH_CHECKLIST.md).
+## Tests
 
-Green checks mean the **research** pipeline is intact. They do **not**
-mean profitability or a license to trade.
+```bash
+uv run pytest -m "not postgres"   # fast, offline
+uv run pytest                     # all (Postgres tests skip if DB is down)
+uv run pytest -m postgres
+```
 
-## Boundaries
+## PostgreSQL (local development)
 
-Implemented: local PIT ingestion, datasets, quality, snapshots, replay,
-dry-run research policies, experiments, release checks, evidence bundle
-(with optional verified fixture reuse on a shared database),
-derived split normalization (silver unchanged), a normalization
-regression matrix, a metadata-only normalized-dataset catalog, an
-offline vendor-agnostic data source contract (no real vendor client),
-offline data-contract conformance reports, an offline contract
-schema compatibility baseline, and an offline contract-payload intake
-bridge (dry-run by default; `--write-db` is explicit).
+Host **5432** is used on this machine by another container and **5433**
+by `postgres_db`, so this project maps PostgreSQL to **`127.0.0.1:5434`**.
 
-Prohibited: strategy, signal, portfolio, PnL, orders, brokers,
-paper/live, external vendors, AI runtime.
+```bash
+docker compose up -d postgres
+docker compose ps
+uv run python scripts/check-db.py
+```
 
-Full matrix: [docs/release/CAPABILITY_MATRIX.md](docs/release/CAPABILITY_MATRIX.md).
-Risks: [docs/release/RISK_REGISTER.md](docs/release/RISK_REGISTER.md).
+Default credentials in Compose and `.env.example` are fictional local
+placeholders. Alembic revisions `0001_ingestion` … `0010_normalized_dataset_catalog`
+create the research tables; `0011_strategy_backtests` and
+`0012_paper_trading` add backtest results and the `paper_*` tables.
+Silver `daily_bars` are never rewritten by any layer.
 
-## What this repo contains
+## API
 
-This repository provides a **research-only** software base: typed
-configuration, UTC clocks, structured logging, PostgreSQL, Alembic, an
-internal health API, **local CSV daily-bar ingestion** with point-in-time
-timestamps, bronze/silver, instrument master, calendars, stored
-corporate actions (silver unadjusted; optional derived split view),
-dataset API, quality reports, snapshots, catalog, replay, dry-run
-backtest (`ResearchPolicy` observers, no orders), experiments, policy
-regression, release checks, a local **research evidence bundle**, and
-Phase 6.0 corporate-action normalization artifacts, a Phase 6.1
-normalization regression matrix, and a Phase 6.2 metadata-only
-normalized-dataset catalog.
-It is **not** a trading system.
+```bash
+make app     # or: APP_MODE=paper uv run uvicorn quant_platform.api.app:app --host 127.0.0.1 --port 8000
+```
 
-## Current purpose
+- `GET /health`
+- `GET /api/status`, `GET /api/market/universe`, `GET /api/market/bars/{symbol}`
+- `GET /api/strategies`, `GET /api/backtests`, `GET /api/backtests/ranking`, `GET /api/backtests/{id}`
+- `GET /api/paper/accounts`, `GET /api/paper/accounts/{name}`, `GET /api/paper/accounts/{name}/equity`
+- `POST /api/market/fetch`, `POST /api/backtests/run`, `POST /api/paper/run` (background jobs, `GET /api/jobs`)
+- Static dashboard at `/` when `dashboard/dist` exists.
 
-- Load local daily OHLCV CSV into PostgreSQL with point-in-time fields.
-- Keep bronze raw records and row-level ingestion errors for audit.
-- Identify instruments by `(symbol, asset_class, exchange_id, currency)`.
-- Build deterministic research datasets with a mandatory `as_of`.
-- Diagnose dataset coverage, calendar gaps, PIT corrections, and ingestion errors
-  before any backtest exists.
-- Save a local, hashed snapshot of a dataset request, CSV, and quality report.
-- Register snapshot metadata in PostgreSQL (hashes, request, relative artifacts).
-- Verify local snapshot artifacts and catalog hashes without rewriting files.
-- Replay a PIT dataset or local snapshot as an ordered market-event timeline.
-- Audit that stream (session/CA events, stream hash, replay boundaries)
-  before any backtest exists.
-- Export a replay run as local JSON/JSONL artifacts and register metadata
-  (hashes, counts, boundary status) in PostgreSQL.
-- Compare registered replay runs and gate whether a run is ready for a
-  dry-run backtest (no strategy, PnL, or orders).
-- Consume a ready replay run with `NoOpBacktestPolicy`, write local
-  summary/manifest artifacts, and register metadata in PostgreSQL.
-- Verify local backtest artifacts, recompute hashes, compare two
-  dry-runs, and gate whether a NoOp result is usable research evidence.
-- Observe a replay stream through a registered `ResearchPolicy`
-  (`noop` / `event_counting` / `data_quality` / `coverage` /
-  `corporate_action_audit` / `correction_audit`) that emits
-  observations and counters only.
-- Group several dry-run backtests under a hashed experiment record
-  (same replay with allowed configs, or several replays with one policy).
-- Gate whether a registered experiment is usable research evidence and
-  write an aggregated observation report (counts and hashes only).
-- Observe replay quality through registered policies (`data_quality`,
-  `coverage`, `corporate_action_audit`, `correction_audit`) without
-  signals or orders.
-- Pin ResearchPolicy outputs with a golden regression matrix (hashes and
-  observation counts; still no PnL).
-- Run a research-mode release candidate check (status, guardrails, policy
-  regression; still no trading or AI runtime).
-- Build and verify a local end-to-end research evidence bundle (fixtures
-  through snapshot, replay, dry-run, experiment, and release status;
-  still no PnL or orders).
-- Freeze this research stage with a technical handoff, checklists,
-  capability/risk matrices, and ADR 0003 (still no trading or AI runtime).
-- Build a derived corporate-action-normalized daily-bar view (splits;
-  silver `daily_bars` unchanged; no performance metrics).
-- Pin that derived view with a golden normalization regression matrix
-  and optionally attach it to a research evidence bundle.
-- Register normalized-dataset metadata in PostgreSQL (hashes, counts,
-  relative artifacts). Bars stay in local files; silver is not rewritten.
-- Validate **offline** vendor-agnostic payloads (daily bars, corporate
-  actions, sessions) with a fake in-memory provider. No HTTP, no
-  credentials, no real vendor client.
-- Pin those payloads with offline conformance reports and a golden
-  regression matrix (hashes and issue codes only; still no vendor HTTP).
-- Export those contract schemas and pin a compatibility baseline
-  (still no vendor HTTP, no internet, no returns/PnL).
-- Optionally attach the offline contract-payload intake bridge to a
-  research evidence bundle (`--include-contract-payload-intake`; dry-run
-  unless `--contract-intake-write-db`). Still no vendor HTTP.
-
-## What is not implemented
-
-- Strategies and BUY/SELL signals
-- Machine learning or LLM runtime
-- Real backtester (PnL, portfolio, orders); only a NoOp dry-run exists
-- Market-data download or vendor APIs (only an offline contract,
-  conformance reports, a schema baseline, and an opt-in intake bridge
-  exist)
-- Broker connectivity
-- Paper trading
-- Live trading or order routing
-- Frontend
-- Kafka, Redis, Celery, Kubernetes, microservices
-
-Live trading is not a configurable mode. `APP_MODE=live` (and `paper`) is
-rejected by settings validation.
+Everything binds to `127.0.0.1`. Paper mutations return 409 unless
+`APP_MODE=paper`.
 
 ## AI usage boundary
 
 Cursor (and similar editors) may be used to **write** this codebase. They
 are **not** part of the running platform: not a dependency, not required
-for tests or CI, and not a trading brain.
-
-A future research assistant, if added, must be optional, off by default,
-auditable, and unable to write market data or place orders. There is **no**
-OpenAI, Anthropic, Cursor API, or local-model integration in this phase.
+for tests or CI, and not a trading brain. There is **no** OpenAI,
+Anthropic, Cursor API, or local-model integration.
 
 Policy: [docs/ai/AI_USAGE_BOUNDARY.md](docs/ai/AI_USAGE_BOUNDARY.md) and
 [docs/adr/0002-ai-usage-boundary.md](docs/adr/0002-ai-usage-boundary.md).
 
-## Prerequisites
+## More documentation
 
-- Python 3.13 (installed automatically by `uv` if missing)
-- [uv](https://docs.astral.sh/uv/)
-- Docker and Docker Compose (only if you need a local PostgreSQL)
-- Git
-
-## Installation
-
-```bash
-uv python install 3.13
-uv sync
-```
-
-Copy the example environment file if you need local overrides:
-
-```bash
-cp .env.example .env
-```
-
-`.env` is gitignored. Use only fictional local values.
-
-## Tests
-
-Fast tests (no Docker, no PostgreSQL):
-
-```bash
-uv run pytest -m "not postgres"
-```
-
-All tests (Postgres-marked tests skip if the database is down):
-
-```bash
-uv run pytest
-```
-
-Postgres-only:
-
-```bash
-uv run pytest -m postgres
-```
-
-Full command list: [docs/development/DEVELOPER_WORKFLOW.md](docs/development/DEVELOPER_WORKFLOW.md).
-
-## Quality gates
-
-```bash
-uv run ruff check .
-uv run ruff format --check .
-uv run mypy src
-uv run pytest -m "not postgres"
-docker compose config
-```
-
-Or `make quality`. GitHub Actions (`.github/workflows/ci.yml`) runs the same
-fast path on every push/PR, plus a Postgres job. No GitHub secrets.
-First push and how to read Actions:
-[docs/development/DEVELOPER_WORKFLOW.md](docs/development/DEVELOPER_WORKFLOW.md#remote-first-push-and-github-actions).
-
-## PostgreSQL (local development)
-
-Host **5432** is already used on this machine by another container
-(`ia_postgres`). **5433** is used by `postgres_db`. This project therefore
-maps PostgreSQL to **`127.0.0.1:5434`** (container port remains 5432).
-
-```bash
-cp .env.example .env   # if .env does not exist; gitignored
-docker compose up -d postgres
-docker compose ps
-docker compose logs postgres --tail=50
-```
-
-Wait until the `postgres` service is healthy. Then:
-
-```bash
-uv run python scripts/check-db.py
-```
-
-That command loads settings, opens a SQLAlchemy connection, runs `SELECT 1`,
-lists public tables, and exits non-zero if any domain table exists. It does
-not create tables.
-
-Stop:
-
-```bash
-docker compose down
-```
-
-`docker compose down` keeps the named volume. Use `docker compose down -v`
-only if you intend to wipe the local database.
-
-Default credentials in Compose and `.env.example` are **fictional local
-placeholders**, not production secrets. Postgres is bound to `127.0.0.1:5434`.
-
-Connection URL:
-
-```text
-postgresql+psycopg://quant:quant_dev_only_not_for_production@127.0.0.1:5434/quant_platform
-```
-
-There are still **no** trading tables (orders, fills, signals, strategies).
-Alembic revisions `0001_ingestion` … `0010_normalized_dataset_catalog`
-create research ingestion, instrument-master, snapshot-catalog,
-replay-run, dry-run backtest, backtest-experiment, and
-normalized-dataset catalog metadata tables only. There is no table of
-normalized bars.
-
-## Migrations
-
-Apply research schema (PostgreSQL only):
-
-```bash
-uv run alembic current
-uv run alembic upgrade head
-```
-
-Do not use SQLite. See `alembic/README.md`.
-
-APP_MODE remains **research** only.
-
-## API
-
-```bash
-uv run uvicorn quant_platform.api.app:app --host 127.0.0.1 --port 8000
-```
-
-The only endpoint is:
-
-```text
-GET /health
-```
-
-It does not query the database or any external service.
-
-Data ingestion (local CSV only):
-[docs/data/DATA_INGESTION.md](docs/data/DATA_INGESTION.md),
-[docs/data/INSTRUMENT_MASTER.md](docs/data/INSTRUMENT_MASTER.md),
-[docs/data/MARKET_CALENDARS.md](docs/data/MARKET_CALENDARS.md),
-[docs/data/CORPORATE_ACTIONS.md](docs/data/CORPORATE_ACTIONS.md).
-
-Research datasets (Python API + optional CSV export):
-[docs/research/RESEARCH_DATASETS.md](docs/research/RESEARCH_DATASETS.md).
-Dataset quality reports (coverage, calendars, PIT, ingestion errors):
-[docs/research/DATASET_QUALITY.md](docs/research/DATASET_QUALITY.md).
-Reproducible local snapshots (CSV + quality JSON + hashed manifest):
-[docs/research/DATASET_SNAPSHOTS.md](docs/research/DATASET_SNAPSHOTS.md).
-Snapshot catalog (PostgreSQL metadata, hashes, list/compare):
-[docs/research/DATASET_CATALOG.md](docs/research/DATASET_CATALOG.md).
-Snapshot integrity (local artifact and catalog verification):
-[docs/research/SNAPSHOT_INTEGRITY.md](docs/research/SNAPSHOT_INTEGRITY.md).
-Dataset replay (ordered market events, not a backtester):
-[docs/simulation/DATASET_REPLAY.md](docs/simulation/DATASET_REPLAY.md).
-Replay boundaries (`ReplayStartedEvent` first, pre-known facts):
-[docs/simulation/REPLAY_BOUNDARIES.md](docs/simulation/REPLAY_BOUNDARIES.md).
-Replay audit (stream hash, order, PIT checks):
-[docs/simulation/REPLAY_AUDIT.md](docs/simulation/REPLAY_AUDIT.md).
-Replay runs (local artifacts + PostgreSQL metadata catalog):
-[docs/simulation/REPLAY_RUNS.md](docs/simulation/REPLAY_RUNS.md).
-Backtest readiness (compare runs; gate, not a strategy):
-[docs/simulation/BACKTEST_READINESS.md](docs/simulation/BACKTEST_READINESS.md).
-Dry-run backtest engine (NoOp policy, no orders or PnL):
-[docs/backtest/BACKTEST_ENGINE.md](docs/backtest/BACKTEST_ENGINE.md).
-Backtest artifact integrity (verify, compare, usable_result):
-[docs/backtest/BACKTEST_INTEGRITY.md](docs/backtest/BACKTEST_INTEGRITY.md).
-Research policy interface (observations, not strategies):
-[docs/backtest/RESEARCH_POLICY_INTERFACE.md](docs/backtest/RESEARCH_POLICY_INTERFACE.md).
-Policy output reports and integrity:
-[docs/backtest/POLICY_OUTPUT_INTEGRITY.md](docs/backtest/POLICY_OUTPUT_INTEGRITY.md).
-Backtest experiments (group dry-runs; not a strategy):
-[docs/backtest/BACKTEST_EXPERIMENTS.md](docs/backtest/BACKTEST_EXPERIMENTS.md).
-Experiment usability and aggregated research reports:
-[docs/backtest/BACKTEST_EXPERIMENT_USABILITY.md](docs/backtest/BACKTEST_EXPERIMENT_USABILITY.md).
-Data-quality research policies (not strategies):
-[docs/backtest/DATA_QUALITY_POLICIES.md](docs/backtest/DATA_QUALITY_POLICIES.md).
-Research-policy regression matrix (golden hashes, not PnL):
-[docs/backtest/POLICY_REGRESSION_MATRIX.md](docs/backtest/POLICY_REGRESSION_MATRIX.md).
-Corporate-action normalization regression matrix (hashes, not PnL):
-[docs/research/NORMALIZATION_REGRESSION_MATRIX.md](docs/research/NORMALIZATION_REGRESSION_MATRIX.md).
-Normalized dataset catalog (PostgreSQL metadata, not bar storage):
-[docs/research/NORMALIZED_DATASET_CATALOG.md](docs/research/NORMALIZED_DATASET_CATALOG.md).
-Normalization add-on verification (Alembic 0010, no trading):
-[docs/release/NORMALIZATION_ADDON_VERIFICATION.md](docs/release/NORMALIZATION_ADDON_VERIFICATION.md).
-Research-mode release candidate (what is ready, what is not):
+Research layer: [docs/data/DATA_INGESTION.md](docs/data/DATA_INGESTION.md),
+[docs/data/CORPORATE_ACTIONS.md](docs/data/CORPORATE_ACTIONS.md),
+[docs/research/RESEARCH_DATASETS.md](docs/research/RESEARCH_DATASETS.md),
+[docs/research/CORPORATE_ACTION_NORMALIZATION.md](docs/research/CORPORATE_ACTION_NORMALIZATION.md),
+[docs/research/NORMALIZED_DATASET_CATALOG.md](docs/research/NORMALIZED_DATASET_CATALOG.md),
+[docs/simulation/DATASET_REPLAY.md](docs/simulation/DATASET_REPLAY.md),
+[docs/backtest/BACKTEST_ENGINE.md](docs/backtest/BACKTEST_ENGINE.md),
+[docs/data/DATA_SOURCE_CONTRACTS.md](docs/data/DATA_SOURCE_CONTRACTS.md),
+[docs/data/CONTRACT_PAYLOAD_INTAKE.md](docs/data/CONTRACT_PAYLOAD_INTAKE.md),
 [docs/release/RESEARCH_RELEASE_CANDIDATE.md](docs/release/RESEARCH_RELEASE_CANDIDATE.md).
-End-to-end research evidence bundle (manual, local fixtures only):
-[docs/release/RESEARCH_EVIDENCE_BUNDLE.md](docs/release/RESEARCH_EVIDENCE_BUNDLE.md).
-Handoff and freeze:
-[docs/release/RESEARCH_HANDOFF.md](docs/release/RESEARCH_HANDOFF.md),
-[docs/release/CAPABILITY_MATRIX.md](docs/release/CAPABILITY_MATRIX.md),
-[docs/adr/0003-research-mode-freeze.md](docs/adr/0003-research-mode-freeze.md).
 
-See [docs/development/DEVELOPER_WORKFLOW.md](docs/development/DEVELOPER_WORKFLOW.md)
-for install, Compose, Alembic, port 5434 conflicts, and CI.
-
-## Architecture
-
-See [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md),
+Commands: [docs/release/COMMANDS.md](docs/release/COMMANDS.md).
+Workflow: [docs/development/DEVELOPER_WORKFLOW.md](docs/development/DEVELOPER_WORKFLOW.md).
+Architecture: [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md),
 [docs/adr/0001-foundation-architecture.md](docs/adr/0001-foundation-architecture.md),
-[docs/adr/0002-ai-usage-boundary.md](docs/adr/0002-ai-usage-boundary.md),
-and [docs/adr/0003-research-mode-freeze.md](docs/adr/0003-research-mode-freeze.md).
+[docs/adr/0003-research-mode-freeze.md](docs/adr/0003-research-mode-freeze.md),
+[docs/adr/0004-vendor-agnostic-data-source-contract.md](docs/adr/0004-vendor-agnostic-data-source-contract.md),
+[docs/adr/0005-paper-trading-pivot.md](docs/adr/0005-paper-trading-pivot.md).

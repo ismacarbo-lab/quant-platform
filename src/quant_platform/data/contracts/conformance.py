@@ -28,7 +28,10 @@ from quant_platform.data.contracts.hashing import (
     hash_vendor_payload_batch,
     sha256_canonical_mapping,
 )
-from quant_platform.data.contracts.types import VendorPayloadBatch
+from quant_platform.data.contracts.types import (
+    NETWORK_SOURCE_KINDS,
+    VendorPayloadBatch,
+)
 from quant_platform.data.contracts.validation import validate_vendor_payload_batch
 from quant_platform.data.payload import redact_payload_secrets
 
@@ -65,6 +68,15 @@ _SECRET_MARKERS = (
     "postgres://",
     "postgresql+psycopg://",
 )
+
+
+def _contract_network_violation(batch: VendorPayloadBatch) -> bool:
+    contract = batch.contract
+    if contract.requires_credentials:
+        return True
+    return contract.requires_network and (
+        contract.source_kind not in NETWORK_SOURCE_KINDS
+    )
 
 
 def summarize_vendor_payload_batch(
@@ -232,11 +244,15 @@ def build_data_contract_conformance_report(
             issues.append(extra)
             seen.add(key)
     offline_findings = detect_offline_contract_violations(package_root)
-    if batch.contract.requires_network or batch.contract.requires_credentials:
+    network_violation = _contract_network_violation(batch)
+    if network_violation:
         issues.append(
             DataContractConformanceIssue(
                 code="offline_contract_violation",
-                message="conformance batches must not require network or credentials",
+                message=(
+                    "only vendor_api contracts may require network; "
+                    "credentials are never allowed"
+                ),
                 field="contract",
                 record_kind="contract",
             )
@@ -263,7 +279,7 @@ def build_data_contract_conformance_report(
     validation_ok = validation.ok
     forbidden_terms_ok = all(item.code != "forbidden_term" for item in ranked)
     offline_only_ok = all(item.code != "offline_contract_violation" for item in ranked)
-    if batch.contract.requires_network or batch.contract.requires_credentials:
+    if network_violation:
         offline_only_ok = False
     if offline_findings:
         offline_only_ok = False

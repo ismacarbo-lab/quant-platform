@@ -1,11 +1,13 @@
-"""Typed application settings with a safe research-only default.
+"""Typed application settings with safe defaults.
 
 Sensitive values are read from the environment. There is no live-trading
-mode, broker URL, or market-data API key in this schema.
+mode, broker URL, or market-data API key in this schema. Paper trading is
+simulated locally with fictional cash (see ADR 0005).
 """
 
 from __future__ import annotations
 
+from decimal import Decimal
 from enum import StrEnum
 from functools import lru_cache
 
@@ -18,11 +20,16 @@ from quant_platform.core.redact import redact_secret_text
 class AppMode(StrEnum):
     """Operational mode.
 
-    Phase 0 supports research only. Paper trading and live execution are
-    future modes and are rejected if configured.
+    ``research`` runs the data and research tooling only. ``paper`` adds the
+    simulated paper-trading engine with fictional money. Live execution is
+    not implemented and is rejected if configured.
     """
 
     RESEARCH = "research"
+    PAPER = "paper"
+
+
+SUPPORTED_APP_MODES: frozenset[str] = frozenset(mode.value for mode in AppMode)
 
 
 class Settings(BaseSettings):
@@ -46,16 +53,34 @@ class Settings(BaseSettings):
             "@127.0.0.1:5434/quant_platform"
         )
     )
+    # Market data source used by ``fetch-market-data`` and the paper engine.
+    market_data_source_name: str = "yfinance"
+    # Paper trading (fictional cash, simulated fills). Never real money.
+    paper_initial_cash: Decimal = Decimal("100000")
+    # One paper account per strategy is bootstrapped on the first run so the
+    # dashboard can compare them side by side ("paper horse race").
+    paper_default_strategies: str = (
+        "inverse_volatility,trend_following,relative_momentum_top_n,"
+        "dual_momentum,sixty_forty,buy_and_hold"
+    )
+    paper_rebalance: str = "monthly"
+    paper_commission_bps: Decimal = Decimal("1")
+    paper_slippage_bps: Decimal = Decimal("5")
+    # Optional built dashboard directory served by the API (static files).
+    dashboard_dist_dir: str = "dashboard/dist"
 
     @field_validator("app_mode", mode="before")
     @classmethod
-    def reject_non_research_modes(cls, value: object) -> object:
-        if isinstance(value, str) and value.strip().lower() != AppMode.RESEARCH:
-            msg = (
-                f"Unsupported app mode {value!r}. Phase 0 only allows "
-                f"{AppMode.RESEARCH!r}; live and paper trading are not implemented."
-            )
-            raise ValueError(msg)
+    def reject_unsupported_modes(cls, value: object) -> object:
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized not in SUPPORTED_APP_MODES:
+                msg = (
+                    f"Unsupported app mode {value!r}. Allowed modes are "
+                    f"{sorted(SUPPORTED_APP_MODES)}; live trading is not implemented."
+                )
+                raise ValueError(msg)
+            return normalized
         return value
 
     @field_validator("database_url")
@@ -80,9 +105,23 @@ class Settings(BaseSettings):
             raise ValueError(msg)
         return level
 
+    @field_validator("paper_initial_cash", "paper_commission_bps", "paper_slippage_bps")
+    @classmethod
+    def require_non_negative(cls, value: Decimal) -> Decimal:
+        if value < 0:
+            msg = "paper trading amounts must not be negative"
+            raise ValueError(msg)
+        return value
+
     @property
     def is_research_mode(self) -> bool:
-        return self.app_mode is AppMode.RESEARCH
+        """True when research tooling may run (research or paper; never live)."""
+        return self.app_mode in (AppMode.RESEARCH, AppMode.PAPER)
+
+    @property
+    def is_paper_mode(self) -> bool:
+        """True only when the simulated paper-trading engine may write state."""
+        return self.app_mode is AppMode.PAPER
 
     @property
     def database_url_display(self) -> str:

@@ -1,5 +1,5 @@
 {
-  "bundle_hash": "sha256:f52d704bb3c422bd318033f1ef7606a12098c0127c17bd434950009f3097648a",
+  "bundle_hash": "sha256:6d4436b58236c62737e9dd95dc6fa1c9675c8990eac50d8a0030e1b44830e228",
   "format_version": 1,
   "kind": "data_contract_schema_bundle",
   "schema_count": 7,
@@ -152,7 +152,8 @@
         ],
         "source_kind": [
           "local_csv",
-          "offline_fixture"
+          "offline_fixture",
+          "vendor_api"
         ]
       },
       "fields": [
@@ -165,7 +166,8 @@
         {
           "enum_values": [
             "local_csv",
-            "offline_fixture"
+            "offline_fixture",
+            "vendor_api"
           ],
           "name": "source_kind",
           "required": true,
@@ -206,7 +208,7 @@
           "type_repr": "bool"
         }
       ],
-      "hash": "sha256:ceaee5e3249f6cf5fdeaf3b489591f3f5725c636ecd96279fa1a8653a2a331d0",
+      "hash": "sha256:bb99f45268472b2cf77b3f289950a07ddd2d2e04617428815a616c605e11a9ac",
       "required_fields": [
         "source_name",
         "source_kind",

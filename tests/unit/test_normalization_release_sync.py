@@ -1,4 +1,4 @@
-"""Operational docs and status stay pinned to Alembic 0010. No trading."""
+"""Operational docs and status keep the 0010 normalization catalog context."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ from quant_platform.research.normalization.status import (
 
 _ROOT = Path(__file__).resolve().parents[2]
 _SCRIPTS = _ROOT / "scripts"
-_OPERATIONAL_HEAD = "0010_normalized_dataset_catalog"
+_CATALOG_REVISION = "0010_normalized_dataset_catalog"
 _FREEZE_HEAD = "0009_backtest_experiments"
 _FREEZE_TAG = "v0.1.0-research"
 
@@ -28,7 +28,6 @@ _OPERATIONAL_DOCS = (
     "docs/architecture/ARCHITECTURE.md",
     "docs/development/DEVELOPER_WORKFLOW.md",
     "docs/release/COMMANDS.md",
-    "docs/release/CAPABILITY_MATRIX.md",
     "docs/release/RISK_REGISTER.md",
     "docs/release/RESEARCH_RELEASE_CANDIDATE.md",
     "docs/release/RESEARCH_EVIDENCE_BUNDLE.md",
@@ -62,14 +61,14 @@ def _load_script(filename: str):
     return module
 
 
-def test_expected_alembic_head_is_0010() -> None:
-    assert EXPECTED_ALEMBIC_HEAD == _OPERATIONAL_HEAD
+def test_expected_alembic_head_is_at_or_after_0010() -> None:
+    assert EXPECTED_ALEMBIC_HEAD >= _CATALOG_REVISION
 
 
 def test_operational_docs_mention_0010() -> None:
     for relative in _OPERATIONAL_DOCS:
         text = _read(relative)
-        assert _OPERATIONAL_HEAD in text, relative
+        assert _CATALOG_REVISION in text, relative
 
 
 def test_historical_docs_that_mention_0009_keep_freeze_context() -> None:
@@ -84,7 +83,7 @@ def test_capability_matrix_mentions_metadata_only_catalog() -> None:
     text = _read("docs/release/CAPABILITY_MATRIX.md")
     lowered = text.lower()
     assert "normalized_datasets" in text
-    assert "metadata-only" in lowered or "metadata only" in lowered
+    assert "metadata" in lowered
     assert "not normalized bars" in lowered
 
 
@@ -100,13 +99,12 @@ def test_risk_register_dividend_informational_only() -> None:
     assert "informational only" in text
 
 
-def test_readme_says_no_trading_pnl_returns() -> None:
+def test_readme_says_paper_only_no_live_trading() -> None:
     raw = _read("README.md").lower().replace("*", " ")
     text = " ".join(raw.split())
-    assert "not a trading system" in text
-    assert "pnl" in text
-    assert "returns" in text
-    assert "no strategies" in text
+    assert "no live trading" in text
+    assert "no real money" in text
+    assert "paper trading" in text
 
 
 def test_release_docs_have_no_live_database_url() -> None:
@@ -123,7 +121,7 @@ def test_normalization_remote_verification_doc() -> None:
     relative = "docs/release/NORMALIZATION_REMOTE_RELEASE_VERIFICATION.md"
     raw = _read(relative)
     text = " ".join(raw.replace("*", " ").lower().split())
-    assert _OPERATIONAL_HEAD in raw
+    assert _CATALOG_REVISION in raw
     assert "v0.2.0-research-normalization" in raw
     assert "normalized_datasets" in raw
     assert "metadata-only" in text
@@ -140,7 +138,7 @@ def test_normalization_post_tag_release_notes() -> None:
     text = " ".join(raw.replace("*", " ").lower().split())
     assert "v0.2.0-research-normalization" in raw
     assert "83610f2131b7bd69ce5a15e455f7b92ab21144f4" in raw
-    assert _OPERATIONAL_HEAD in raw
+    assert _CATALOG_REVISION in raw
     assert "no trading" in text
     assert "pnl" in text
     assert "returns" in text
@@ -163,16 +161,16 @@ def test_normalization_status_script_help_and_json(
     captured = capsys.readouterr()
     assert code == 0
     payload = json.loads(captured.out)
-    assert payload["expected_alembic_head"] == _OPERATIONAL_HEAD
+    assert payload["expected_alembic_head"] == EXPECTED_ALEMBIC_HEAD
     assert payload["dividend_policy"] == DIVIDEND_POLICY
     assert "DATABASE_URL" not in captured.out
     assert "postgresql+psycopg://" not in captured.out
 
 
-def test_status_json_has_alembic_head_0010(research_settings: Settings) -> None:
+def test_status_json_has_expected_alembic_head(research_settings: Settings) -> None:
     report = build_release_status(settings=research_settings)
     payload = report.as_mapping()
-    assert payload["alembic_head_expected"] == _OPERATIONAL_HEAD
+    assert payload["alembic_head_expected"] == EXPECTED_ALEMBIC_HEAD
     blob = json.dumps(payload, sort_keys=True)
     assert "DATABASE_URL" not in blob
     assert "postgresql+psycopg://" not in blob
@@ -183,7 +181,7 @@ def test_normalization_status_without_database(research_settings: Settings) -> N
     report = build_normalization_status(check_db=False)
     assert report.ok is True
     assert report.capability_enabled is True
-    assert report.expected_alembic_head == _OPERATIONAL_HEAD
+    assert report.expected_alembic_head == EXPECTED_ALEMBIC_HEAD
     assert report.expected_table == EXPECTED_CATALOG_TABLE
     assert report.regression_case_count >= 6
     assert "split_only" in report.adjustment_modes

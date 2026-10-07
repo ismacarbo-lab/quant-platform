@@ -18,6 +18,7 @@ from quant_platform.data.repository import (
     upsert_instrument,
 )
 from quant_platform.data.validation import DailyBarDraft
+from quant_platform.release.constants import EXPECTED_PUBLIC_TABLES
 from quant_platform.research.catalog import (
     compare_catalog_snapshots,
     register_dataset_snapshot,
@@ -37,27 +38,7 @@ pytestmark = pytest.mark.postgres
 _TRADING_TABLES = frozenset(
     {"trades", "orders", "fills", "signals", "strategies", "positions"}
 )
-_ALLOWED = frozenset(
-    {
-        "alembic_version",
-        "corporate_actions",
-        "daily_bars",
-        "data_sources",
-        "dataset_snapshots",
-        "simulation_replay_runs",
-        "backtest_runs",
-        "backtest_experiments",
-        "normalized_datasets",
-        "exchanges",
-        "ingestion_errors",
-        "ingestion_runs",
-        "instrument_identifiers",
-        "instruments",
-        "market_calendars",
-        "market_sessions",
-        "raw_ingestion_records",
-    }
-)
+_ALLOWED = EXPECTED_PUBLIC_TABLES
 
 
 def _seed_snapshot(session: Session, output_dir: Path, symbol: str | None = None):

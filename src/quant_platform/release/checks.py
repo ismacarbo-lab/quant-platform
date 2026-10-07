@@ -197,10 +197,10 @@ def _check_app_mode(
 ) -> ReleaseCheckItem:
     is_research = settings.is_research_mode if research_mode is None else research_mode
     if is_research:
-        return _ok("app_mode", "APP_MODE is research")
+        return _ok("app_mode", f"APP_MODE is {settings.app_mode} (research tooling on)")
     return _error(
         "app_mode",
-        "APP_MODE must be research",
+        "APP_MODE must be research or paper",
         code="app_mode_not_research",
     )
 
@@ -256,7 +256,7 @@ def _check_trading_constructs(
             True,
         )
     return (
-        _ok("trading_constructs", "no trading constructs in package or tables"),
+        _ok("trading_constructs", "no live-trading constructs in package or tables"),
         False,
     )
 
@@ -291,7 +291,7 @@ def _check_forbidden_packages(package_root: Path) -> ReleaseCheckItem:
             f"forbidden packages present: {', '.join(present)}",
             code="forbidden_package",
         )
-    return _ok("architecture_packages", "no strategy/signal/broker packages")
+    return _ok("architecture_packages", "no live-trading or AI runtime packages")
 
 
 def _check_forbidden_dependencies(pyproject_path: Path) -> ReleaseCheckItem:
@@ -304,7 +304,7 @@ def _check_forbidden_dependencies(pyproject_path: Path) -> ReleaseCheckItem:
         )
     return _ok(
         "architecture_dependencies",
-        "no trading, vendor, or AI runtime dependencies",
+        "no broker, paid-vendor, or AI runtime dependencies",
     )
 
 
@@ -325,7 +325,7 @@ def _check_vendor_runtime(package_root: Path) -> ReleaseCheckItem:
         )
     return _ok(
         "vendor_runtime",
-        "no real vendor clients or contract networking",
+        "no broker clients; contracts package stays offline",
     )
 
 

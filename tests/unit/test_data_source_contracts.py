@@ -233,11 +233,11 @@ def test_contracts_package_has_no_http_or_vendor_imports() -> None:
     assert detect_real_vendor_clients(_PACKAGE) == ()
 
 
-def test_no_real_vendor_client_is_implemented() -> None:
+def test_contracts_package_has_no_vendor_client_module() -> None:
     enabled = set(ENABLED_CAPABILITIES)
     disabled = set(DISABLED_CAPABILITIES)
     assert "vendor_agnostic_data_contracts" in enabled
-    assert "external_market_data_vendors" in disabled
+    assert "real_brokers" in disabled
     contracts = _PACKAGE / "data" / "contracts"
     forbidden = {
         "polygon.py",

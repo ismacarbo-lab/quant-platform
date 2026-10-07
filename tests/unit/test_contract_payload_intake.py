@@ -328,7 +328,7 @@ def test_no_real_vendors_or_network_imports() -> None:
     enabled = set(ENABLED_CAPABILITIES)
     disabled = set(DISABLED_CAPABILITIES)
     assert "contract_payload_intake_offline" in enabled
-    assert "external_market_data_vendors" in disabled
+    assert "live_trading" in disabled
     contracts = _PACKAGE / "data" / "contracts"
     present = {path.name for path in contracts.glob("*.py")}
     assert present.isdisjoint(_VENDOR_FILENAMES)

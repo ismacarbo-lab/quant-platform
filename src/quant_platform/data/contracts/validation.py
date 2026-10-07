@@ -14,6 +14,7 @@ from quant_platform.data.contracts.types import (
     ALLOWED_SESSION_KINDS,
     ALLOWED_SOURCE_KINDS,
     FORBIDDEN_VENDOR_IDENTITY_NAMES,
+    NETWORK_SOURCE_KINDS,
     OPEN_SESSION_KINDS,
     DataSourceContract,
     VendorCorporateActionPayload,
@@ -404,11 +405,11 @@ def _validate_contract(
                 record_kind="contract",
             )
         )
-    if contract.requires_network:
+    if contract.requires_network and contract.source_kind not in NETWORK_SOURCE_KINDS:
         issues.append(
             _issue(
                 VendorContractErrorCode.NETWORK_REQUIRED,
-                "data source contracts must not require network in this phase",
+                "only vendor_api data source contracts may require network",
                 field="requires_network",
                 record_kind="contract",
             )

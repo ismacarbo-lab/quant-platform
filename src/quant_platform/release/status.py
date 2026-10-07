@@ -42,53 +42,61 @@ from quant_platform.research.snapshots import (
 
 DOCUMENTED_RELEASE_RISKS: tuple[ReleaseRiskItem, ...] = (
     ReleaseRiskItem(
-        code="no_data_vendors",
+        code="single_free_data_vendor",
         message=(
-            "Market data is local CSV plus an offline vendor-agnostic "
-            "contract; there is no vendor download client."
+            "Market data comes from Yahoo Finance via yfinance, a free "
+            "unofficial feed without SLA; outages or data revisions are possible."
         ),
     ),
     ReleaseRiskItem(
-        code="vendor_contracts_offline_only",
+        code="vendor_contracts_offline_tests",
         message=(
-            "Vendor-agnostic contracts exist for future adapters; "
-            "tests stay offline and credentials stay out of the repo."
+            "The contracts package stays offline; the marketdata adapter is "
+            "tested with recorded fixtures and credentials stay out of the repo."
         ),
     ),
     ReleaseRiskItem(
         code="vendor_rate_limits_unimplemented",
         message=(
-            "Rate limits and vendor licensing are future integration "
-            "risks, not implemented controls."
+            "Rate limits and vendor licensing are not enforced controls; "
+            "fetches are manual or scheduled once per day."
         ),
     ),
     ReleaseRiskItem(
-        code="no_advanced_normalization",
+        code="normalization_scope",
         message=(
-            "Silver OHLCV stays unadjusted; optional derived split "
-            "normalization exists; dividends stay informational; "
-            "CA methodology is limited to stored split factors."
+            "Silver OHLCV stays unadjusted; derived split and total-return "
+            "views are computed from stored corporate actions only."
         ),
     ),
     ReleaseRiskItem(
-        code="no_portfolio_pnl",
-        message="There is no portfolio, cash, holdings, PnL, or returns engine.",
+        code="paper_not_real_money",
+        message=(
+            "Paper trading uses fictional cash and simulated fills; "
+            "results do not include real-world liquidity or broker behaviour."
+        ),
     ),
     ReleaseRiskItem(
-        code="no_strategy_framework",
-        message="ResearchPolicy is an observer, not a strategy or signal model.",
+        code="backtest_overfitting",
+        message=(
+            "Backtests can overfit; only walk-forward out-of-sample results "
+            "and benchmark comparison should drive promotion to paper."
+        ),
     ),
     ReleaseRiskItem(
-        code="no_execution",
-        message="There is no broker adapter, order execution, or paper/live mode.",
+        code="no_live_execution",
+        message="There is no real broker adapter or live mode; live is rejected.",
     ),
     ReleaseRiskItem(
         code="policy_regression_manual_goldens",
         message="Policy regression goldens must be copied into matrix.json by hand.",
     ),
     ReleaseRiskItem(
-        code="normalization_dividends_informational",
-        message="Dividends are informational only; prices are not dividend-adjusted.",
+        code="normalization_dividends_total_return_only",
+        message=(
+            "Dividends adjust prices only in the derived total_return view; "
+            "silver prices are never dividend-adjusted."
+        ),
     ),
     ReleaseRiskItem(
         code="normalization_regression_manual_goldens",
@@ -133,6 +141,13 @@ DOCUMENTED_RELEASE_RISKS: tuple[ReleaseRiskItem, ...] = (
         message=(
             "The evidence bundle proves the research pipeline ran; "
             "it does not measure returns or edge."
+        ),
+    ),
+    ReleaseRiskItem(
+        code="no_profit_guarantee",
+        message=(
+            "No strategy here is guaranteed to be profitable; past "
+            "performance in backtests or paper does not promise future results."
         ),
     ),
 )

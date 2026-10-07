@@ -1,8 +1,8 @@
-"""Corporate-action factor math. Research-only; not returns or PnL."""
+"""Corporate-action factor math for derived views. Silver bars stay raw."""
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from datetime import datetime
 from decimal import Decimal
 from uuid import UUID, uuid5
@@ -29,6 +29,9 @@ ADJUSTABLE_BY_MODE: dict[AdjustmentMode, frozenset[str]] = {
         {ACTION_SPLIT, ACTION_REVERSE_SPLIT}
     ),
     AdjustmentMode.INFORMATIONAL: frozenset(),
+    AdjustmentMode.TOTAL_RETURN: frozenset(
+        {ACTION_SPLIT, ACTION_REVERSE_SPLIT, ACTION_DIVIDEND}
+    ),
 }
 
 
@@ -55,6 +58,56 @@ def split_quantity_factors(
     if quantity_before <= 0 or quantity_after <= 0:
         raise ValueError("split quantities must be positive")
     return quantity_before / quantity_after, quantity_after / quantity_before
+
+
+def dividend_factor_key(action: CorporateActionDatasetRow) -> str:
+    """Stable key for dividend price factors (id when stored, else natural key)."""
+    if action.id is not None:
+        return str(action.id)
+    return f"{action.instrument_id}|{action.effective_time.isoformat()}"
+
+
+def dividend_price_factor(cash_amount: Decimal, prior_close: Decimal) -> Decimal | None:
+    """Reinvestment factor ``1 - D / P_prev`` applied to bars before the ex-date."""
+    if cash_amount <= 0 or prior_close <= 0:
+        return None
+    factor = _ONE - (cash_amount / prior_close)
+    if factor <= 0:
+        return None
+    return factor
+
+
+def compute_dividend_price_factors(
+    bars: Sequence[DailyBarDatasetRow],
+    actions: Sequence[CorporateActionDatasetRow],
+) -> dict[str, Decimal]:
+    """Price factors for dividends using the last close strictly before ex-date."""
+    closes_by_instrument: dict[UUID, list[tuple[datetime, Decimal]]] = {}
+    for bar in bars:
+        closes_by_instrument.setdefault(bar.instrument_id, []).append(
+            (bar.observation_time, bar.close)
+        )
+    for series in closes_by_instrument.values():
+        series.sort(key=lambda item: item[0])
+    factors: dict[str, Decimal] = {}
+    for action in actions:
+        if action.action_type != ACTION_DIVIDEND or action.cash_amount is None:
+            continue
+        series = closes_by_instrument.get(action.instrument_id, [])
+        if not series:
+            continue
+        prior_close: Decimal | None = None
+        for observation_time, close in series:
+            if observation_time < action.effective_time:
+                prior_close = close
+            else:
+                break
+        if prior_close is None:
+            continue
+        factor = dividend_price_factor(action.cash_amount, prior_close)
+        if factor is not None:
+            factors[dividend_factor_key(action)] = factor
+    return factors
 
 
 def is_visible_at(action: CorporateActionDatasetRow, *, as_of: datetime) -> bool:
@@ -84,6 +137,7 @@ def compute_bar_adjustment(
     *,
     as_of: datetime,
     adjustment_mode: AdjustmentMode,
+    dividend_price_factors: Mapping[str, Decimal] | None = None,
 ) -> tuple[
     Decimal,
     Decimal,
@@ -100,6 +154,7 @@ def compute_bar_adjustment(
     adjustable = ADJUSTABLE_BY_MODE[adjustment_mode]
     ordered = sorted(actions, key=action_sort_key)
     seen_issue_keys: set[tuple[str, str | None]] = set()
+    dividend_factors = dividend_price_factors or {}
 
     for action in ordered:
         if not is_visible_at(action, as_of=as_of):
@@ -112,6 +167,7 @@ def compute_bar_adjustment(
             adjustment_mode=adjustment_mode,
             adjustable=adjustable,
             retroactive=retroactive,
+            dividend_factors=dividend_factors,
         )
         for issue in extra:
             key = (
@@ -155,15 +211,45 @@ def _factor_for_action(
     adjustment_mode: AdjustmentMode,
     adjustable: frozenset[str],
     retroactive: bool,
+    dividend_factors: Mapping[str, Decimal],
 ) -> tuple[CorporateActionFactor | None, tuple[NormalizationIssue, ...]]:
     if action.action_type == ACTION_DIVIDEND:
-        return None, (
-            NormalizationIssue(
-                code="dividend_not_adjusted",
-                message="dividend is informational only; prices were not adjusted",
-                instrument_id=action.instrument_id,
+        if adjustment_mode is not AdjustmentMode.TOTAL_RETURN:
+            return None, (
+                NormalizationIssue(
+                    code="dividend_not_adjusted",
+                    message="dividend is informational only; prices were not adjusted",
+                    instrument_id=action.instrument_id,
+                    action_id=action.id,
+                ),
+            )
+        factor_value = dividend_factors.get(dividend_factor_key(action))
+        if factor_value is None:
+            return None, (
+                NormalizationIssue(
+                    code="dividend_factor_unavailable",
+                    message=(
+                        "dividend has no prior close in the dataset window; "
+                        "factor was skipped"
+                    ),
+                    severity="info",
+                    instrument_id=action.instrument_id,
+                    action_id=action.id,
+                ),
+            )
+        return (
+            CorporateActionFactor(
                 action_id=action.id,
+                action_type=action.action_type,
+                instrument_id=action.instrument_id,
+                effective_time=action.effective_time,
+                available_time=action.available_time,
+                price_factor=factor_value,
+                volume_factor=_ONE,
+                applied=retroactive,
+                note="cash dividend reinvested on ex-date",
             ),
+            (),
         )
     if action.action_type not in {ACTION_SPLIT, ACTION_REVERSE_SPLIT}:
         return None, (
