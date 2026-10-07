@@ -33,7 +33,8 @@ from quant_platform.release.evidence_types import (
 )
 from quant_platform.simulation.constructs import detect_trading_constructs
 
-_SCRIPTS = Path(__file__).resolve().parents[2] / "scripts"
+_ROOT = Path(__file__).resolve().parents[2]
+_SCRIPTS = _ROOT / "scripts"
 _FAKE_HASH = "sha256:" + ("a" * 64)
 _OTHER_HASH = "sha256:" + ("b" * 64)
 _STAMP = datetime(2024, 1, 2, tzinfo=UTC)
@@ -606,6 +607,27 @@ def test_build_script_rejects_write_db_without_include(
     assert code == 1
     assert "include-contract-payload-intake" in captured.err
     _assert_no_secrets(captured.err + captured.out)
+
+
+def test_evidence_intake_remote_verification_doc() -> None:
+    spec = _ROOT / "docs" / "release" / "EVIDENCE_INTAKE_REMOTE_RELEASE_VERIFICATION.md"
+    assert spec.is_file()
+    raw = spec.read_text(encoding="utf-8")
+    text = " ".join(raw.replace("*", " ").lower().split())
+    assert "v0.6.0-research-evidence-intake" in raw
+    assert "0010_normalized_dataset_catalog" in raw
+    assert "evidence bundle" in text
+    assert "contract payload intake" in text
+    assert "opt-in" in text
+    assert "dry-run" in text
+    assert "--contract-intake-write-db" in raw
+    assert "no vendors reales" in text
+    assert "no internet" in text
+    assert "no trading" in text
+    assert "no pnl/returns" in text
+    assert "DATABASE_URL=" not in raw
+    assert "postgresql+psycopg://quant:" not in text
+    assert "quant_dev_only_not_for_production" not in text
 
 
 def _write_payload_bundle(root: Path, manifest: ResearchEvidenceBundleManifest) -> None:
